@@ -8,7 +8,7 @@
 
 מה מקבלים: כל המסכים עובדים, עם נתוני ההדגמה וכפתור "מצב פיתוח" להחלפה בין תאגיד, קבלן ואדמין. הנתונים נשמרים בזיכרון של השרת ומתאפסים מדי פעם (כשהשרת מופעל מחדש). לא להגדיר `DEMO_MODE` בפריסה אמיתית.
 
-**צילום סטטי ב-GitHub Pages:** כל דחיפה ל-`main` מייצרת גם עותק לצפייה בלבד של כל המסכים בשלוש השפות (`.github/workflows/pages.yml`). כדי להפעיל: בריפו ב-GitHub, **Settings ← Pages ← Source: GitHub Actions**. בריפו פרטי זה דורש מנוי GitHub Pro. הכתובת: `https://damirbarr.github.io/yadaim/`.
+**צילום סטטי ב-GitHub Pages:** כל דחיפה ל-`main` מייצרת גם עותק לצפייה בלבד של כל המסכים בשלוש השפות (`.github/workflows/pages.yml`). הצילום נדחף לענף `gh-pages` (רק ה-workflow כותב אליו). כדי להפעיל: בריפו ב-GitHub, **Settings ← Pages ← Source: Deploy from a branch ← `gh-pages` / (root)**. בריפו פרטי זה דורש מנוי GitHub Pro. הכתובת: `https://damirbarr.github.io/yadaim/`.
 
 ## מה נפרס לאן
 | רכיב | שירות | מה יש בו |

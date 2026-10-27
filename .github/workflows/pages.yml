@@ -1,6 +1,7 @@
 # Publishes a static, view-only snapshot of the demo to GitHub Pages (scripts/snapshot.mjs).
 # The app needs a server, so CI builds it, runs it with fresh demo data (embedded PGlite, dev personas),
-# crawls every screen in he/ar/en and uploads the saved pages. Enable once: Settings → Pages → Source: GitHub Actions.
+# crawls every screen in he/ar/en and pushes the saved pages to the gh-pages branch (written only by this workflow;
+# no Actions artifact storage involved). Enable once: Settings → Pages → Source: Deploy from a branch → gh-pages / (root).
 name: Demo snapshot (GitHub Pages)
 
 on:
@@ -9,9 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
@@ -52,16 +51,12 @@ jobs:
         if: failure()
         run: tail -n 200 app.log
 
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: out-demo
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}he/
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish to the gh-pages branch
+        run: |
+          cd out-demo
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Demo snapshot of ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" gh-pages
