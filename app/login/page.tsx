@@ -35,7 +35,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
       <section className="blueprint relative hidden flex-col justify-between p-10 md:flex">
         <Link href="/"><Logo dark /></Link>
         <div>
-          <div className="text-[13px] font-bold tracking-[.16em] text-hazard">כניסה למערכת</div>
+          <div className="text-[13px] font-bold tracking-[.02em] text-hazard">כניסה למערכת</div>
           <h2 className="mt-3 text-[56px] font-bold leading-[1.03] text-white">בונים על אנשים.<br /><em className="not-italic text-hazard">לא על הבטחות.</em></h2>
           <svg viewBox="0 0 400 40" className="mt-8 w-72" aria-hidden><g stroke="#d4f25a" strokeWidth="1.2"><path d="M4 20h392M4 12v16M396 12v16" /></g></svg>
           <p className="mt-2 max-w-sm text-[15px] text-[#c9d6e3]">קבלנים מזמינים עובד מסוים לפי מקצוע ויום. תאגידים ממלאים ימים פנויים ושומרים על תוקף האישורים.</p>

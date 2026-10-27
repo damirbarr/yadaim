@@ -1,8 +1,6 @@
-// Single source of truth for the database schema (Postgres — PGlite locally, Supabase in production).
-// `npm run db:export-schema` writes this to supabase/migrations/0001_init.sql.
-// Every statement is idempotent so it can run on every boot in development.
+-- Initial schema. Migrations run in file-name order, once each, via `npm run db:migrate` (or `supabase db push`).
+-- RLS is enabled automatically on every public table after each migration run (lib/migrations.ts).
 
-export const SCHEMA = /* sql */ `
 create or replace function now_txt(delta interval default interval '0') returns text
   language sql stable as $$ select to_char((now() + delta) at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS') $$;
 
@@ -222,21 +220,3 @@ create index if not exists idx_docs_worker on documents(worker_id);
 create index if not exists idx_workers_agency on workers(agency_id);
 create index if not exists idx_events_agency on events(agency_id, id);
 
--- Supabase exposes the public schema over its REST API. The app talks to Postgres directly as the
--- owner role, so we lock every table for the anon/authenticated API roles (RLS on, no policies).
-alter table agencies enable row level security;
-alter table contractors enable row level security;
-alter table users enable row level security;
-alter table invites enable row level security;
-alter table sessions enable row level security;
-alter table workers enable row level security;
-alter table documents enable row level security;
-alter table bookings enable row level security;
-alter table booking_workers enable row level security;
-alter table crews enable row level security;
-alter table crm_contacts enable row level security;
-alter table campaigns enable row level security;
-alter table campaign_recipients enable row level security;
-alter table events enable row level security;
-alter table audit_log enable row level security;
-`;

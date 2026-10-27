@@ -144,13 +144,22 @@ try {
 
   step("Excel import + CRM paste + campaign tracking");
   await o.goto(B + "/a/workers");
-  await o.locator("input[type=file]").setInputFiles(path.join(DIR, "..", "public", "templates", "workers.xlsx"));
-  await o.click('button:has-text("ייבוא")');
+  await o.locator("input[type=file]").setInputFiles(path.join(DIR, "..", "public", "templates", "workers.xlsx")); // picking the file is the whole action
   await o.waitForSelector("text=נוספו");
   ok((await o.locator("text=נוספו 4 עובדים").count()) === 1, "XLSX template imported 4 workers");
+  // A sheet that isn't the template: the user maps its columns once, then it imports.
+  const odd = path.join(DIR, ".tmp-odd-workers.csv");
+  fs.writeFileSync(odd, "Worker Name,Job,Nationality,Mobile,Visa valid until,Notes\nפטר ס.,טפסן,מולדובה,0521112233,31/12/2027,ותיק\nלי וי,רצף,סין,0523334455,30/06/2027,\n");
+  await o.goto(B + "/a/workers");
+  await o.locator("input[type=file]").setInputFiles(odd);
+  await o.waitForSelector("text=התאימו את העמודות בקובץ");
+  ok((await o.locator('select[aria-label="מקצוע"]').inputValue()) === "1", "unknown sheet: columns pre-matched, mapping step shown");
+  await o.click('button:has-text("ייבוא מהקובץ")');
+  await o.waitForSelector("text=נוספו 2 עובדים");
+  ok(true, "mapped sheet imported 2 workers");
   await o.goto(B + "/a/contractors");
   await o.fill("textarea[name=pasted]", "דני רוזן 052-9998877\nשמעון ביטון, 054-1112299");
-  await o.click('button:has-text("ייבוא")');
+  await o.click('button:has-text("הוספת הרשימה")');
   await o.waitForSelector("text=נוספו");
   ok((await o.locator("text=נוספו 2 קבלנים").count()) === 1, "pasted WhatsApp contacts imported");
   await o.goto(B + "/a/campaigns");
@@ -185,7 +194,6 @@ try {
   await Promise.all([n.waitForURL(/welcome=1/), n.click('button:has-text("המשך")')]);
   ok((await n.locator("text=ממתין לאימות").count()) >= 1, "new agency created, pending verification");
   await n.locator("input[type=file]").setInputFiles(path.join(DIR, "..", "public", "templates", "workers.xlsx"));
-  await n.click('button:has-text("ייבוא")');
   await n.waitForSelector("text=נוספו");
   ok(true, "new agency imported its workers from Excel");
 
@@ -196,6 +204,8 @@ try {
   await a.waitForLoadState("networkidle");
   await a.reload();
   ok((await a.locator('tr:has-text("תאגיד בדיקה") >> text=מאומת').count()) === 1, "admin verified the new agency");
+  await a.goto(B + "/admin/users");
+  ok((await a.locator('form:has(button:has-text("שמירה")) option[value="admin"], form:has(button:has-text("הוספה")) option[value="admin"]').count()) === 0, "admin can't be granted from the admin screens");
   await a.goto(B + "/admin/users?q=agency@demo");
   await Promise.all([a.waitForURL(/\/a$/), a.locator('button:has-text("כניסה בתור")').first().click()]);
   ok((await a.locator("text=צופה במערכת בתור").count()) === 1, "impersonation banner shown");
@@ -210,5 +220,6 @@ try {
   process.exitCode = 1;
 } finally {
   fs.rmSync(path.join(DIR, ".tmp-doc.png"), { force: true });
+  fs.rmSync(path.join(DIR, ".tmp-odd-workers.csv"), { force: true });
   await browser.close();
 }

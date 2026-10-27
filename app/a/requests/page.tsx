@@ -29,11 +29,12 @@ export default async function Requests({ searchParams }: { searchParams: Promise
           return (
             <Link key={b.id} href={`/a/requests/${b.id}`} className="card flex flex-wrap items-center gap-4 p-4 hover:border-ink">
               <span className="chip-hazard">חדש</span>
-              <div className="min-w-0 flex-1">
+              {/* On a phone the details take the whole first line and price + action wrap below. */}
+              <div className="min-w-0 flex-1 basis-[calc(100%-5rem)] sm:basis-0">
                 <div className="font-semibold">{b.company} · {b.contact_name}</div>
                 <div className="text-sm text-muted">{b.workers.length} {trade(b.trade).plural} · {prettyDate(b.date)}{b.days > 1 ? ` · ${b.days} ימים` : ""} · {b.address} · לינה {b.lodging === "agency" ? "אצלכם" : "אצל הקבלן"}</div>
               </div>
-              <div className="text-left"><div className="text-[22px] font-bold text-ink num">{ils(t.net)}</div><div className="text-xs text-muted">לפני מע״מ</div></div>
+              <div className="flex-1 sm:flex-none sm:text-left"><div className="text-[22px] font-bold text-ink num">{ils(t.net)}</div><div className="text-xs text-muted">לפני מע״מ</div></div>
               <span className="btn-primary">לשיבוץ</span>
             </Link>
           );

@@ -34,7 +34,26 @@ export default async function Workers({ searchParams }: { searchParams: Promise<
         {TRADES.map((t) => <Link key={t.key} href={`/a/workers?trade=${t.key}`} className={sp.trade === t.key ? "chip-hazard px-3 py-1.5" : "chip-muted px-3 py-1.5"}>{t.plural} · {everyone.filter((w) => w.active && w.trade === t.key).length}</Link>)}
         <Link href="/a/workers?show=inactive" className={sp.show === "inactive" ? "chip-hazard px-3 py-1.5" : "chip-muted px-3 py-1.5"}>לא פעילים</Link>
       </div>
-      <div className="card overflow-x-auto">
+      {/* Phone: one row per worker with a single documents status; the full grid needs a wide screen. */}
+      <div className="card divide-y divide-dashed divide-line sm:hidden">
+        {list.map((w) => {
+          const check = docCheck(docs.get(w.id)!, w.trade, today);
+          return (
+            <Link key={w.id} href={`/a/workers/${w.id}`} className="flex items-center gap-3 px-4 py-3 active:bg-paper">
+              <Avatar w={w} size={40} />
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold">{displayName(w)}</div>
+                <div className="truncate text-xs text-muted">{trade(w.trade).label} · {w.years} שנים · {countryLabel(w.country)}</div>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                {check.ok ? <span className="chip-ok">✓ אישורים</span> : <span className="chip-bad">חסר אישור</span>}
+                {busyToday.has(w.id) ? <span className="chip-ok">באתר</span> : <span className="chip-muted">פנוי</span>}
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+      <div className="card hidden overflow-x-auto sm:block">
         <table className="tbl min-w-[860px]">
           <thead><tr><th>עובד</th><th>מקצוע</th><th>ותק</th><th>ארץ</th>{DOC_TYPES.filter((d) => d.key !== "passport").map((d) => <th key={d.key}>{d.short}</th>)}<th>דירוג</th><th>היום</th></tr></thead>
           <tbody>

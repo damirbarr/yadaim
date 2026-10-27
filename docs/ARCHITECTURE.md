@@ -28,27 +28,30 @@ One Next.js 16 app is both frontend and backend: React Server Components render 
 | `app/auth/google`, `app/auth/callback` | Google OAuth via Supabase (route handlers) |
 | `app/c/*` | Contractor area: search, worker profile, checkout, orders, site check-in, crews, team |
 | `app/a/*` | Agency area: today, requests, compliance, workers, contractors CRM, campaigns, billing, team, settings |
-| `app/admin/*` | Platform admin: organisations, users & roles, audit log |
+| `app/admin/*` | Platform admin: organisations, users & roles, audit log. 404 for anyone who isn't a platform admin |
 | `app/o/[slug]`, `app/r/[ref]` | Public agency offer page; campaign tracking redirect |
 | `app/api/files/[name]` | Serves uploads with permission checks |
 | `app/api/wa/[rid]` | Marks a campaign message as sent, then redirects to `wa.me` |
 | `app/api/reports/placements` | Monthly placement report (CSV) for the Population Authority |
 | `app/actions/*.ts` | Server Actions per area (`auth`, `contractor`, `agency`, `team`, `admin`, `worker`) |
-| `components/*` | UI. `ui.tsx` primitives, client forms (`*Form.tsx`), Hebrew `FileField`, `DateField`/`TimeField`, `DevToolbar`, `Nav` |
-| `app/globals.css` | Design tokens and utilities for the "שרטוט" (blueprint) design language. Rules in `AGENTS.md` → Conventions |
+| `components/*` | UI. `ui.tsx` primitives, client forms (`*Form.tsx`, incl. `ImportForm` for file import + column mapping), Hebrew `FileField`, `DateField`/`TimeField`, `DevToolbar`, `Nav` |
+| `app/globals.css` | Design tokens and utilities for the "שרטוט" (blueprint) design language; Rubik is the only font. Rules in `AGENTS.md` → Conventions |
+| `lib/config.ts` | Every env var in one place (`config`) and what is switched on (`features`). Code reads `config.x.y`, never `process.env` |
 | `lib/db.ts` | Driver selection, `all/get/run/insert/tx`, auto-migrate and seed |
-| `lib/schema.ts` | The schema, the only source of truth (exported to `supabase/migrations/`) |
+| `supabase/migrations/*.sql` | The schema: numbered SQL files, the only source of truth (first: `20261027000000_init.sql`) |
+| `lib/migrations.ts` | Runs pending migrations in order, one transaction each, tracked in `supabase_migrations.schema_migrations` (same table as the Supabase CLI); enables RLS on every `public` table after each run |
 | `lib/seed.ts` | Deterministic demo data |
 | `lib/auth.ts` | Sessions, dev persona, impersonation, `requireAgency/Contractor/Admin(perm)` |
 | `lib/rbac.ts` | Roles, permissions, matrix, `can()` |
 | `lib/accounts.ts` | Google identity → app user (invites, ADMIN_EMAILS) |
 | `lib/domain.ts` | Trades, regions, documents, pricing, Israel dates, booking phases |
 | `lib/queries.ts` | Search, availability, document checks, reliability, utilisation, idle forecast |
-| `lib/importer.ts` | CSV/XLSX parsing, Hebrew/English header matching, date and phone normalisation |
-| `lib/storage.ts`, `lib/supabase.ts` | Uploads; Supabase clients |
+| `lib/importer.ts` | CSV/XLSX parsing; `ImportField[]` definitions (workers, contacts), `autoMap()` header matching, `readImport()` (imports straight away when the sheet matches, otherwise returns a column-mapping request); date and phone normalisation |
+| `lib/supabase.ts` | The only place that creates Supabase clients |
+| `lib/storage.ts` | `FileStore` interface (`put`/`get`): Supabase Storage or local disk |
 | `lib/wa.ts` | `wa.me` link builder, `appUrl()` |
-| `scripts/db.ts` | `db:migrate`, `db:seed`, `db:reset`, `db:export-schema` |
-| `tests/e2e.mjs` | Playwright end-to-end test of every role (33 checks) |
+| `scripts/db.ts` | `db:new`, `db:migrate`, `db:status`, `db:seed`, `db:reset` |
+| `tests/e2e.mjs` | Playwright end-to-end test of every role (36 checks) |
 
 ## Data model
 ```
@@ -73,9 +76,9 @@ contractors 1─* crews                          events (agency activity feed) �
 - **Production:** `/auth/google?intent=` → Supabase `signInWithOAuth(google)` with PKCE cookies → Google → Supabase → `/auth/callback` → `exchangeCodeForSession` → `upsertFromIdentity()` → `startSession()` sets the httpOnly `yd_session` cookie (30 days) → `homeFor(role)`. Supabase is used only for identity, and its session is signed out immediately.
 - **Pending users** (`role='pending'`) are sent to `/onboarding`, where they create a contractor or agency and become its `owner`.
 - **Invites:** `invites` rows (from team pages or admin) are applied on that email's first sign-in.
-- **Admins:** `ADMIN_EMAILS` (comma-separated, case-insensitive) are promoted on sign-in. Admins can add more in `/admin/users`.
+- **Admins:** platform admin comes only from `ADMIN_EMAILS` (comma-separated, case-insensitive; `isPlatformAdmin()` in `lib/auth.ts`). Listed emails are promoted on sign-in; a user removed from the list is demoted to pending at the next sign-in. Admin screens can't grant, change, disable or impersonate admins, and `/admin` returns 404 to anyone who isn't a platform admin.
 - **Dev mode** (`devBypass()`: on under `next dev` unless `AUTH_DEV_BYPASS=0`, off in production unless `AUTH_DEV_BYPASS=1`): with no session, `currentUser(area)` returns the persona from the `yd_dev_as` cookie, or the first demo owner of that area. `DevToolbar` switches personas.
-- **Impersonation:** `beginImpersonation()` saves the admin token in `yd_admin_return` and opens a 2-hour session with `impersonator_id`. A banner is shown, and every `audit()` records the impersonator.
+- **Impersonation** (non-admin users only): `beginImpersonation()` saves the admin token in `yd_admin_return` and opens a 2-hour session with `impersonator_id`. A banner is shown, and every `audit()` records the impersonator.
 
 ## RBAC
 `lib/rbac.ts` defines 18 permissions and `MATRIX["<role>:<org_role>"]`. Every page and every action calls `requireAgency(perm)`, `requireContractor(perm)` or `requireAdmin(perm)`. These redirect to `/login`, `/onboarding`, the user's home, or `/forbidden?p=`. UI elements are hidden with `can(user, perm)`. **Never** gate by role string in new code; add a permission instead.
@@ -92,7 +95,9 @@ contractors 1─* crews                          events (agency activity feed) �
 - postgres.js runs with `prepare:false` for Supabase's transaction pooler.
 
 ## Security notes
-- RLS is enabled on every table with no policies, so Supabase's anon/authenticated REST roles see nothing. The app connects as the owner role.
+- RLS is enabled on every table with no policies (automatically, after every migration run), so Supabase's anon/authenticated REST roles see nothing. The app connects as the owner role.
 - Documents (`d_*`) are served only to the owning agency, contractors and admins. Photos (`p_*`) are public by unguessable name.
 - Server Actions are protected by Next's origin check. Cookies are httpOnly and SameSite=Lax, and Secure in production.
 - The passport number is masked for contractors. Only the last 4 digits are shown.
+
+Supabase integration details (migrations, env vars, storage, sign-in): [`SUPABASE.md`](SUPABASE.md).

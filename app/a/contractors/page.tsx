@@ -49,7 +49,7 @@ export default async function Contractors({ searchParams }: { searchParams: Prom
               <tr key={c.id} className={c.opted_out ? "opacity-50" : ""}>
                 <td className="font-medium">{c.name}</td>
                 <td className="text-muted">{c.company ?? "—"}</td>
-                <td><a href={waLink(c.phone, `שלום ${c.name.split(" ")[0]},`)} target="_blank" className="inline-flex items-center gap-1 num hover:underline"><IWhatsapp className="h-3.5 w-3.5 text-ok" />{c.phone}</a></td>
+                <td><a href={waLink(c.phone, `שלום ${c.name.split(" ")[0]},`)} target="_blank" className="inline-flex items-center gap-1 whitespace-nowrap num hover:underline"><IWhatsapp className="h-3.5 w-3.5 text-ok" />{c.phone}</a></td>
                 <td>{c.city ?? (c.region ? regionLabel(c.region) : "—")}</td>
                 <td><span className="chip-muted">{{ whatsapp: "וואטסאפ", phone: "טלפון", csv: "קובץ", manual: "ידני" }[c.source] ?? c.source}</span></td>
                 <td className="num">{c.opened || ""}</td>

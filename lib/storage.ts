@@ -1,15 +1,51 @@
 import "server-only";
 import fs from "node:fs";
 import path from "node:path";
-import { UPLOAD_DIR } from "./db";
 import { randomToken } from "./tokens";
-import { storageEnabled, supabaseAdmin } from "./supabase";
+import { config, features } from "./config";
+import { supabaseAdmin } from "./supabase";
 
-// Uploaded photos and documents. Local disk in development, a private Supabase Storage bucket in production
-// (bucket name: SUPABASE_BUCKET, default "uploads"). Files are always served through /api/files/[name],
-// which checks permissions — the bucket itself stays private.
+// Uploaded photos and documents. One small interface, two implementations: a private Supabase Storage
+// bucket when it is configured, the local ./data/uploads folder otherwise. Files are always served through
+// /api/files/[name], which checks permissions — the bucket itself stays private.
+// Another backend (S3, R2…) = one more FileStore and one line in `store()`.
 
-const BUCKET = () => process.env.SUPABASE_BUCKET || "uploads";
+interface FileStore {
+  put(name: string, data: Buffer, contentType: string): Promise<void>;
+  get(name: string): Promise<Buffer | null>;
+}
+
+export const UPLOAD_DIR = path.join(process.cwd(), "data", "uploads");
+
+const localStore: FileStore = {
+  async put(name, data) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    fs.writeFileSync(path.join(UPLOAD_DIR, name), data);
+  },
+  async get(name) {
+    const file = path.join(UPLOAD_DIR, name);
+    return fs.existsSync(file) ? fs.readFileSync(file) : null;
+  },
+};
+
+const supabaseStore: FileStore = {
+  async put(name, data, contentType) {
+    const { error } = await supabaseAdmin().storage.from(config.supabase.bucket).upload(name, data, { contentType, upsert: false });
+    if (error) throw new Error("שמירת הקובץ נכשלה: " + error.message);
+  },
+  async get(name) {
+    const { data, error } = await supabaseAdmin().storage.from(config.supabase.bucket).download(name);
+    return error || !data ? null : Buffer.from(await data.arrayBuffer());
+  },
+};
+
+function store(): FileStore {
+  if (features.supabaseStorage) return supabaseStore;
+  // Serverless disks are wiped between requests, so a missing key there is a setup error, not a fallback.
+  if (config.onVercel) throw new Error("אחסון קבצים לא הוגדר (SUPABASE_SERVICE_ROLE_KEY חסר)");
+  return localStore;
+}
+
 export const TYPES: Record<string, string> = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", heic: "image/heic", pdf: "application/pdf" };
 const MAX = 8 * 1024 * 1024;
 
@@ -20,23 +56,8 @@ export async function saveUpload(file: File | null, prefix: "p" | "d"): Promise<
   const ext = (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
   if (!TYPES[ext]) throw new Error("סוג קובץ לא נתמך (תמונה או מסמך סרוק)");
   const name = `${prefix}_${randomToken(16)}.${ext}`;
-  const buf = Buffer.from(await file.arrayBuffer());
-  if (storageEnabled()) {
-    const { error } = await supabaseAdmin().storage.from(BUCKET()).upload(name, buf, { contentType: TYPES[ext], upsert: false });
-    if (error) throw new Error("שמירת הקובץ נכשלה: " + error.message);
-  } else {
-    if (process.env.VERCEL) throw new Error("אחסון קבצים לא הוגדר (SUPABASE_SERVICE_ROLE_KEY חסר)");
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-    fs.writeFileSync(path.join(UPLOAD_DIR, name), buf);
-  }
+  await store().put(name, Buffer.from(await file.arrayBuffer()), TYPES[ext]);
   return name;
 }
 
-export async function readUpload(name: string): Promise<Buffer | null> {
-  if (storageEnabled()) {
-    const { data, error } = await supabaseAdmin().storage.from(BUCKET()).download(name);
-    return error || !data ? null : Buffer.from(await data.arrayBuffer());
-  }
-  const file = path.join(UPLOAD_DIR, name);
-  return fs.existsSync(file) ? fs.readFileSync(file) : null;
-}
+export const readUpload = (name: string) => store().get(name);

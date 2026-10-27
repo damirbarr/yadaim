@@ -52,7 +52,7 @@ export default async function Landing() {
 
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-14 pt-6 md:grid-cols-[1.05fr_.95fr] md:px-6 md:pb-20 md:pt-10">
           <div>
-            <div className="text-[13px] font-bold tracking-[.16em] text-hazard">גיליון 01 · עובדי בניין מתאגידים מורשים</div>
+            <div className="text-[13px] font-bold tracking-[.02em] text-hazard">גיליון 01 · עובדי בניין מתאגידים מורשים</div>
             <h1 className="mt-4 text-[48px] font-bold leading-[1.02] text-white md:text-[80px]">
               בונים על אנשים.<br /><em className="not-italic text-hazard">לא על הבטחות.</em>
             </h1>
@@ -64,20 +64,44 @@ export default async function Landing() {
             <p className="mt-4 text-[14px] text-white/60">רוצים להסתכל קודם? <Link href="/login" className="font-bold text-white underline underline-offset-4">כניסה לחשבון הדגמה</Link></p>
           </div>
 
-          <svg viewBox="0 0 620 520" className="w-full" aria-hidden>
-            <g stroke="#fff" strokeWidth="1.6" fill="none" opacity=".85">
-              <path d="M90 470h440M110 470V170h400v300M110 270h400M110 370h400M210 170v300M310 170v300M410 170v300" />
-              <path d="M110 170l100 100M210 170l100 100M310 170l100 100M410 170l100 100M110 270l100 100M210 270l100 100M310 270l100 100M410 270l100 100" opacity=".35" />
-              <path d="M70 470V110M80 470V110M70 110h330" strokeWidth="2.2" />
-              <path d="M70 130l10 10-10 10 10 10-10 10 10 10-10 10 10 10-10 10 10 10" opacity=".6" />
-            </g>
-            <path d="M360 110v60" stroke="#ff7a45" strokeWidth="3" />
-            <rect x="340" y="170" width="40" height="26" fill="#ff7a45" />
-            <g stroke="#d4f25a" strokeWidth="1.2"><path d="M110 500h400M110 492v16M510 492v16" /><path d="M560 170v300M552 170h16M552 470h16" /></g>
-            <text x="310" y="516" textAnchor="middle" fontSize="13" fontWeight="700" fill="#d4f25a">מחיר יומי סופי · כולל לינה והסעה</text>
-            <text x="584" y="325" fontSize="13" fontWeight="700" fill="#d4f25a" transform="rotate(90 584 325)" textAnchor="middle">07:00 · באתר</text>
-            <g transform="translate(250 300)"><circle r="34" fill="#d4f25a" /><text y="7" textAnchor="middle" fontFamily="Frank Ruhl Libre" fontWeight="700" fontSize="22" fill="#0e2a44">✓ 4.9</text></g>
-          </svg>
+          {/* The hero shows the product promise itself: tomorrow's crew, named and priced, the evening before. */}
+          <div className="relative mx-auto w-full max-w-[460px] pb-6">
+            <div className="rounded-[3px] bg-white text-ink">
+              <div className="flex items-center justify-between border-b border-line px-5 py-4">
+                <div>
+                  <div className="text-[13px] text-muted">מחר · נתניה, רחוב הרצל 12</div>
+                  <div className="font-display text-[22px] font-bold">הצוות שלכם למחר</div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 bg-ink px-2.5 py-1 text-[13px] font-semibold text-white"><span className="h-2 w-2 rounded-full bg-signal" />ננעל ב-18:00</span>
+              </div>
+              {[
+                { id: 3, n: "סרגיי ב.", t: "טפסן", tk: "formwork", y: 14, r: 4.9 },
+                { id: 8, n: "ראג׳ש ק.", t: "טפסן", tk: "formwork", y: 9, r: 4.8 },
+                { id: 20, n: "מיכאיל ד.", t: "ברזלן", tk: "rebar", y: 11, r: 4.7 },
+              ].map((w) => (
+                <div key={w.id} className="mx-5 flex items-center gap-3 border-b border-dashed border-line py-3">
+                  <Avatar w={{ id: w.id, trade: w.tk }} size={44} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[16px] font-semibold">{w.n} <span className="text-[13px] font-normal text-muted">· {w.t} · {w.y} שנות ותק</span></div>
+                    <div className="text-[12px] font-semibold text-ok">✓ אשרה · ✓ ביטוח · ✓ בטיחות · ✓ גובה</div>
+                  </div>
+                  <span className="num text-[14px] font-semibold">★ {w.r}</span>
+                </div>
+              ))}
+              <div className="flex items-center justify-between px-5 py-3 text-[13px] text-muted">
+                <span>איסוף 06:15 · נהג: אבי מ.</span>
+                <span>לינה והסעה כלולים</span>
+              </div>
+              <div className="flex items-center justify-between bg-hazard px-5 py-3">
+                <span className="text-[15px] font-semibold">מחיר סופי ליום</span>
+                <span className="num font-display text-[24px] font-bold">₪1,962</span>
+              </div>
+            </div>
+            <div className="absolute -bottom-1 start-6 flex items-center gap-2 border border-line bg-paper px-3 py-2 text-[13px] font-semibold text-ink">
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-ok text-[11px] text-white">✓</span>
+              07:02 · כולם הגיעו ואושרו באתר
+            </div>
+          </div>
         </div>
 
         <div className="border-t border-white/20">
@@ -133,7 +157,7 @@ export default async function Landing() {
 
       <section id="agencies" className="blueprint">
         <div className="mx-auto max-w-6xl px-4 py-16 md:px-6 md:py-20">
-          <div className="text-[13px] font-bold tracking-[.16em] text-hazard">גיליון 02 · לתאגיד</div>
+          <div className="text-[13px] font-bold tracking-[.02em] text-hazard">גיליון 02 · לתאגיד</div>
           <h2 className="mt-2 text-[36px] font-bold leading-tight text-white md:text-[52px]">ימים פנויים הופכים להכנסה.</h2>
           <p className="mt-3 max-w-2xl text-[17px] text-[#c9d6e3]">כלי ניהול ושיווק למצבת העובדים: העובדים, האישורים והקבלנים שלכם, במקום אחד.</p>
           <div className="mt-10 grid border-s border-t border-white/20 sm:grid-cols-2 lg:grid-cols-3">
@@ -159,7 +183,7 @@ export default async function Landing() {
             <Link href="/login?intent=contractor" className="btn-primary mt-6">כניסה כקבלן</Link>
           </div>
           <div className="blueprint p-7">
-            <div className="text-[12px] font-bold tracking-[.14em] text-hazard">תאגיד</div>
+            <div className="text-[12px] font-bold tracking-[.02em] text-hazard">תאגיד</div>
             <div className="mt-2 font-display text-[32px] font-bold text-white">תעריף קבוע לשעת עבודה</div>
             <ul className="mt-3 space-y-1.5 text-[15px] text-white/75">
               <li>— משלמים רק על שעות עבודה שהקבלן אישר. אין עבודה, אין תשלום.</li>

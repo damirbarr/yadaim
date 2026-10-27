@@ -1,11 +1,12 @@
 /**
- * Database CLI — works against PGlite (no DATABASE_URL) or any Postgres/Supabase (DATABASE_URL set).
+ * Database CLI — works against PGlite (no DATABASE_URL) or Supabase / any Postgres (DATABASE_URL set).
  *
- *   npm run db:migrate          apply lib/schema.ts (idempotent)
- *   npm run db:seed             load demo data if the database is empty
- *   npm run db:seed -- --force  wipe all app tables, then load demo data
- *   npm run db:export-schema    write supabase/migrations/0001_init.sql from lib/schema.ts
- *   npm run db:reset            local only: delete ./data/pglite and ./data/uploads
+ *   npm run db:new -- add_latin_name   create supabase/migrations/<timestamp>_add_latin_name.sql
+ *   npm run db:migrate                 apply pending migrations
+ *   npm run db:status                  list migrations and whether each is applied
+ *   npm run db:seed                    load demo data if the database is empty
+ *   npm run db:seed -- --force         wipe all app tables, then load demo data
+ *   npm run db:reset                   local only: delete ./data/pglite and ./data/uploads
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -13,16 +14,16 @@ import path from "node:path";
 process.env.DB_AUTO_MIGRATE = "0";
 process.env.SEED_DEMO = "0";
 
-const TABLES = ["audit_log", "events", "campaign_recipients", "campaigns", "crm_contacts", "crews", "booking_workers", "bookings", "documents", "workers", "sessions", "invites", "users", "contractors", "agencies"];
-
 async function main() {
-  const cmd = process.argv[2];
-  const { SCHEMA } = await import("../lib/schema");
-  if (cmd === "export-schema") {
-    const out = path.join(process.cwd(), "supabase", "migrations", "0001_init.sql");
-    fs.mkdirSync(path.dirname(out), { recursive: true });
-    fs.writeFileSync(out, `-- Generated from lib/schema.ts by \`npm run db:export-schema\`. Do not edit by hand.\n${SCHEMA.trim()}\n`);
-    console.log("wrote", out);
+  const [cmd, arg] = process.argv.slice(2);
+  const { MIGRATIONS_DIR, appliedVersions, migrate, migrationFiles, versionOf } = await import("../lib/migrations");
+  if (cmd === "new") {
+    const name = (arg ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+    if (!name) throw new Error("usage: npm run db:new -- <name>   e.g. add_latin_name");
+    const stamp = new Date().toISOString().replace(/\D/g, "").slice(0, 14);
+    const file = path.join(MIGRATIONS_DIR, `${stamp}_${name}.sql`);
+    fs.writeFileSync(file, `-- ${name.replace(/_/g, " ")}\n-- Plain Postgres. Runs once, in a transaction. New tables get RLS automatically.\n\n`);
+    console.log("created", path.relative(process.cwd(), file));
     return;
   }
   if (cmd === "reset") {
@@ -35,22 +36,28 @@ async function main() {
   const d = await driver();
   console.log(`connected (${d.kind})`);
   if (cmd === "migrate") {
-    await d.exec(SCHEMA);
-    console.log("schema applied");
+    const ran = await migrate(d);
+    console.log(ran.length ? `applied:\n  ${ran.join("\n  ")}` : "up to date");
+  } else if (cmd === "status") {
+    const done = await appliedVersions(d);
+    for (const f of migrationFiles()) console.log(`${done.has(versionOf(f)) ? "✓ applied" : "· pending"}  ${f}`);
   } else if (cmd === "seed") {
-    await d.exec(SCHEMA);
+    await migrate(d);
     const [{ n }] = await d.query(`select count(*)::int as n from users`, []);
     if (n && !process.argv.includes("--force")) {
       console.log(`database already has ${n} users — nothing to do (use --force to wipe and reseed)`);
     } else {
-      if (n) await d.exec(`truncate ${TABLES.join(", ")} restart identity cascade`);
+      if (n) {
+        const tables = (await d.query(`select tablename from pg_tables where schemaname = 'public'`, [])).map((r) => `"${r.tablename}"`);
+        await d.exec(`truncate ${tables.join(", ")} restart identity cascade`);
+      }
       const { seed } = await import("../lib/seed");
       const t = Date.now();
       await seed(d.query.bind(d));
       console.log(`demo data loaded in ${Date.now() - t}ms`);
     }
   } else {
-    console.log("usage: tsx scripts/db.ts migrate|seed [--force]|export-schema|reset");
+    console.log("usage: tsx scripts/db.ts new <name> | migrate | status | seed [--force] | reset");
     process.exitCode = 1;
   }
   process.exit();

@@ -26,7 +26,7 @@ export async function setSuspended(fd: FormData) {
   revalidatePath("/admin");
 }
 
-const ROLES: Role[] = ["admin", "agency", "contractor", "pending"];
+const ROLES: Role[] = ["agency", "contractor", "pending"];
 const ORG_ROLES: OrgRole[] = ["owner", "manager", "viewer"];
 
 /** Change a user's account kind, organisation and permission level. */
@@ -36,7 +36,9 @@ export async function updateUser(fd: FormData) {
   const role = String(fd.get("role")) as Role;
   const orgRole = String(fd.get("org_role")) as OrgRole;
   if (!ROLES.includes(role) || !ORG_ROLES.includes(orgRole)) return;
-  if (id === me.id && role !== "admin") return; // don't lock yourself out
+  // Admin comes only from ADMIN_EMAILS: never granted here (ROLES has no "admin"), and admin rows aren't edited from the UI.
+  const target = await get<{ role: Role }>(`SELECT role FROM users WHERE id = ?`, id);
+  if (!target || target.role === "admin") return;
   // org select values are "a:<agencyId>" or "c:<contractorId>"
   const [kind, raw] = String(fd.get("org") ?? "").split(":");
   const agencyId = role === "agency" && kind === "a" ? Number(raw) : null;
@@ -51,7 +53,8 @@ export async function updateUser(fd: FormData) {
 export async function setDisabled(fd: FormData) {
   const me = await requireAdmin("admin.users");
   const id = Number(fd.get("id"));
-  if (id === me.id) return;
+  const target = await get<{ role: Role }>(`SELECT role FROM users WHERE id = ?`, id);
+  if (!target || target.role === "admin") return;
   const v = fd.get("v") === "1" ? 1 : 0;
   await run(`UPDATE users SET disabled = ? WHERE id = ?`, v, id);
   if (v) await run(`DELETE FROM sessions WHERE user_id = ?`, id);
@@ -67,9 +70,10 @@ export async function adminInvite(_: FormState, fd: FormData): Promise<FormState
   const orgRole = String(fd.get("org_role")) as OrgRole;
   const org = Number(fd.get("org")) || null;
   if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "אימייל לא תקין" };
-  if (!["admin", "agency", "contractor"].includes(role) || !ORG_ROLES.includes(orgRole)) return { error: "תפקיד לא תקין" };
-  if (role !== "admin" && !org) return { error: "בחרו ארגון" };
-  const u = await get<{ id: number }>(`SELECT id FROM users WHERE email = ?`, email);
+  if (!["agency", "contractor"].includes(role) || !ORG_ROLES.includes(orgRole)) return { error: "תפקיד לא תקין" };
+  if (!org) return { error: "בחרו ארגון" };
+  const u = await get<{ id: number; role: Role }>(`SELECT id, role FROM users WHERE email = ?`, email);
+  if (u?.role === "admin") return { error: "זה חשבון אדמין. אדמינים מוגדרים רק בהגדרות השרת." };
   if (u) {
     await run(`UPDATE users SET role = ?, org_role = ?, agency_id = ?, contractor_id = ? WHERE id = ?`, role, orgRole, role === "agency" ? org : null, role === "contractor" ? org : null, u.id);
   } else {
@@ -85,7 +89,7 @@ export async function impersonate(fd: FormData) {
   const me = await requireAdmin("admin.impersonate");
   const id = Number(fd.get("id"));
   const target = await get<{ id: number; email: string; role: Role }>(`SELECT id, email, role FROM users WHERE id = ? AND disabled = 0`, id);
-  if (!target || target.id === me.id) return;
+  if (!target || target.role === "admin") return;
   await audit(me, "impersonate.start", target.email);
   await beginImpersonation(me.id, target.id);
   redirect(target.role === "agency" ? "/a" : target.role === "contractor" ? "/c" : target.role === "pending" ? "/onboarding" : "/admin");

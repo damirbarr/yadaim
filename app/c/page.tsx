@@ -17,7 +17,7 @@ export default async function ContractorHome() {
   return (
     <div className="space-y-8">
       <section className="blueprint -mx-4 -mt-6 overflow-hidden px-4 pb-8 pt-7 md:mx-0 md:mt-0 md:rounded-[3px] md:px-10 md:pb-10 md:pt-9">
-        <div className="text-[13px] font-bold tracking-[.14em] text-hazard">הזמנה חדשה · עובדים מתאגידים מורשים</div>
+        <div className="text-[13px] font-bold tracking-[.02em] text-hazard">הזמנה חדשה · עובדים מתאגידים מורשים</div>
         <h1 className="mt-2 text-[38px] font-bold leading-[1.05] text-white md:text-[56px]">צריך ידיים <em className="not-italic text-hazard">לאתר?</em></h1>
         <p className="mt-2 max-w-xl text-[16px] text-white/75">רואים מראש מי מגיע: תמונה, ותק, דירוג ואישורים בתוקף. מחיר יומי סופי.</p>
         <div className="mt-6 text-text">

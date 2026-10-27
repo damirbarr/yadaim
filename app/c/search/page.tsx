@@ -32,7 +32,16 @@ export default async function Search({ searchParams }: { searchParams: Promise<R
   }));
   return (
     <div className="space-y-5">
-      <SearchForm d={q} compact />
+      {/* Phone: the query is a one-line summary so the results come first; tapping it opens the form. */}
+      <details className="group md:hidden">
+        <summary className="sheet flex cursor-pointer list-none items-center gap-2 border-b-[3px] border-b-hazard px-4 py-3 text-[15px] [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 flex-1 truncate font-semibold">{t.label} · {q.city} · <span className="num">{prettyDate(q.date)}</span>{q.days > 1 ? <> · <span className="num">{q.days}</span> ימים</> : ""} · <span className="num">{q.count}</span> עובדים</span>
+          <span className="text-sm font-semibold text-ink underline group-open:hidden">שינוי</span>
+          <span className="hidden text-sm text-muted group-open:inline">סגירה</span>
+        </summary>
+        <div className="mt-2"><SearchForm d={q} compact /></div>
+      </details>
+      <div className="hidden md:block"><SearchForm d={q} compact /></div>
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-ink/15 pb-4">
         <div>
           <div className="eyebrow mb-1">תוצאות · {t.label}</div>

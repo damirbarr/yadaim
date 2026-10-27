@@ -3,6 +3,7 @@ import { ORG_ROLE_HINT, ORG_ROLE_LABEL, PERMISSIONS, MATRIX, type OrgRole } from
 import type { User } from "@/lib/auth";
 import { cancelInvite, changeMemberRole, removeMember } from "@/app/actions/team";
 import { InviteForm } from "./InviteForm";
+import { AutoSubmitSelect } from "./AutoSubmitSelect";
 import { PageHead } from "./ui";
 
 /** Shared team & permissions screen for agencies and contractors. */
@@ -20,33 +21,40 @@ export async function TeamPage({ kind, orgId, me }: { kind: "agency" | "contract
     <div className="space-y-6">
       <PageHead title="צוות והרשאות" sub="כל אחד נכנס עם חשבון הגוגל שלו. ההרשאות נקבעות לפי התפקיד." />
       <InviteForm kind={kind} />
+      {/* Fixed columns so every row lines up: avatar · name/email · role · remove. */}
       <section className="card divide-y divide-line">
         {members.map((m) => (
-          <div key={m.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+          <div key={m.id} className="grid grid-cols-[36px_1fr] items-center gap-x-3 gap-y-2 px-4 py-3 sm:grid-cols-[36px_1fr_160px_48px]">
             <div className="grid h-9 w-9 place-items-center rounded-full bg-paper font-semibold">{m.name.charAt(0)}</div>
-            <div className="min-w-0 flex-1">
-              <div className="font-semibold">{m.name}{m.id === me.id && <span className="text-muted"> (את/ה)</span>}</div>
-              <div className="truncate text-xs text-muted" dir="ltr">{m.email}</div>
+            <div className="min-w-0">
+              <div className="font-semibold">{m.name}{m.id === me.id && <span className="font-normal text-muted"> · זה אתם</span>}</div>
+              <div className="truncate text-xs text-muted"><bdi dir="ltr">{m.email}</bdi></div>
             </div>
-            <form action={changeMemberRole} className="flex items-center gap-2">
+            <form action={changeMemberRole} className="col-start-2 sm:col-start-auto">
               <input type="hidden" name="kind" value={kind} />
               <input type="hidden" name="user" value={m.id} />
-              <select name="org_role" defaultValue={m.org_role} className="input w-36 py-1.5 text-sm">
-                {roles.map((r) => <option key={r} value={r}>{ORG_ROLE_LABEL[r]}</option>)}
-              </select>
-              <button className="btn-ghost btn-sm">עדכון</button>
+              {m.id === me.id
+                ? <span className="text-sm text-muted">{ORG_ROLE_LABEL[m.org_role]}</span>
+                : <AutoSubmitSelect name="org_role" aria-label="תפקיד" defaultValue={m.org_role} className="input py-1.5 text-sm">
+                    {roles.map((r) => <option key={r} value={r}>{ORG_ROLE_LABEL[r]}</option>)}
+                  </AutoSubmitSelect>}
             </form>
-            {m.id !== me.id && (
-              <form action={removeMember}><input type="hidden" name="kind" value={kind} /><input type="hidden" name="user" value={m.id} /><button className="text-xs text-muted underline hover:text-bad">הסרה</button></form>
-            )}
+            <div className="col-start-2 sm:col-start-auto">
+              {m.id !== me.id && (
+                <form action={removeMember}><input type="hidden" name="kind" value={kind} /><input type="hidden" name="user" value={m.id} /><button className="text-xs text-muted underline hover:text-bad">הסרה</button></form>
+              )}
+            </div>
           </div>
         ))}
         {invites.map((i) => (
-          <div key={`i${i.id}`} className="flex flex-wrap items-center gap-3 bg-paper/50 px-4 py-3 text-sm">
-            <span className="chip-warn">הוזמן</span>
-            <span className="flex-1" dir="ltr">{i.email}</span>
-            <span className="text-muted">{ORG_ROLE_LABEL[i.org_role]}</span>
-            <form action={cancelInvite}><input type="hidden" name="kind" value={kind} /><input type="hidden" name="id" value={i.id} /><button className="text-xs text-muted underline">ביטול</button></form>
+          <div key={`i${i.id}`} className="grid grid-cols-[36px_1fr] items-center gap-x-3 gap-y-2 px-4 py-3 sm:grid-cols-[36px_1fr_160px_48px] bg-paper/50">
+            <div className="grid h-9 w-9 place-items-center rounded-full border border-dashed border-line text-muted">@</div>
+            <div className="min-w-0">
+              <div className="truncate text-sm"><bdi dir="ltr">{i.email}</bdi></div>
+              <div className="text-xs text-warn">הוזמנו · יצטרפו בכניסה הראשונה עם גוגל</div>
+            </div>
+            <div className="col-start-2 text-sm text-muted sm:col-start-auto">{ORG_ROLE_LABEL[i.org_role]}</div>
+            <form action={cancelInvite} className="col-start-2 sm:col-start-auto"><input type="hidden" name="kind" value={kind} /><input type="hidden" name="id" value={i.id} /><button className="text-xs text-muted underline hover:text-bad">ביטול</button></form>
           </div>
         ))}
       </section>

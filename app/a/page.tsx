@@ -130,7 +130,7 @@ export default async function AgencyToday() {
             {missingTransport.map((b) => (
               <li key={b.id}>
                 <Link href={`/a/requests/${b.id}`} className="flex items-center gap-4 border-b border-dashed border-line px-5 py-4 transition hover:bg-paper">
-                  <span className="w-16 shrink-0 text-[13px] font-bold tracking-wider text-warn">הסעה</span>
+                  <span className="w-16 shrink-0 text-[13px] font-bold text-warn">הסעה</span>
                   <span className="flex-1 text-[15px]">חסרים פרטי נהג ושעת איסוף להזמנה של <b className="text-ink">{b.company}</b> מחר. הקבלן מקבל אותם ב-18:00.</span>
                 </Link>
               </li>
@@ -138,7 +138,7 @@ export default async function AgencyToday() {
             {idle[0] && idle[0].idleDays >= 5 && (
               <li>
                 <Link href={`/a/campaigns?trade=${idle[0].trade}`} className="flex items-center gap-4 px-5 py-4 transition hover:bg-paper">
-                  <span className="w-16 shrink-0 text-[13px] font-bold tracking-wider text-info">הזדמנות</span>
+                  <span className="w-16 shrink-0 text-[13px] font-bold text-info">הזדמנות</span>
                   <span className="flex-1 text-[15px]"><b className="num">{idle[0].workerCount}</b> {trade(idle[0].trade).plural} עם <b className="num">{idle[0].idleDays}</b> ימים פנויים עד <span className="num">{ddmm(idle[0].to)}</span>. המערכת הכינה הצעה לקבלנים במאגר.</span>
                   <span className="btn-ghost btn-sm shrink-0">להצעה</span>
                 </Link>

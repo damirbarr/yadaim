@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 /* "שרטוט" — blueprint design language: navy drafting sheets with a fine grid, warm paper,
-   lime as the single highlight, serif display type (Frank Ruhl Libre) over a clean sans (Assistant).
+   lime as the single highlight, one sans family (Rubik) for display and body.
    Token names are semantic so components don't care about the palette:
    ink = navy (primary), hazard = lime (accent), signal = orange (rare emphasis). */
 @theme {
-  --font-sans: "Assistant", system-ui, sans-serif;
-  --font-display: "Frank Ruhl Libre", "Assistant", serif;
+  --font-sans: "Rubik", system-ui, sans-serif;
+  --font-display: "Rubik", system-ui, sans-serif;
   --color-paper: #f4efe4;
   --color-paper-2: #ebe4d5;
   --color-ink: #0e2a44;
@@ -29,7 +29,7 @@
 
 html { -webkit-tap-highlight-color: transparent; }
 body { background: var(--color-paper); color: var(--color-text); font-family: var(--font-sans); font-size: 16px; }
-h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0.005em; }
+h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
 .num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
 
 /* Navy drafting sheet with a two-scale grid */
@@ -57,7 +57,7 @@ h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0
     linear-gradient(var(--color-hazard), var(--color-hazard)) left / 1.5px 100% no-repeat,
     linear-gradient(var(--color-hazard), var(--color-hazard)) right / 1.5px 100% no-repeat;
 }
-.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .14em; color: var(--color-muted); }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--color-muted); }
 
 @utility card { @apply rounded-[3px] border border-line bg-white; }
 @utility sheet { @apply relative rounded-[3px] border border-line bg-white; }
@@ -83,6 +83,7 @@ h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0
 }
 @utility tbl {
   @apply w-full text-[15px];
-  & th { @apply border-b border-ink/20 px-3 py-2 text-start text-[12px] font-bold tracking-wider text-muted; }
-  & td { @apply border-b border-dashed border-line px-3 py-2.5; }
+  /* :where() keeps these defaults at zero specificity, so a cell's own utilities (text-center, …) win. */
+  & :where(th) { @apply border-b border-ink/20 px-3 py-2 text-start align-bottom text-[12px] font-bold text-muted; }
+  & :where(td) { @apply border-b border-dashed border-line px-3 py-2.5; }
 }

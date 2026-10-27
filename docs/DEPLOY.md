@@ -4,7 +4,7 @@
 | רכיב | שירות | מה יש בו |
 |---|---|---|
 | **פרונטאנד ובקאנד** | **Vercel** | אפליקציית Next.js אחת: הדפים, ה-Server Actions (כל הפעולות) וה-API routes (`/auth/*`, `/api/*`, `/r/*`) |
-| **מסד נתונים** | **Supabase Postgres** | כל הטבלאות (`supabase/migrations/0001_init.sql`) |
+| **מסד נתונים** | **Supabase Postgres** | כל הטבלאות (מיגרציות SQL ממוספרות ב-`supabase/migrations/`) |
 | **התחברות** | **Supabase Auth** עם Google | זיהוי בלבד. ההרשאות (RBAC) מנוהלות באפליקציה |
 | **קבצים** | **Supabase Storage** | תמונות עובדים ומסמכים, בדלי פרטי `uploads` |
 | **קוד ו-CI** | **GitHub** | הריפו. ‏Vercel מושך ממנו בכל push, ו-Actions מריץ בדיקות |
@@ -38,12 +38,13 @@
    - **Transaction pooler** (פורט **6543**) ל-`DATABASE_URL` ב-Vercel
    - **Session pooler** (פורט **5432**) למיגרציות מהמחשב
 4. **יצירת הטבלאות.** אחת משלוש דרכים:
-   - **הכי פשוט:** SQL Editor ← הדביקו את התוכן של `supabase/migrations/0001_init.sql` ← Run.
-   - **מהמחשב:**
+   - **מומלץ, מהמחשב** (עם מחרוזת ה-Session pooler):
      ```bash
      DATABASE_URL="postgresql://postgres.<ref>:<password>@aws-0-eu-central-1.pooler.supabase.com:5432/postgres" npm run db:migrate
      ```
-   - **Supabase CLI:** `supabase link --project-ref <ref>` ואז `supabase db push`.
+     הפקודה מריצה את קבצי `supabase/migrations/` שעוד לא רצו (הראשון: `20261027000000_init.sql`), רושמת אותם ב-`supabase_migrations.schema_migrations` ומפעילה RLS על כל טבלה. ‏`npm run db:status` מראה מה כבר רץ.
+   - **Supabase CLI:** `supabase link --project-ref <ref>` ואז `supabase db push`. היא משתמשת באותה טבלת מעקב, אז אפשר לעבור בינה לבין `db:migrate`.
+   - **ידנית:** SQL Editor ← הדביקו את קבצי המיגרציה לפי הסדר ← Run. הדבקה ידנית **לא נרשמת** בטבלת המעקב, ולכן `db:migrate` עלול לנסות להריץ אותם שוב. עדיף `db:migrate`.
 5. **נתוני הדגמה (רשות, לסביבת דמו בלבד):**
    ```bash
    DATABASE_URL="...:5432/postgres" npm run db:seed
@@ -51,7 +52,7 @@
    בפרודקשן אמיתי לא מריצים seed. האדמין הראשון נכנס עם Google (סעיף 5).
 6. **אחסון:** Storage ← New bucket ← שם `uploads`, **Private** (לא Public). האפליקציה ניגשת לדלי עם ה-service role, ומגישה את הקבצים דרך `/api/files` אחרי בדיקת הרשאות.
 
-> **אבטחה:** הסכמה מפעילה RLS על כל הטבלאות בלי policies. המשמעות היא שה-REST API הציבורי של Supabase, עם מפתח anon, לא חושף כלום. האפליקציה מתחברת ישירות ל-Postgres. **לא מכבים RLS.**
+> **אבטחה:** המיגרציות מפעילות RLS על כל הטבלאות בלי policies. המשמעות היא שה-REST API הציבורי של Supabase, עם מפתח anon, לא חושף כלום. האפליקציה מתחברת ישירות ל-Postgres. **לא מכבים RLS.**
 
 ## 3. Google Cloud: לקוח OAuth
 1. ב-https://console.cloud.google.com צרו פרויקט חדש (למשל "Yadaim").
@@ -97,11 +98,11 @@
 5. אחרי הפריסה הראשונה בדקו ש-`APP_URL` וה-Redirect URLs ב-Supabase תואמים לכתובת האמיתית.
 6. **דומיין:** Settings ← Domains. אחרי ההוספה עדכנו את `APP_URL`, את ה-Site URL ואת ה-Redirect URLs ב-Supabase, ואת ה-Authorized domains ב-Google.
 
-> **מיגרציות בכל פריסה (רשות):** אפשר להגדיר ב-Vercel ← Settings ← Build Command את הפקודה `npm run db:migrate && npm run build`. הסכמה אידמפוטנטית ולכן בטוח להריץ אותה שוב ושוב.
+> **מיגרציות בכל פריסה (רשות):** אפשר להגדיר ב-Vercel ← Settings ← Build Command את הפקודה `npm run db:migrate && npm run build`. כל מיגרציה רצה פעם אחת בלבד (המעקב ב-`supabase_migrations.schema_migrations`), ולכן בטוח להריץ את הפקודה בכל פריסה.
 
 ## 6. בדיקה אחרי פריסה
 - [ ] `https://<app>/login` מציג "כניסה כקבלן / כתאגיד עם Google", ואין כפתור DEV.
-- [ ] כניסה עם המייל שמופיע ב-`ADMIN_EMAILS` מובילה ל-`/admin`.
+- [ ] כניסה עם המייל שמופיע ב-`ADMIN_EMAILS` מובילה ל-`/admin`. משתמש אחר שפותח `/admin` מקבל 404.
 - [ ] משתמש Google אחר מגיע ל-`/onboarding`. אחרי בחירת "תאגיד" הוא נכנס ל-`/a/workers?welcome=1`, ושם ייבוא `workers.xlsx` מצליח.
 - [ ] האדמין מאמת את התאגיד ב-`/admin`, והתאגיד מופיע בחיפוש של קבלן.
 - [ ] העלאת תמונה לעובד, והתמונה מוצגת. הקובץ מופיע ב-Storage ← uploads.
@@ -128,7 +129,9 @@ docker run -p 3000:3000 \
 - **Google OAuth:** חינם.
 
 ## 9. עדכוני סכמה בהמשך
-1. מוסיפים ל-`lib/schema.ts` פקודות אידמפוטנטיות בלבד, למשל `alter table workers add column if not exists latin_name text;`.
-2. מריצים `npm run db:export-schema` ושומרים את הקובץ שנוצר ב-commit.
-3. מריצים `npm run db:migrate` מול Supabase, או נותנים ל-Build Command לעשות את זה.
+1. ‏`npm run db:new -- <name>` יוצר קובץ חדש ב-`supabase/migrations/`. כותבים בו SQL רגיל של Postgres, למשל `alter table workers add column latin_name text;`, ושומרים אותו ב-commit.
+2. מקומית, `npm run dev` מחיל אותו לבד. מול Supabase מריצים `npm run db:migrate` (או `supabase db push`), או נותנים ל-Build Command לעשות את זה.
+3. לא עורכים מיגרציה שכבר נדחפה ל-`main`. מתקנים בקובץ חדש.
 4. לא מוחקים ולא משנים עמודות קיימות בלי תוכנית מעבר. מוסיפים חדש ואז מעבירים.
+
+הפירוט המלא: [`SUPABASE.md`](SUPABASE.md).

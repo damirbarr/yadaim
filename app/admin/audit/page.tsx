@@ -7,7 +7,7 @@ const ACTIONS: Record<string, string> = {
   login: "כניסה למערכת", "user.created": "משתמש חדש", "invite.accepted": "הזמנה הופעלה", "onboarding.agency": "הרשמת תאגיד",
   "onboarding.contractor": "הרשמת קבלן", "org.verify": "אימות ארגון", "org.unverify": "ביטול אימות", "org.suspend": "השעיית תאגיד",
   "org.unsuspend": "ביטול השעיה", "user.update": "שינוי הרשאות משתמש", "user.disable": "השבתת משתמש", "user.enable": "הפעלת משתמש",
-  "admin.invite": "הוספת משתמש ע״י אדמין", "impersonate.start": "כניסה בתור משתמש", "impersonate.end": "סיום כניסה בתור",
+  "admin.invite": "הוספת משתמש ע״י אדמין", "admin.revoked": "הסרת הרשאת אדמין", "impersonate.start": "כניסה בתור משתמש", "impersonate.end": "סיום כניסה בתור",
   "team.invite": "הזמנה לצוות", "team.role": "שינוי תפקיד בצוות", "team.remove": "הסרה מהצוות", "booking.create": "הזמנת עובדים",
   "booking.approve": "אישור הזמנה", "booking.reject": "דחיית הזמנה", "worker.create": "הוספת עובד", "workers.import": "ייבוא עובדים מאקסל",
   "document.review": "בדיקת מסמך", "campaign.create": "יצירת הצעה לקבלנים", "agency.settings": "שינוי הגדרות תאגיד",

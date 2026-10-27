@@ -9,7 +9,7 @@ import { audit } from "@/lib/audit";
 import type { Perm } from "@/lib/rbac";
 import { busyWorkers, docCheck, docsFor, getAgency, getBooking, getWorker } from "@/lib/queries";
 import { ALL_CITIES, COUNTRIES, DOC_TYPES, MIN_DAYS_OPTIONS, REGIONS, TRADES, bookingPhase, ddmm, hourlyFor, regionOf } from "@/lib/domain";
-import { parseSheet, pick, normalizeDate, normalizePhone } from "@/lib/importer";
+import { CONTACT_FIELDS, WORKER_FIELDS, normalizeDate, normalizePhone, readImport, type ImportState } from "@/lib/importer";
 import type { FormState } from "./auth";
 
 async function event(agencyId: number, kind: string, text: string, bookingId?: number, contractorId?: number) {
@@ -162,13 +162,15 @@ export async function setWorkerActive(fd: FormData) {
   revalidatePath("/a", "layout");
 }
 
-export async function importWorkers(_: FormState, fd: FormData): Promise<FormState> {
+export async function importWorkers(_: ImportState, fd: FormData): Promise<ImportState> {
   const { agencyId, user } = await requireAgency("agency.workers.edit");
   const file = fd.get("file") as File | null;
-  if (!file || !file.size) return { error: "לא נבחר קובץ" };
+  if (!file || !file.size) return { error: "בחרו קובץ" };
   let rows: Record<string, string>[];
   try {
-    rows = await parseSheet(file);
+    const res = await readImport(file, WORKER_FIELDS, (fd.get("mapping") as string) || null);
+    if ("mapping" in res) return { mapping: res.mapping };
+    rows = res.rows;
   } catch (e) {
     return { error: (e as Error).message };
   }
@@ -177,29 +179,20 @@ export async function importWorkers(_: FormState, fd: FormData): Promise<FormSta
   let added = 0, skipped = 0;
   await tx(async () => {
     for (const r of rows) {
-      const full = pick(r, ["שם מלא", "name", "full name"]);
-      let first = pick(r, ["שם פרטי", "first name", "first"]), last = pick(r, ["שם משפחה", "last name", "last", "surname"]);
-      if (!first && full) {
-        const parts = full.split(/\s+/);
+      let first = r.first_name, last = r.last_name;
+      if (!first && r.full_name) {
+        const parts = r.full_name.split(/\s+/);
         first = parts[0];
-        last = parts.slice(1).join(" ");
+        last = last || parts.slice(1).join(" ");
       }
-      const tk = tradeByLabel(pick(r, ["מקצוע", "trade", "profession"]));
-      const ck = countryBy(pick(r, ["ארץ", "ארץ מוצא", "country", "נתינות"]));
+      const tk = tradeByLabel(r.trade);
+      const ck = countryBy(r.country);
       if (!first || !tk || !ck) { skipped++; continue; }
-      const rate = Number(pick(r, ["תעריף", "תעריף שעתי", "rate", "hourly"])) || 75;
-      const wid = Number((await insert(`INSERT INTO workers (agency_id, first_name, last_name, trade, years, country, lang, phone, passport_no, hourly_rate, token) VALUES (?,?,?,?,?,?,?,?,?,?,?)`, agencyId, first, last || "-", tk, Number(pick(r, ["ותק", "שנות ניסיון", "years", "experience"])) || 0, ck, COUNTRIES[ck].lang,
-        normalizePhone(pick(r, ["טלפון", "phone", "נייד"])), pick(r, ["דרכון", "מספר דרכון", "passport"]) || null, rate, randomToken(9))));
-      const docCols: [string, string[]][] = [
-        ["visa", ["תוקף אשרה", "אשרה", "visa", "visa expiry"]],
-        ["passport", ["תוקף דרכון", "passport expiry"]],
-        ["insurance", ["תוקף ביטוח", "ביטוח", "insurance"]],
-        ["safety", ["הדרכת בטיחות", "בטיחות", "safety"]],
-        ["heights", ["עבודה בגובה", "גובה", "heights"]],
-      ];
-      for (const [type, cols] of docCols) {
-        const exp = normalizeDate(pick(r, cols));
-        if (exp) (await run(`INSERT INTO documents (worker_id, type, expires, status, verified_at) VALUES (?,?,?, 'verified', now_txt())`, wid, type, exp));
+      const wid = Number((await insert(`INSERT INTO workers (agency_id, first_name, last_name, trade, years, country, lang, phone, passport_no, hourly_rate, token) VALUES (?,?,?,?,?,?,?,?,?,?,?)`, agencyId, first, last || "-", tk, Number(r.years) || 0, ck, COUNTRIES[ck].lang,
+        normalizePhone(r.phone), r.passport_no || null, Number(r.rate) || 75, randomToken(9))));
+      for (const d of DOC_TYPES) {
+        const exp = normalizeDate(r[`doc_${d.key}`] ?? "");
+        if (exp) (await run(`INSERT INTO documents (worker_id, type, expires, status, verified_at) VALUES (?,?,?, 'verified', now_txt())`, wid, d.key, exp));
       }
       added++;
     }
@@ -230,18 +223,21 @@ export async function addContact(_: FormState, fd: FormData): Promise<FormState>
   return r.length ? { ok: `${name} נוסף למאגר` } : { error: "המספר כבר קיים במאגר" };
 }
 
-export async function importContacts(_: FormState, fd: FormData): Promise<FormState> {
+export async function importContacts(_: ImportState, fd: FormData): Promise<ImportState> {
   const { agencyId } = await requireAgency("agency.crm.manage");
   const file = fd.get("file") as File | null;
   const pasted = String(fd.get("pasted") ?? "").trim();
   let rows: Record<string, string>[] = [];
   try {
-    if (file && file.size) rows = await parseSheet(file);
-    else if (pasted) {
+    if (file && file.size) {
+      const res = await readImport(file, CONTACT_FIELDS, (fd.get("mapping") as string) || null);
+      if ("mapping" in res) return { mapping: res.mapping };
+      rows = res.rows;
+    } else if (pasted) {
       // WhatsApp group members / phone contacts pasted as lines: "name, phone" or just phones
       rows = pasted.split(/\n+/).map((line) => {
         const phone = (line.match(/\+?\d[\d\s-]{7,}\d/) ?? [""])[0];
-        return { name: line.replace(phone, "").replace(/[,;:\t~]+/g, " ").trim(), phone };
+        return { name: line.replace(phone, "").replace(/[,;:\t~]+/g, " ").trim(), phone, company: "", city: "" };
       });
     } else return { error: "בחרו קובץ או הדביקו רשימה" };
   } catch (e) {
@@ -251,11 +247,11 @@ export async function importContacts(_: FormState, fd: FormData): Promise<FormSt
   let added = 0, dup = 0, bad = 0;
   await tx(async () => {
     for (const r of rows) {
-      const phone = normalizePhone(pick(r, ["טלפון", "phone", "נייד", "mobile"]));
+      const phone = normalizePhone(r.phone);
       if (!phone || phone.replace(/\D/g, "").length < 9) { bad++; continue; }
-      const city = pick(r, ["עיר", "city", "אזור"]);
+      const city = r.city;
       const known = ALL_CITIES.includes(city) ? city : null;
-      const res = (await run(`INSERT INTO crm_contacts (agency_id, name, company, phone, city, region, source) VALUES (?,?,?,?,?,?,?) ON CONFLICT DO NOTHING RETURNING id`, agencyId, pick(r, ["שם", "name", "איש קשר"]) || "ללא שם", pick(r, ["חברה", "company", "שם חברה"]) || null, phone, known, known ? regionOf(known) : null, source));
+      const res = (await run(`INSERT INTO crm_contacts (agency_id, name, company, phone, city, region, source) VALUES (?,?,?,?,?,?,?) ON CONFLICT DO NOTHING RETURNING id`, agencyId, r.name || "ללא שם", r.company || null, phone, known, known ? regionOf(known) : null, source));
       if (res.length) added++; else dup++;
     }
   });

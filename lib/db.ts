@@ -1,11 +1,13 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import fs from "node:fs";
 import path from "node:path";
-import { SCHEMA } from "./schema";
+import { config } from "./config";
+import { migrate } from "./migrations";
 
 // One async API over two Postgres drivers:
 //   • DATABASE_URL set  → postgres.js (Supabase / any Postgres)            — production
 //   • otherwise         → PGlite, embedded Postgres in ./data/pglite       — zero-setup local dev
+// The schema lives in supabase/migrations/ (see lib/migrations.ts).
 // SQL is written with `?` placeholders; they are converted to $1..$n here.
 
 type Row = Record<string, unknown>;
@@ -24,7 +26,7 @@ const clean = (params: unknown[]) => params.map((p) => (p === undefined ? null :
 
 async function pgliteDriver(): Promise<Driver> {
   const { PGlite } = await import("@electric-sql/pglite");
-  const dir = process.env.PGLITE_DIR || path.join(process.cwd(), "data", "pglite");
+  const dir = config.db.pgliteDir || path.join(process.cwd(), "data", "pglite");
   fs.mkdirSync(path.dirname(dir), { recursive: true });
   const pg = await PGlite.create(dir, { parsers: { 20: Number, 1700: Number } });
   type Q = { query: typeof pg.query; exec: typeof pg.exec };
@@ -45,7 +47,7 @@ async function postgresDriver(url: string): Promise<Driver> {
   const num = (oid: number) => ({ to: oid, from: [oid], parse: (x: string) => Number(x), serialize: (x: unknown) => String(x) });
   const sql = postgres(url, {
     prepare: false, // required for Supabase's transaction pooler (port 6543)
-    max: Number(process.env.DB_POOL_MAX || 5),
+    max: config.db.poolMax,
     idle_timeout: 20,
     types: { int8: num(20), numeric: num(1700) },
     onnotice: () => {},
@@ -67,13 +69,11 @@ type G = typeof globalThis & { __yd?: Promise<Driver> };
 const store = new AsyncLocalStorage<Driver>();
 
 async function boot(): Promise<Driver> {
-  const url = process.env.DATABASE_URL;
-  if (!url && process.env.VERCEL) throw new Error("DATABASE_URL is not set. On Vercel the app needs Supabase Postgres (see docs/DEPLOY.md).");
+  const url = config.db.url;
+  if (!url && config.onVercel) throw new Error("DATABASE_URL is not set. On Vercel the app needs Supabase Postgres (see docs/SUPABASE.md).");
   const d = url ? await postgresDriver(url) : await pgliteDriver();
-  const autoMigrate = process.env.DB_AUTO_MIGRATE ? process.env.DB_AUTO_MIGRATE === "1" : d.kind === "pglite";
-  if (autoMigrate) await d.exec(SCHEMA);
-  const seedDemo = process.env.SEED_DEMO ? process.env.SEED_DEMO === "1" : d.kind === "pglite";
-  if (seedDemo) {
+  if (config.db.autoMigrate) await migrate(d);
+  if (config.db.seedDemo) {
     const [{ n }] = await d.query(`select count(*)::int as n from users`, []);
     if (n === 0) {
       const { seed } = await import("./seed");
@@ -118,4 +118,3 @@ export async function tx<T>(fn: () => Promise<T>): Promise<T> {
   return d.tx((t) => store.run(t, fn));
 }
 
-export const UPLOAD_DIR = path.join(process.cwd(), "data", "uploads");

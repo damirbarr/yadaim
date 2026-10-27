@@ -21,7 +21,7 @@ export default async function Users({ searchParams }: { searchParams: Promise<{ 
   const list = users.filter((u) => (!sp.role || u.role === sp.role) && (!sp.q || `${u.name} ${u.email} ${u.org ?? ""}`.toLowerCase().includes(sp.q.toLowerCase())));
   return (
     <div className="space-y-5">
-      <PageHead title="משתמשים והרשאות" sub="סוג חשבון (קבלן / תאגיד / אדמין) + רמת הרשאה בארגון (בעלים / מנהל / צפייה). אדמינים נוספים מוסיפים כאן, או ברשימת מנהלי המערכת בהגדרות השרת." />
+      <PageHead title="משתמשים והרשאות" sub="סוג חשבון (קבלן / תאגיד) ורמת הרשאה בארגון (בעלים / מנהל / צפייה). אדמינים מוגדרים רק ברשימת מנהלי המערכת בהגדרות השרת." />
       <AdminInviteForm agencies={agencies} contractors={contractors} />
       <form className="flex flex-wrap gap-2">
         <input name="q" defaultValue={sp.q} placeholder="חיפוש שם / אימייל / ארגון" className="input max-w-xs" />
@@ -37,9 +37,10 @@ export default async function Users({ searchParams }: { searchParams: Promise<{ 
                 <td><div className="font-medium">{u.name}</div><div className="text-xs text-muted" dir="ltr">{u.email}</div></td>
                 <td className="text-sm">{u.org ?? "—"}</td>
                 <td>
+                  {u.role === "admin" ? <span className="text-xs text-muted">אדמין · מוגדר רק בהגדרות השרת</span> : (
                   <form action={updateUser} className="flex flex-wrap items-center gap-1">
                     <input type="hidden" name="id" value={u.id} />
-                    <select name="role" defaultValue={u.role} className="input w-24 py-1 text-xs">{(["contractor", "agency", "admin", "pending"] as Role[]).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</select>
+                    <select name="role" defaultValue={u.role} className="input w-24 py-1 text-xs">{(["contractor", "agency", "pending"] as Role[]).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</select>
                     <select name="org_role" defaultValue={u.org_role} className="input w-24 py-1 text-xs">{(["owner", "manager", "viewer"] as OrgRole[]).map((r) => <option key={r} value={r}>{ORG_ROLE_LABEL[r]}</option>)}</select>
                     <select name="org" defaultValue={u.agency_id ? `a:${u.agency_id}` : u.contractor_id ? `c:${u.contractor_id}` : ""} className="input w-40 py-1 text-xs">
                       <option value="">ללא ארגון</option>
@@ -48,14 +49,15 @@ export default async function Users({ searchParams }: { searchParams: Promise<{ 
                     </select>
                     <button className="btn-ghost btn-sm">שמירה</button>
                   </form>
+                  )}
                 </td>
                 <td className="num text-xs text-muted">{u.last_login_at ? ddmm(u.last_login_at.slice(0, 10)) : "—"}</td>
                 <td>
                   <div className="flex gap-2">
-                    {can(me, "admin.impersonate") && u.id !== me.id && !u.disabled && (
+                    {can(me, "admin.impersonate") && u.role !== "admin" && !u.disabled && (
                       <form action={impersonate}><input type="hidden" name="id" value={u.id} /><button className="btn-ghost btn-sm">כניסה בתור</button></form>
                     )}
-                    {u.id !== me.id && (
+                    {u.role !== "admin" && (
                       <form action={setDisabled}><input type="hidden" name="id" value={u.id} /><input type="hidden" name="v" value={u.disabled ? "0" : "1"} /><button className="text-xs text-muted underline">{u.disabled ? "הפעלה" : "השבתה"}</button></form>
                     )}
                   </div>

@@ -106,7 +106,7 @@ export function ScoreRing({ score, size = 112 }: { score: number; size?: number 
       <circle cx="50" cy="50" r={r} fill="none" stroke="#e5ddcc" strokeWidth="7" />
       <circle cx="50" cy="50" r={r} fill="none" stroke={color} strokeWidth="7" strokeDasharray={`${(c * score) / 100} ${c}`} transform="rotate(-90 50 50)" />
       {[0, 90, 180, 270].map((a) => <line key={a} x1="50" y1="2" x2="50" y2="9" stroke="#0e2a44" strokeWidth="1.2" transform={`rotate(${a} 50 50)`} />)}
-      <text x="50" y="60" textAnchor="middle" fontSize="30" fontWeight="700" fontFamily="Frank Ruhl Libre" fill="#0e2a44">{score}</text>
+      <text x="50" y="60" textAnchor="middle" fontSize="30" fontWeight="700" fontFamily="Rubik" fill="#0e2a44">{score}</text>
     </svg>
   );
 }

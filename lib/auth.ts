@@ -1,9 +1,10 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { get, run } from "./db";
 import { randomToken } from "./tokens";
 import { can, type OrgRole, type Perm, type Role } from "./rbac";
+import { config, features } from "./config";
 
 export type User = {
   id: number;
@@ -27,10 +28,17 @@ const ADMIN_RETURN = "yd_admin_return";
 export const DEV_PERSONA = "yd_dev_as";
 
 /** Dev mode: no sign-in required. Off in production unless AUTH_DEV_BYPASS=1 is set explicitly (e.g. a demo deployment). */
-export const devBypass = () =>
-  process.env.AUTH_DEV_BYPASS ? process.env.AUTH_DEV_BYPASS === "1" : process.env.NODE_ENV !== "production";
+export const devBypass = () => config.auth.devBypass;
 
-export const googleEnabled = () => !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+/** Platform admins are the people who build and run Yadaim, and nobody else: the ADMIN_EMAILS list in the
+ *  server's environment. No screen can grant or revoke it. Dev mode adds the seeded demo admin. */
+const DEMO_ADMIN = "admin@demo.co.il";
+export const isPlatformAdmin = (email: string) => {
+  const e = email.trim().toLowerCase();
+  return config.auth.adminEmails.includes(e) || (devBypass() && e === DEMO_ADMIN);
+};
+
+export const googleEnabled = () => features.googleSignIn;
 
 const USER_COLS = `u.id, u.email, u.name, u.role, u.org_role, u.agency_id, u.contractor_id, u.avatar_url, u.disabled`;
 
@@ -79,7 +87,7 @@ export async function startSession(userId: number, impersonatorId: number | null
   (await cookies()).set(SESSION, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production" && process.env.INSECURE_COOKIES !== "1",
+    secure: config.auth.secureCookies,
     path: "/",
     maxAge: impersonatorId ? 60 * 60 * 2 : 60 * 60 * 24 * 30,
   });
@@ -116,6 +124,8 @@ export const homeFor = (role: Role) => (role === "agency" ? "/a" : role === "con
 /** Gate for a whole area + an optional permission. Redirects instead of throwing so it works in pages and actions. */
 export async function requireUser<R extends Role>(area: R, perm?: Perm): Promise<User & { role: R }> {
   const u = await currentUser(area);
+  // The admin area isn't even confirmed to exist for anyone but the platform admins (ADMIN_EMAILS).
+  if (area === "admin" && (u?.role !== "admin" || !isPlatformAdmin(u.email))) notFound();
   if (!u) redirect("/login");
   if (u.role === "pending" && area !== "pending") redirect("/onboarding");
   if (u.role !== area) redirect(homeFor(u.role));
