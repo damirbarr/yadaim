@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+/* "שרטוט" — blueprint design language: navy drafting sheets with a fine grid, warm paper,
+   lime as the single highlight, serif display type (Frank Ruhl Libre) over a clean sans (Assistant).
+   Token names are semantic so components don't care about the palette:
+   ink = navy (primary), hazard = lime (accent), signal = orange (rare emphasis). */
+@theme {
+  --font-sans: "Assistant", system-ui, sans-serif;
+  --font-display: "Frank Ruhl Libre", "Assistant", serif;
+  --color-paper: #f4efe4;
+  --color-paper-2: #ebe4d5;
+  --color-ink: #0e2a44;
+  --color-ink-2: #163a5c;
+  --color-text: #14212f;
+  --color-muted: #6b6457;
+  --color-line: #d9cfbc;
+  --color-hazard: #d4f25a;
+  --color-hazard-soft: #eef8c8;
+  --color-signal: #ff7a45;
+  --color-ok: #2e6b3f;
+  --color-ok-soft: #e1ecdc;
+  --color-warn: #9a5a00;
+  --color-warn-soft: #f8e8cc;
+  --color-bad: #b3261e;
+  --color-bad-soft: #f7e0dc;
+  --color-info: #1f4e79;
+  --color-info-soft: #e0e9f2;
+}
+
+html { -webkit-tap-highlight-color: transparent; }
+body { background: var(--color-paper); color: var(--color-text); font-family: var(--font-sans); font-size: 16px; }
+h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0.005em; }
+.num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+
+/* Navy drafting sheet with a two-scale grid */
+.blueprint {
+  background-color: var(--color-ink);
+  background-image:
+    linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+  color: #fff;
+}
+/* Faint grid on paper (used behind content areas) */
+.paper-grid {
+  background-image:
+    linear-gradient(rgba(14,42,68,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14,42,68,.045) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+/* Dimension line: |——————| in lime, used as a small brand accent */
+.stripe {
+  background:
+    linear-gradient(var(--color-hazard), var(--color-hazard)) center / 100% 1.5px no-repeat,
+    linear-gradient(var(--color-hazard), var(--color-hazard)) left / 1.5px 100% no-repeat,
+    linear-gradient(var(--color-hazard), var(--color-hazard)) right / 1.5px 100% no-repeat;
+}
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .14em; color: var(--color-muted); }
+
+@utility card { @apply rounded-[3px] border border-line bg-white; }
+@utility sheet { @apply relative rounded-[3px] border border-line bg-white; }
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-[3px] px-4 py-2.5 text-[15px] font-bold transition active:translate-y-px disabled:opacity-40 disabled:pointer-events-none; }
+@utility btn-primary { @apply btn bg-ink text-white hover:bg-ink-2; }
+@utility btn-hazard { @apply btn bg-hazard text-ink hover:brightness-95; }
+@utility btn-ghost { @apply btn border-[1.5px] border-ink bg-transparent text-ink hover:bg-ink hover:text-white; }
+@utility btn-ok { @apply btn bg-ok text-white hover:brightness-110; }
+@utility btn-sm { @apply px-3 py-1.5 text-[13px]; }
+@utility input { @apply w-full rounded-[3px] border border-line bg-white px-3 py-2.5 text-[15px] text-text outline-none focus:border-ink focus:ring-2 focus:ring-hazard; }
+@utility label { @apply mb-1 block text-[13px] font-semibold text-muted; }
+@utility chip { @apply inline-flex items-center gap-1 rounded-[2px] px-1.5 py-0.5 text-[12px] font-bold whitespace-nowrap; }
+@utility chip-ok { @apply chip bg-ok-soft text-ok; }
+@utility chip-warn { @apply chip bg-warn-soft text-warn; }
+@utility chip-bad { @apply chip bg-bad-soft text-bad; }
+@utility chip-info { @apply chip bg-info-soft text-info; }
+@utility chip-muted { @apply chip bg-paper-2 text-muted; }
+@utility chip-hazard { @apply chip bg-hazard text-ink; }
+@utility seg {
+  @apply flex rounded-[3px] border border-line bg-paper p-1 text-[15px];
+  & > label { @apply flex-1 cursor-pointer rounded-[2px] px-3 py-2 text-center font-semibold text-muted has-[:checked]:bg-ink has-[:checked]:text-white; }
+  & > label > input { @apply sr-only; }
+}
+@utility tbl {
+  @apply w-full text-[15px];
+  & th { @apply border-b border-ink/20 px-3 py-2 text-start text-[12px] font-bold tracking-wider text-muted; }
+  & td { @apply border-b border-dashed border-line px-3 py-2.5; }
+}
