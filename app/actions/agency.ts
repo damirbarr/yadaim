@@ -7,7 +7,8 @@ import { randomToken } from "@/lib/tokens";
 import { saveUpload } from "@/lib/storage";
 import { audit } from "@/lib/audit";
 import type { Perm } from "@/lib/rbac";
-import { busyWorkers, docCheck, docsFor, getAgency, getBooking, getWorker } from "@/lib/queries";
+import { busyWorkers, docCheck, docsFor, getAgency, getBooking, getWorker, idleForecast } from "@/lib/queries";
+import { offerTail } from "@/app/a/campaigns/offer";
 import { ALL_CITIES, COUNTRIES, DOC_TYPES, MIN_DAYS_OPTIONS, REGIONS, TRADES, bookingPhase, hourlyFor, regionOf } from "@/lib/domain";
 import { CONTACT_FIELDS, ImportError, WORKER_FIELDS, normalizeDate, normalizePhone, readImport, type ImportField, type ImportState } from "@/lib/importer";
 import { logEvent } from "@/lib/events";
@@ -294,34 +295,32 @@ export async function toggleOptOut(fd: FormData) {
 }
 
 // ── Campaigns ──────────────────────────────────────────────────────────
+/** Pressing "send" on /a/campaigns is the agency's approval: it creates the offer and its recipient list, and the
+ *  campaign page then opens WhatsApp for each contractor. Dates and counts are recomputed here, never taken from the form. */
 export async function createCampaign(fd: FormData) {
   const { agencyId, user } = await requireAgency("agency.campaigns.send");
+  const i18n = await getI18n();
   const tradeKey = String(fd.get("trade"));
-  const message = String(fd.get("message") ?? "").trim();
-  const from = String(fd.get("from")), to = String(fd.get("to"));
-  const idle = Number(fd.get("idle")) || 0;
-  const regions = fd.getAll("regions").map(String);
-  if (!message || !TRADES.some((t) => t.key === tradeKey)) return;
-  const cid = Number((await insert(`INSERT INTO campaigns (agency_id, trade, date_from, date_to, idle_days, message) VALUES (?,?,?,?,?,?)`, agencyId, tradeKey, from, to, idle, message)));
+  const body = String(fd.get("message") ?? "").trim().slice(0, 1000);
+  const regions = fd.getAll("regions").map(String).filter((r) => REGIONS.some((x) => x.key === r));
+  const idle = (await idleForecast(agencyId)).find((i) => i.trade === tradeKey);
+  const a = await getAgency(agencyId);
+  if (!body || !idle || !a || !regions.length) return;
+  const message = `${body} ${offerTail(i18n, a.min_days)}`;
   // Frequency cap: max one offer per contact every 3 days (≈2 a week), never to opted-out contacts.
+  // Contacts without a known area are included: the agency added them, and leaving them out silently would be worse.
   const contacts = (await all(
     `SELECT id, region FROM crm_contacts WHERE agency_id = ? AND opted_out = 0 AND (last_sent_at IS NULL OR last_sent_at <= now_txt(interval '-3 days'))`
   , agencyId)) as { id: number; region: string | null }[];
-  await tx(async () => {
-    for (const c of contacts)
-      if (!regions.length || !c.region || regions.includes(c.region)) await run(`INSERT INTO campaign_recipients (campaign_id, contact_id, ref) VALUES (?,?,?)`, cid, c.id, randomToken(6));
+  const to = contacts.filter((c) => !c.region || regions.includes(c.region));
+  if (!to.length) return;
+  const cid = await tx(async () => {
+    const id = Number(await insert(`INSERT INTO campaigns (agency_id, trade, date_from, date_to, idle_days, message) VALUES (?,?,?,?,?,?)`, agencyId, tradeKey, idle.from, idle.to, idle.idleDays, message));
+    for (const c of to) await run(`INSERT INTO campaign_recipients (campaign_id, contact_id, ref) VALUES (?,?,?)`, id, c.id, randomToken(6));
+    return id;
   });
   await audit(user, "campaign.create", `campaign:${cid}`, tradeKey);
   redirect(`/a/campaigns/${cid}`);
-}
-
-export async function markCampaignSent(fd: FormData) {
-  const { agencyId } = await requireAgency("agency.campaigns.send");
-  const id = Number(fd.get("id"));
-  const c = (await get(`SELECT id FROM campaigns WHERE id = ? AND agency_id = ?`, id, agencyId));
-  if (!c) return;
-  (await run(`UPDATE campaigns SET status = 'sent', sent_at = COALESCE(sent_at, now_txt()) WHERE id = ?`, id));
-  revalidatePath(`/a/campaigns/${id}`);
 }
 
 // ── Settings ───────────────────────────────────────────────────────────

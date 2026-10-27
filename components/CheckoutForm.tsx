@@ -5,6 +5,7 @@ import type { FormState } from "@/app/actions/auth";
 import { useI18n } from "@/lib/i18n/client";
 import { LOCK_HOUR, VAT } from "@/lib/domain";
 import { Avatar } from "./ui";
+import type { MessageKey } from "@/lib/i18n/core";
 
 type W = { id: number; name: string; trade: string; years: number; base: number; agencyId: number; agency: string; lodgingDiscount: number; transportRate: number; photo: string | null; country: string; docsUntil: string };
 
@@ -31,6 +32,14 @@ export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: 
   const avgL = workers.reduce((a, w) => a + w.lodgingDiscount, 0) / workers.length;
   const avgT = workers.reduce((a, w) => a + w.transportRate, 0) / workers.length;
   const agencies = new Set(workers.map((w) => w.agencyId)).size;
+  // The order is sent as one request per agency and trade (a booking has a single trade). Workers arrive sorted that way.
+  const groups: { key: string; agency: string; trade: string; rows: typeof calc.rows }[] = [];
+  for (const r of calc.rows) {
+    const key = `${r.w.agencyId}:${r.w.trade}`;
+    const g = groups[groups.length - 1];
+    if (g?.key === key) g.rows.push(r);
+    else groups.push({ key, agency: r.w.agency, trade: r.w.trade, rows: [r] });
+  }
 
   return (
     <form action={action} className="grid gap-5 lg:grid-cols-[1fr_380px]">
@@ -43,16 +52,30 @@ export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: 
       <input type="hidden" name="transport" value={transport} />
 
       <div className="space-y-4">
-        <div className="card divide-y divide-line">
-          {workers.map((w) => (
-            <div key={w.id} className="flex items-center gap-3 p-4">
-              <Avatar w={{ id: w.id, trade: w.trade, photo: w.photo, country: w.country }} size={44} />
-              <div className="flex-1">
-                <div className="font-semibold">{w.name}</div>
-                <div className="text-xs text-muted">{fmt.trade(w.trade)} · {t("contractor.count.years", { n: w.years })} · {w.agency}</div>
+        <div className="card">
+          {groups.map((g) => (
+            <section key={g.key} data-group={g.key}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line bg-paper px-4 py-2">
+                <h3 className="font-display text-[17px] font-bold text-ink">{g.agency} · {t(`contractor.count.${g.trade}` as MessageKey, { n: g.rows.length })}</h3>
+                <span className="text-[12px] text-muted">{t("contractor.checkout.groupNote")}</span>
               </div>
-              <span className="chip-ok">{t("contractor.checkout.docsValid")}</span>
-            </div>
+              <ul className="divide-y divide-dashed divide-line">
+                {g.rows.map(({ w, day }) => (
+                  <li key={w.id} className="flex items-center gap-3 px-4 py-3">
+                    <Avatar w={{ id: w.id, trade: w.trade, photo: w.photo, country: w.country }} size={44} />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold">{w.name}</div>
+                      <div className="text-xs text-muted">{fmt.trade(w.trade)} · {t("contractor.count.years", { n: w.years })}</div>
+                      <div className="text-xs text-ok">✓ {t("contractor.checkout.docsValid")}</div>
+                    </div>
+                    <div className="shrink-0 text-end">
+                      <div className="font-display text-[18px] font-bold leading-none num">{fmt.money(Math.round(day))}</div>
+                      <div className="text-[11px] text-muted">{t("contractor.checkout.perWorkerDay")}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
         </div>
 
@@ -61,8 +84,8 @@ export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: 
             <div>
               <div className="label">{t("contractor.prices.lodging")}</div>
               <div className="seg">
-                <label><input type="radio" checked={lodging === "contractor"} onChange={() => setLodging("contractor")} />{t("contractor.prices.lodgingOursAdj", { amount: fmt.money(avgL) })}</label>
                 <label><input type="radio" checked={lodging === "agency"} onChange={() => setLodging("agency")} />{t("contractor.prices.lodgingAgency")}</label>
+                <label><input type="radio" checked={lodging === "contractor"} onChange={() => setLodging("contractor")} />{t("contractor.prices.lodgingOursAdj", { amount: fmt.money(avgL) })}</label>
               </div>
             </div>
             <div>
@@ -112,6 +135,7 @@ export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: 
           <span className="text-sm text-muted">{t("contractor.checkout.total")}</span>
           <span className="font-display text-3xl font-bold num">{fmt.money(calc.gross, 2)}</span>
         </div>
+        {groups.length > 1 && <p className="mt-3 text-xs text-muted">{t("contractor.checkout.split", { n: groups.length })}</p>}
         {state?.error && <p className="mt-3 text-sm text-bad">{state.error}</p>}
         <button className="btn-hazard mt-4 w-full py-3 text-base" disabled={pending}>{pending ? t("contractor.checkout.sending") : t("contractor.checkout.send", { n: agencies })}</button>
         <ul className="mt-3 space-y-1 text-xs text-muted">

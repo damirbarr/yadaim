@@ -35,7 +35,6 @@ export default {
     doc_visa: "תוקף אשרה",
     doc_passport: "תוקף דרכון",
     doc_insurance: "תוקף ביטוח",
-    doc_safety: "הדרכת בטיחות",
     doc_heights: "עבודה בגובה",
     name: "שם",
     company: "חברה",

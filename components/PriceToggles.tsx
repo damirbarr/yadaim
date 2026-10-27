@@ -2,7 +2,7 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/client";
 
-/** Lodging/transport choice - changes the all-inclusive price shown everywhere. */
+/** Lodging/transport choice - changes the all-inclusive price shown everywhere. The agency option comes first in both. */
 export function PriceToggles({ lodging, transport }: { lodging: string; transport: string }) {
   const { t } = useI18n();
   const router = useRouter();
@@ -18,8 +18,8 @@ export function PriceToggles({ lodging, transport }: { lodging: string; transpor
       <div>
         <div className="label">{t("contractor.prices.lodging")}</div>
         <div className="seg">
-          <label><input type="radio" checked={lodging === "contractor"} onChange={() => set("lodging", "contractor")} />{t("contractor.prices.lodgingOurs")}</label>
           <label><input type="radio" checked={lodging === "agency"} onChange={() => set("lodging", "agency")} />{t("contractor.prices.lodgingAgency")}</label>
+          <label><input type="radio" checked={lodging === "contractor"} onChange={() => set("lodging", "contractor")} />{t("contractor.prices.lodgingOurs")}</label>
         </div>
       </div>
       <div>

@@ -4,22 +4,25 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { all, get, insert, run, tx } from "@/lib/db";
 import { requireContractor } from "@/lib/auth";
-import { busyWorkers, docCheck, docsFor, getAgency, getBooking, getContractor, getWorker } from "@/lib/queries";
-import { bookingPhase, ALL_CITIES, endOfBlock, hourlyFor, todayISO, TRADES } from "@/lib/domain";
+import { agencyReliability, busyWorkers, docCheck, docsFor, getAgency, getBooking, getContractor, getWorker } from "@/lib/queries";
+import { bookingPhase, ALL_CITIES, endOfBlock, hourlyFor, regionOf, todayISO, TRADES } from "@/lib/domain";
 import { audit } from "@/lib/audit";
 import { logEvent } from "@/lib/events";
 import { getI18n } from "@/lib/i18n/server";
 import type { Perm } from "@/lib/rbac";
 import type { FormState } from "./auth";
 
+/**
+ * Send an order. The basket may mix agencies and trades; a booking has one agency and one trade, so the order is
+ * split into one booking per (agency, trade), all created in one transaction: either every request goes out or none.
+ */
 export async function createBooking(_: FormState, fd: FormData): Promise<FormState> {
   const { contractorId, user } = await requireContractor("contractor.book");
   const { t } = await getI18n();
   const c = (await getContractor(contractorId))!;
   if (!c.verified) return { error: t("contractor.errors.notVerified") };
 
-  const ids = String(fd.get("w") ?? "").split(",").map(Number).filter(Boolean);
-  const tradeKey = String(fd.get("trade"));
+  const ids = [...new Set(String(fd.get("w") ?? "").split(",").map(Number).filter(Boolean))].slice(0, 40);
   const date = String(fd.get("date"));
   const days = Math.min(22, Math.max(1, Number(fd.get("days")) || 1));
   const city = String(fd.get("city"));
@@ -31,7 +34,7 @@ export async function createBooking(_: FormState, fd: FormData): Promise<FormSta
   const notes = String(fd.get("notes") ?? "").trim() || null;
 
   if (!ids.length) return { error: t("contractor.errors.noWorkers") };
-  if (!TRADES.some((t) => t.key === tradeKey) || !ALL_CITIES.includes(city)) return { error: t("contractor.errors.badDetails") };
+  if (!ALL_CITIES.includes(city)) return { error: t("contractor.errors.badDetails") };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < todayISO()) return { error: t("contractor.errors.badDate") };
   if (address.length < 4) return { error: t("contractor.errors.noAddress") };
 
@@ -42,18 +45,28 @@ export async function createBooking(_: FormState, fd: FormData): Promise<FormSta
     created = await tx(async () => {
       const busy = (await busyWorkers(date, end));
       const docs = (await docsFor(ids));
-      const byAgency = new Map<number, number[]>();
+      const groups = new Map<string, { agencyId: number; trade: string; wids: number[] }>();
       for (const id of ids) {
         const w = (await getWorker(id));
-        if (!w || !w.active || w.trade !== tradeKey) throw new Error(t("contractor.errors.unavailable"));
+        if (!w || !w.active || !TRADES.some((x) => x.key === w.trade)) throw new Error(t("contractor.errors.unavailable"));
         if (busy.has(id)) throw new Error(t("contractor.errors.justBooked"));
         if (!docCheck(docs.get(id)!, w.trade, end).ok) throw new Error(t("contractor.errors.docs"));
-        byAgency.set(w.agency_id, [...(byAgency.get(w.agency_id) ?? []), id]);
+        const key = `${w.agency_id}:${w.trade}`;
+        const g = groups.get(key) ?? { agencyId: w.agency_id, trade: w.trade, wids: [] };
+        g.wids.push(id);
+        groups.set(key, g);
       }
       const out: number[] = [];
-      for (const [agencyId, wids] of byAgency) {
+      const checked = new Set<number>();
+      for (const { agencyId, trade: tradeKey, wids } of groups.values()) {
         const a = (await getAgency(agencyId))!;
-        if (days < a.min_days) throw new Error(t("contractor.errors.minDays", { agency: a.name, n: a.min_days }));
+        if (!checked.has(agencyId)) {
+          // Same placement rules as search: the ids come from the URL, so they are re-checked here.
+          if (!a.verified || a.suspended || !a.regions.split(",").includes(regionOf(city)) || (await agencyReliability(agencyId)).score < 60)
+            throw new Error(t("contractor.errors.unavailable"));
+          if (days < a.min_days) throw new Error(t("contractor.errors.minDays", { agency: a.name, n: a.min_days }));
+          checked.add(agencyId);
+        }
         let campaignId: number | null = null;
         if (ref) {
           const rec = (await get(`SELECT r.id, r.campaign_id FROM campaign_recipients r JOIN campaigns c ON c.id = r.campaign_id WHERE r.ref = ? AND c.agency_id = ?`, ref, agencyId)) as { id: number; campaign_id: number } | undefined;

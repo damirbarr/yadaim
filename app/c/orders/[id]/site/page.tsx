@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { requireContractor } from "@/lib/auth";
-import { bookingsWhere, displayName } from "@/lib/queries";
+import { bookingsWhere, displayName, siteBriefings } from "@/lib/queries";
 import { bookingPhase, nowParts, todayISO, WORK_TAGS } from "@/lib/domain";
 import { getI18n } from "@/lib/i18n/server";
 import { approveHours, siteCheck } from "@/app/actions/contractor";
+import { recordBriefing } from "@/app/actions/briefings";
+import { FileField } from "@/components/FileField";
 import { Avatar, Notice, PageHead } from "@/components/ui";
 
 export async function generateMetadata() {
@@ -31,7 +33,28 @@ async function Ask({ bw, field, q, value }: { bw: number; field: string; q: stri
   );
 }
 
-export default async function Site({ params }: { params: Promise<{ id: string }> }) {
+/** Separate from the identity/skill questions: recording it never changes check-in or billing. */
+async function Briefing({ bw, valid, error }: { bw: number; valid: string | null; error: boolean }) {
+  const { t, fmt } = await getI18n();
+  return (
+    <div className="border-t border-dashed border-line pt-3">
+      <div className="mb-1.5 text-sm font-medium">{t("safety.site.step")}</div>
+      {valid ? (
+        <p className="text-sm font-semibold text-ok">✓ {t("safety.site.valid", { date: fmt.fullDate(valid) })}</p>
+      ) : (
+        <form action={recordBriefing} className="space-y-2">
+          <input type="hidden" name="bw" value={bw} />
+          <p className="text-xs text-muted">{t("safety.site.needed")}</p>
+          {error && <Notice tone="bad">{t("safety.site.uploadError")}</Notice>}
+          <div><span className="label">{t("safety.site.photo")}</span><FileField name="file" accept="image/*,.pdf" small /></div>
+          <button className="btn w-full border border-ink bg-white py-3 text-ink">{t("safety.site.submit")}</button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+export default async function Site({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ briefingError?: string }> }) {
   const { contractorId } = await requireContractor("contractor.site");
   const [b] = (await bookingsWhere(`b.id = ? AND b.contractor_id = ?`, Number((await params).id), contractorId));
   if (!b) notFound();
@@ -40,6 +63,9 @@ export default async function Site({ params }: { params: Promise<{ id: string }>
   const crew = b.workers.filter((w) => w.state === "assigned");
   const canClose = b.status === "approved" && todayISO() >= b.end_date;
   const { time } = nowParts();
+  const briefingError = Number((await searchParams).briefingError) || 0;
+  // Briefings are per site: valid for this contractor + address through the booking's last day.
+  const briefed = await siteBriefings(contractorId, b.address, crew.map((w) => w.worker_id), b.end_date);
   if (!["today", "awaiting_hours", "locked"].includes(phase))
     return <div className="mx-auto max-w-md"><PageHead back={`/c/orders/${b.id}`} title={t("contractor.site.title")} /><Notice>{t("contractor.site.notOpen")}</Notice></div>;
   return (
@@ -49,7 +75,7 @@ export default async function Site({ params }: { params: Promise<{ id: string }>
       {crew.map((w) => {
         const bad = w.arrived === 0 || w.identity_ok === "no" || w.trade_ok === "no";
         return (
-          <section key={w.bw_id} className={`card space-y-4 p-4 ${bad ? "border-bad" : w.identity_ok && w.trade_ok ? "border-ok" : ""}`}>
+          <section key={w.bw_id} id={`bw-${w.bw_id}`} className={`card space-y-4 p-4 ${bad ? "border-bad" : w.identity_ok && w.trade_ok ? "border-ok" : ""}`}>
             <div className="flex items-center gap-3">
               <Avatar w={w} size={64} />
               <div className="flex-1">
@@ -65,6 +91,7 @@ export default async function Site({ params }: { params: Promise<{ id: string }>
               <>
                 <Ask bw={w.bw_id} field="identity_ok" q={t("contractor.site.qIdentity")} value={w.identity_ok} />
                 <Ask bw={w.bw_id} field="trade_ok" q={t("contractor.site.qTrade", { trade: fmt.trade(w.trade) })} value={w.trade_ok} />
+                {!bad && <Briefing bw={w.bw_id} valid={briefed.get(w.worker_id)?.expires ?? null} error={briefingError === w.bw_id} />}
                 {!w.checkin_at && (
                   <form action={siteCheck}><input type="hidden" name="bw" value={w.bw_id} /><input type="hidden" name="field" value="arrived" /><input type="hidden" name="value" value="0" />
                     <button className="w-full text-center text-xs text-muted underline">{t("contractor.site.noShow")}</button></form>

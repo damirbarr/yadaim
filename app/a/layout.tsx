@@ -12,7 +12,7 @@ import { getI18n } from "@/lib/i18n/server";
 import type { Messages } from "@/messages";
 
 type Key = keyof Messages["common"]["nav"]["agency"];
-import { IBook, IHome, IInbox, ILogout, IMegaphone, IReceipt, ISettings, IShield, IUsers } from "@/components/icons";
+import { IBook, ICalendar, IHome, IInbox, ILogout, IMegaphone, IReceipt, ISettings, IShield, IUsers } from "@/components/icons";
 
 export default async function AgencyLayout({ children }: { children: React.ReactNode }) {
   const { user, agencyId } = await requireAgency();
@@ -30,9 +30,11 @@ export default async function AgencyLayout({ children }: { children: React.React
   const { t, } = await getI18n();
   const all: (NavItem & { perm: Perm; key: Key })[] = [
     { key: "today", href: "/a", label: "", icon: <IHome />, exact: true, perm: "agency.view" },
+    { key: "calendar", href: "/a/calendar", label: "", icon: <ICalendar />, perm: "agency.view" },
     { key: "requests", href: "/a/requests", label: "", icon: <IInbox />, badge: requests, perm: "agency.view" },
     { key: "compliance", href: "/a/compliance", label: "", icon: <IShield />, badge: compliance, perm: "agency.view" },
     { key: "workers", href: "/a/workers", label: "", icon: <IUsers />, badge: workers, perm: "agency.view" },
+    { key: "crews", href: "/a/crews", label: "", icon: <IUsers />, perm: "agency.view" },
     { key: "contractors", href: "/a/contractors", label: "", icon: <IBook />, badge: contacts, perm: "agency.view" },
     { key: "campaigns", href: "/a/campaigns", label: "", icon: <IMegaphone />, perm: "agency.view" },
     { key: "billing", href: "/a/billing", label: "", icon: <IReceipt />, perm: "agency.billing.view" },
@@ -42,7 +44,7 @@ export default async function AgencyLayout({ children }: { children: React.React
   const items = all.filter((i) => can(user, i.perm)).map((i) => ({ ...i, label: t(`common.nav.agency.${i.key}`) }));
   const short = (i: (typeof items)[number]) => ({ ...i, label: t(`common.nav.agencyShort.${i.key}`) });
   const mobile = items.filter((i) => ["today", "requests", "compliance", "workers", "campaigns"].includes(i.key)).map(short);
-  const extra = items.filter((i) => ["contractors", "billing", "team", "settings"].includes(i.key)).map(short);
+  const extra = items.filter((i) => ["calendar", "crews", "contractors", "billing", "team", "settings"].includes(i.key)).map(short);
   return (
     <>
       <ImpersonationBanner user={user} />
@@ -65,7 +67,13 @@ export default async function AgencyLayout({ children }: { children: React.React
           <header className="blueprint sticky top-0 z-30 flex h-14 items-center justify-between px-4 md:hidden">
             <Logo dark />
             <div className="flex items-center gap-1">
-              {extra.map((i) => <Link key={i.href} href={i.href} className="rounded-[3px] px-2 py-1 text-xs text-white/70">{i.label}</Link>)}
+              {/* The rest of the menu folds into one button so the phone header never outgrows the screen. */}
+              <details className="group relative">
+                <summary className="flex min-h-9 cursor-pointer list-none items-center rounded-[3px] px-3 text-sm font-semibold text-white/80 group-open:bg-white/10 [&::-webkit-details-marker]:hidden">{t("common.more")}</summary>
+                <nav className="absolute end-0 top-full z-40 mt-2 grid min-w-48 border border-white/20 bg-ink py-1 shadow-lg">
+                  {extra.map((i) => <Link key={i.href} href={i.href} className="px-4 py-2.5 text-[15px] text-white/85 hover:bg-white/10">{t(`common.nav.agency.${i.key}`)}</Link>)}
+                </nav>
+              </details>
               <form action={logout}><button className="grid h-9 w-9 place-items-center text-white/70" aria-label={t("common.logout")}><ILogout className="flip-ltr" /></button></form>
             </div>
           </header>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireContractor } from "@/lib/auth";
 import { can } from "@/lib/rbac";
-import { bookingsWhere, bookingTotals, displayName } from "@/lib/queries";
+import { bookingsWhere, bookingTotals, displayName, siteBriefings } from "@/lib/queries";
 import { addDays, bookingPhase, LOCK_HOUR, todayISO } from "@/lib/domain";
 import { toQS } from "@/lib/params";
 import { waLink } from "@/lib/wa";
@@ -39,6 +39,9 @@ export default async function Order({ params, searchParams }: { params: Promise<
   ];
   const dates = b.days > 1 ? t("contractor.dateRange", { from: fmt.prettyDate(b.date), to: fmt.prettyDate(b.end_date) }) : fmt.prettyDate(b.date);
   const alt = `/c/search?${toQS({ trade: b.trade, city: b.city, date: b.date >= today ? b.date : "", days: b.days, count: crew.length })}`;
+  // Safety briefings are signed per site; show who still needs one before work starts (not on closed bookings).
+  const showBriefing = !completed && !["rejected", "cancelled"].includes(b.status);
+  const briefed = showBriefing ? await siteBriefings(contractorId, b.address, crew.map((w) => w.worker_id), b.end_date) : null;
   const altLink = { link: (c: React.ReactNode) => <Link className="underline" href={alt}>{c}</Link> };
   return (
     <div className="space-y-5">
@@ -77,6 +80,9 @@ export default async function Order({ params, searchParams }: { params: Promise<
                 <div className="flex-1">
                   <div className="font-semibold">{displayName(w)}</div>
                   <div className="text-xs text-muted">{fmt.trade(w.trade)} · {t("contractor.count.years", { n: w.years })}</div>
+                  {briefed && (briefed.has(w.worker_id)
+                    ? <div className="text-xs text-ok">✓ {t("safety.order.valid", { date: fmt.fullDate(briefed.get(w.worker_id)!.expires) })}</div>
+                    : <div className="text-xs font-semibold text-warn">{t("safety.order.needed")}</div>)}
                 </div>
                 {completed ? (
                   w.hours_approved ? <div className="text-end text-xs"><Rating value={w.rating} /><div className="num text-muted">{t("contractor.count.hours", { n: w.hours_approved })}</div></div> : <span className="chip-bad">{t("contractor.order.noFitNotBilled")}</span>
@@ -88,6 +94,7 @@ export default async function Order({ params, searchParams }: { params: Promise<
               </li>
             ))}
           </ul>
+          {briefed && crew.some((w) => !briefed.has(w.worker_id)) && <p className="border-t border-dashed border-line px-5 py-3 text-xs text-muted">{t("safety.order.note")}</p>}
           {b.agency_note && b.status !== "rejected" && <p className="border-t border-line px-5 py-3 text-sm text-muted">{t("contractor.order.agencyNote", { note: b.agency_note })}</p>}
         </section>
 

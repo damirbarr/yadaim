@@ -5,9 +5,10 @@ import { all } from "@/lib/db";
 import { bookingsWhere, bookingTotals, busyWorkers, displayName, docCheck, docsFor, workedWith, workerStats, type Worker } from "@/lib/queries";
 import { bookingPhase } from "@/lib/domain";
 import { getI18n } from "@/lib/i18n/server";
+import { agencyCrews } from "@/lib/crews";
 import { waLink } from "@/lib/wa";
 import { agencyCancel, rejectRequest, swapWorker } from "@/app/actions/agency";
-import { AssignForm, type Cand } from "@/components/AssignForm";
+import { AssignForm, type Cand, type CrewOption } from "@/components/AssignForm";
 import { Avatar, Notice, PageHead, Rating } from "@/components/ui";
 import { IWhatsapp } from "@/components/icons";
 
@@ -20,7 +21,13 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
   const phase = bookingPhase(b);
   const crew = b.workers.filter((w) => w.state === "assigned");
   const requestedIds = b.workers.map((w) => w.worker_id);
-  const pool = (await all(`SELECT * FROM workers WHERE agency_id = ? AND active = 1 AND trade = ?`, agencyId, b.trade)) as Worker[];
+  // Crews with at least one member in the requested trade can be assigned whole, so their other-trade members join the pool.
+  const crewList = (await agencyCrews(agencyId)).filter((c) => c.members.some((m) => m.trade === b.trade));
+  const crewOf = new Map(crewList.flatMap((c) => c.members.map((m) => [m.id, c.name] as const)));
+  const pool = [
+    ...((await all(`SELECT * FROM workers WHERE agency_id = ? AND active = 1 AND trade = ?`, agencyId, b.trade)) as Worker[]),
+    ...crewList.flatMap((c) => c.members.filter((m) => m.trade !== b.trade)),
+  ];
   const busy = (await busyWorkers(b.date, b.end_date, b.id));
   const docs = (await docsFor(pool.map((w) => w.id)));
   const stats = (await workerStats(pool.map((w) => w.id)));
@@ -29,7 +36,7 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
     .map((w) => {
       const dc = docCheck(docs.get(w.id)!, b.trade, b.end_date);
       return {
-        id: w.id, name: displayName(w), trade: w.trade, years: w.years, photo: w.photo, country: w.country, requested: requestedIds.includes(w.id),
+        id: w.id, name: displayName(w), trade: w.trade, years: w.years, photo: w.photo, country: w.country, requested: requestedIds.includes(w.id), crew: crewOf.get(w.id),
         withContractor: hist.get(w.id) ?? 0, rating: stats.get(w.id)!.rating, busy: busy.has(w.id), docsOk: dc.ok,
         docsNote: dc.ok
           ? (dc.expiring.length ? t("agency.request.docsValidUntil", { doc: fmt.docShort(dc.expiring[0].type), date: fmt.date(dc.expiring[0].expires) }) : t("agency.request.docsAllValid"))
@@ -38,6 +45,10 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
     })
     .sort((x, y) => Number(y.requested) - Number(x.requested) || Number(x.busy) - Number(y.busy) || y.withContractor - x.withContractor || (y.rating ?? 0) - (x.rating ?? 0));
   const totals = bookingTotals(b, b.status === "requested" ? b.workers : crew, b.status === "completed");
+  const crewOptions: CrewOption[] = crewList
+    .map((c) => ({ id: c.id, name: c.name, size: c.members.length, ready: cands.filter((x) => c.members.some((m) => m.id === x.id) && x.docsOk && !x.busy).map((x) => x.id) }))
+    .filter((c) => c.ready.length > 0)
+    .sort((x, y) => y.ready.length - x.ready.length);
   const free = cands.filter((c) => !c.busy && c.docsOk && !crew.some((w) => w.worker_id === c.id));
 
   return (
@@ -58,7 +69,7 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
           ) : b.status === "requested" ? (
             <>
               <h2 className="text-[20px] font-bold text-ink">{t("agency.request.proposal")}</h2>
-              <AssignForm id={b.id} cands={cands} need={b.workers.length} transport={b.transport === "agency"} defaults={{ pickup: "06:15" }} />
+              <AssignForm id={b.id} cands={cands} crews={crewOptions} trade={b.trade} need={b.workers.length} transport={b.transport === "agency"} defaults={{ pickup: "06:15" }} />
               <form action={rejectRequest} className="card flex flex-wrap items-end gap-2 p-4">
                 <input type="hidden" name="id" value={b.id} />
                 <div className="flex-1"><label className="label" htmlFor="reject-reason">{t("agency.request.rejectLabel")}</label><input id="reject-reason" name="reason" className="input" placeholder={t("agency.request.rejectPlaceholder")} /></div>

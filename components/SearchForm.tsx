@@ -1,6 +1,7 @@
 import { REGIONS, TRADES, nextWorkday, todayISO } from "@/lib/domain";
 import { getI18n } from "@/lib/i18n/server";
 import { DateField } from "./DateField";
+import { BasketField } from "./BasketField";
 
 export type SearchDefaults = { trade?: string; city?: string; date?: string; days?: number; count?: number };
 
@@ -39,6 +40,7 @@ export async function SearchForm({ d = {}, compact = false }: { d?: SearchDefaul
         <label className="label">{t("contractor.form.count")}</label>
         <input type="number" name="count" className="input" min={1} max={20} defaultValue={d.count ?? 2} />
       </div>
+      <BasketField />
       <button className="btn-primary self-end py-2.5 text-base">{t("contractor.form.search")} <span className="flip-ltr inline-block">←</span></button>
     </form>
   );

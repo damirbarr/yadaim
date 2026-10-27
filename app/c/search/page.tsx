@@ -4,10 +4,12 @@ import { parseSearch, toQS } from "@/lib/params";
 import { DOC_TYPES, diffDays, endOfBlock, regionOf } from "@/lib/domain";
 import { displayName } from "@/lib/queries";
 import { getI18n } from "@/lib/i18n/server";
+import { basketItems, parseBasket, searchCrews } from "@/lib/crews";
 import type { MessageKey } from "@/lib/i18n/core";
 import { SearchForm } from "@/components/SearchForm";
 import { PriceToggles } from "@/components/PriceToggles";
 import { ResultsGrid, type Hit } from "@/components/ResultsGrid";
+import { workerAvailability } from "@/lib/calendar";
 import { Empty, Notice } from "@/components/ui";
 
 export async function generateMetadata() {
@@ -18,19 +20,22 @@ export async function generateMetadata() {
 export default async function Search({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const { contractorId } = await requireContractor("contractor.book");
   const { t, fmt } = await getI18n();
-  const q = parseSearch(await searchParams);
-  const hits = (await searchWorkers(q, contractorId));
+  const sp = await searchParams;
+  const q = parseSearch(sp);
+  const [hits, crews, basket] = await Promise.all([searchWorkers(q, contractorId), searchCrews(q), basketItems(parseBasket(sp.w), q)]);
   const contractor = (await getContractor(contractorId))!;
   const end = endOfBlock(q.date, q.days);
   const qs = toQS({ trade: q.trade, city: q.city, date: q.date, days: q.days, count: q.count, lodging: q.lodging, transport: q.transport });
   const agencies = new Set(hits.map((h) => h.agency.id)).size;
   const dates = q.days > 1 ? t("contractor.dateRange", { from: fmt.prettyDate(q.date), to: fmt.prettyDate(end) }) : fmt.prettyDate(q.date);
+  // Free work days from the searched date: tells the contractor who can also stay on for the following days.
+  const avail = await workerAvailability(hits.map((h) => h.worker.id), q.date);
   const data: Hit[] = hits.map((h) => ({
     id: h.worker.id, name: displayName(h.worker), trade: h.worker.trade, years: h.worker.years,
     country: h.worker.country, skills: (h.worker.skills ?? "").split(",").filter(Boolean).slice(0, 3),
     rating: h.stats.rating, jobs: h.stats.jobs, arrival: h.stats.arrival, match: h.stats.match, withContractor: h.withContractor,
     agency: h.agency.name, agencyScore: h.reliability.score, agencyTier: h.reliability.tier.tone, daily: h.daily, hourly: h.hourly,
-    photo: h.worker.photo,
+    photo: h.worker.photo, avail: avail.get(h.worker.id),
     docs: DOC_TYPES.filter((d) => d.key !== "passport" && (d.key !== "heights" || h.heightsOk)).map((d) => {
       const soon = h.docs.expiring.find((e) => e.type === d.key);
       return { key: d.key, soon: !!soon && diffDays(end, soon.expires) < 30 };
@@ -63,11 +68,8 @@ export default async function Search({ searchParams }: { searchParams: Promise<R
       </div>
       <div className="sheet p-3"><PriceToggles lodging={q.lodging} transport={q.transport} /></div>
       {hits.length > 0 && hits.length < q.count && <Notice tone="warn">{t("contractor.search.partial", { found: hits.length, wanted: q.count })}</Notice>}
-      {hits.length === 0 ? (
-        <Empty title={t("contractor.search.emptyTitle")}>{t("contractor.search.emptyBody")}</Empty>
-      ) : (
-        <ResultsGrid hits={data} qs={qs} count={q.count} days={q.days} canBook={!!contractor.verified} />
-      )}
+      <ResultsGrid hits={data} crews={crews} basket={basket} trade={q.trade} qs={qs} count={q.count} days={q.days} canBook={!!contractor.verified}
+        empty={<Empty title={t("contractor.search.emptyTitle")}>{t("contractor.search.emptyBody")}</Empty>} />
     </div>
   );
 }

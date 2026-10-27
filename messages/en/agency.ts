@@ -170,7 +170,7 @@ const m: Messages["agency"] = {
     add: "Add worker",
     welcome: "Welcome! First step: upload your workers' Excel file, and we'll build a profile for each worker with their expiry dates. You can start from the template.",
     importTitle: "Upload your workers' Excel file",
-    importHint: "We recognize names, trades, country of origin and expiry dates (visa, insurance, safety, heights) and build a profile for each worker.",
+    importHint: "The system recognizes names, trades, country of origin and expiry dates (visa, insurance, working at heights) and build a profile for each worker.",
     template: "Download Excel template",
     all: "All",
     inactive: "Inactive",

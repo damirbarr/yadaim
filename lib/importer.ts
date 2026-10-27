@@ -59,7 +59,6 @@ export const WORKER_FIELDS: ImportField[] = [
   { key: "doc_visa", aliases: ["תוקף אשרה", "אשרה", "תוקף ויזה", "ויזה", "صلاحية التأشيرة", "التأشيرة", "visa", "visa expiry"] }, // i18n-data
   { key: "doc_passport", aliases: ["תוקף דרכון", "صلاحية جواز السفر", "صلاحية الجواز", "passport expiry"] }, // i18n-data
   { key: "doc_insurance", aliases: ["תוקף ביטוח", "ביטוח", "ביטוח רפואי", "صلاحية التأمين", "التأمين", "insurance"] }, // i18n-data
-  { key: "doc_safety", aliases: ["הדרכת בטיחות", "בטיחות", "إرشاد السلامة", "السلامة", "safety"] }, // i18n-data
   { key: "doc_heights", aliases: ["עבודה בגובה", "גובה", "العمل على ارتفاع", "heights"] }, // i18n-data
 ];
 

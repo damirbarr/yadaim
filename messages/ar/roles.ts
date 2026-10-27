@@ -29,6 +29,9 @@ const m: Messages["roles"] = {
     admin: { owner: "كل أدوات الإدارة", manager: "التحقق من المؤسسات وإدارة المستخدمين", viewer: "سجل النشاط" },
   },
   audit: {
+    briefing_sign: "تسجيل إرشاد السلامة في الموقع",
+    crew_create: "إنشاء طاقم",
+    crew_delete: "حلّ طاقم",
     login: "تسجيل دخول",
     user_created: "مستخدم جديد",
     invite_accepted: "تفعيل دعوة",

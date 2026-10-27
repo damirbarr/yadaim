@@ -26,10 +26,10 @@ export const DOC_TYPES = [
   { key: "visa", required: true },
   { key: "passport", required: true },
   { key: "insurance", required: true },
-  { key: "safety", required: true },
   { key: "heights", required: false },
 ] as const;
 export const docType = (k: string) => DOC_TYPES.find((d) => d.key === k) ?? DOC_TYPES[0];
+// Site safety briefings are not here: they belong to a contractor's site, not to the worker (site_briefings, lib/queries.ts).
 /** Documents a worker must hold, valid on the work date, to be placed in a given trade. */
 export const requiredDocs = (tradeKey: string) =>
   DOC_TYPES.filter((d) => d.required || (d.key === "heights" && trade(tradeKey).heights)).map((d) => d.key);
@@ -78,6 +78,9 @@ export function hourlyFor(base: number, a: AgencyRates, o: Pick<PriceOpts, "lodg
   return base - (o.lodging === "contractor" ? a.lodging_discount : 0) + (o.transport === "agency" ? a.transport_rate : 0);
 }
 export const DEFAULT_OPTS: PriceOpts = { lodging: "contractor", transport: "agency", hours: 9 };
+
+/** A signed site safety briefing is usually valid for a year. */
+export const BRIEFING_VALID_DAYS = 365;
 
 // ── Dates (Israel time) ─────────────────────────────────────────────────
 export const TZ = "Asia/Jerusalem";

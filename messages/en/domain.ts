@@ -24,7 +24,6 @@ const m: Messages["domain"] = {
     visa: { name: "Work visa (B/1), construction", short: "Visa" },
     passport: { name: "Passport", short: "Passport" },
     insurance: { name: "Health insurance", short: "Insurance" },
-    safety: { name: "Site safety training", short: "Safety" },
     heights: { name: "Working at heights certificate", short: "Heights" },
   },
   phases: {

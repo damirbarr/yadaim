@@ -29,6 +29,9 @@ const m: Messages["roles"] = {
     admin: { owner: "All admin tools", manager: "Verify organizations and manage users", viewer: "Activity log" },
   },
   audit: {
+    briefing_sign: "Site safety briefing recorded",
+    crew_create: "Crew created",
+    crew_delete: "Crew dissolved",
     login: "Signed in",
     user_created: "New user",
     invite_accepted: "Invitation accepted",

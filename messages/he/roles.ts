@@ -31,6 +31,9 @@ export default {
   },
   // Activity-log actions (the `action` passed to audit()), dots → underscores.
   audit: {
+    briefing_sign: "רישום הדרכת בטיחות באתר",
+    crew_create: "יצירת צוות",
+    crew_delete: "פירוק צוות",
     login: "כניסה למערכת",
     user_created: "משתמש חדש",
     invite_accepted: "הזמנה הופעלה",

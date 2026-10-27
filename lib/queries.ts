@@ -37,7 +37,7 @@ export const getWorker = (id: number) => get<Worker>(`SELECT * FROM workers WHER
 export const getBooking = (id: number) => get<Booking>(`SELECT * FROM bookings WHERE id = ?`, id);
 export const getContractor = (id: number) => get<Contractor>(`SELECT * FROM contractors WHERE id = ?`, id);
 export const workerDocs = (workerId: number) =>
-  all<Doc>(`SELECT * FROM documents WHERE worker_id = ? ORDER BY CASE type WHEN 'visa' THEN 0 WHEN 'passport' THEN 1 WHEN 'insurance' THEN 2 WHEN 'safety' THEN 3 ELSE 4 END, id`, workerId);
+  all<Doc>(`SELECT * FROM documents WHERE worker_id = ? ORDER BY CASE type WHEN 'visa' THEN 0 WHEN 'passport' THEN 1 WHEN 'insurance' THEN 2 ELSE 3 END, id`, workerId);
 export const count = async (sql: string, ...args: unknown[]) => (await get<{ n: number }>(sql, ...args))?.n ?? 0;
 
 // ── Worker reputation ────────────────────────────────────────────────────
@@ -114,6 +114,32 @@ export async function docsFor(ids: number[]): Promise<Map<number, Doc[]>> {
   for (const d of rows) m.get(d.worker_id)!.push(d);
   return m;
 }
+
+// ── Site safety briefings ────────────────────────────────────────────────
+// A briefing is signed at one contractor's site and counts only there. "Same site" = same contractor and the
+// same address after trimming, collapsing spaces and lowercasing. Both sides are normalised in SQL (matches the index).
+export type SiteBriefing = { id: number; worker_id: number; contractor_id: number; site: string; signed_at: string; expires: string; booking_id: number | null; file: string | null; created_at: string };
+const SITE_KEY = (col: string) => `lower(regexp_replace(btrim(${col}), '\\s+', ' ', 'g'))`;
+
+/** worker_id → the briefing at this site that stays valid longest, for briefings still valid on `until`. */
+export async function siteBriefings(contractorId: number, site: string, workerIds: number[], until: string): Promise<Map<number, SiteBriefing>> {
+  const m = new Map<number, SiteBriefing>();
+  if (!workerIds.length) return m;
+  const rows = await all<SiteBriefing>(
+    `SELECT * FROM site_briefings WHERE contractor_id = ? AND ${SITE_KEY("site")} = ${SITE_KEY("?")} AND expires >= ? AND worker_id IN (${marks(workerIds.length)})
+     ORDER BY expires DESC, id DESC`,
+    contractorId, site, until, ...workerIds
+  );
+  for (const r of rows) if (!m.has(r.worker_id)) m.set(r.worker_id, r);
+  return m;
+}
+
+/** Every briefing a worker has signed, newest first (agency worker profile). */
+export const workerBriefings = (workerId: number) =>
+  all<SiteBriefing & { company: string }>(
+    `SELECT sb.*, c.company FROM site_briefings sb JOIN contractors c ON c.id = sb.contractor_id WHERE sb.worker_id = ? ORDER BY sb.signed_at DESC, sb.id DESC`,
+    workerId
+  );
 
 // ── Contractor search ────────────────────────────────────────────────────
 export type SearchQuery = { trade: string; city: string; date: string; days: number; count: number } & PriceOpts;

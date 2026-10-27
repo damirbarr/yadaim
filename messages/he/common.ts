@@ -10,13 +10,16 @@ export default {
   save: "שמירה",
   cancel: "ביטול",
   close: "סגירה",
+  more: "עוד",
   change: "שינוי",
   nav: {
     agency: {
       today: "היום",
+      calendar: "לוח זמנים",
       requests: "בקשות ושיבוץ",
       compliance: "אישורים ותוקף",
       workers: "העובדים שלי",
+      crews: "צוותים",
       contractors: "מאגר הקבלנים",
       campaigns: "שיווק לקבלנים",
       billing: "חשבון ודוחות",
@@ -24,7 +27,7 @@ export default {
       settings: "הגדרות",
     },
     // Short labels for the phone bar at the bottom of the screen.
-    agencyShort: { today: "היום", requests: "בקשות", compliance: "אישורים", workers: "עובדים", campaigns: "שיווק", contractors: "קבלנים", billing: "חשבון", team: "צוות", settings: "הגדרות" },
+    agencyShort: { today: "היום", calendar: "לוח", crews: "צוותים", requests: "בקשות", compliance: "אישורים", workers: "עובדים", campaigns: "שיווק", contractors: "קבלנים", billing: "חשבון", team: "צוות", settings: "הגדרות" },
     contractor: { search: "הזמנה חדשה", orders: "ההזמנות שלי", crews: "צוותים שמורים", team: "צוות" },
     admin: { orgs: "ארגונים", users: "משתמשים והרשאות", audit: "יומן פעולות", badge: "אדמין" },
   },

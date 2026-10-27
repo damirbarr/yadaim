@@ -26,7 +26,7 @@ export default async function Compliance() {
   }));
   return (
     <div className="space-y-6">
-      <PageHead title={t("agency.compliance.title")} sub={t("agency.compliance.sub")} />
+      <PageHead title={t("agency.compliance.title")} sub={t("safety.complianceSub")} />
 
       <section className="space-y-2">
         <h2 className="text-[20px] font-bold text-ink">{t("agency.compliance.expiringTitle")}</h2>

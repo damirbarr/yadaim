@@ -146,8 +146,8 @@ try {
   await o.goto(B + workerHref);
   const png = path.join(DIR, ".tmp-doc.png");
   fs.writeFileSync(png, Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"));
-  for (const k of ["visa", "insurance", "safety", "heights"]) await o.fill(`input[name=doc_${k}_expires]`, "2028-12-31");
-  await o.locator("input[name=doc_safety_file]").setInputFiles(png);
+  for (const k of ["visa", "insurance", "heights"]) await o.fill(`input[name=doc_${k}_expires]`, "2028-12-31");
+  await o.locator("input[name=doc_insurance_file]").setInputFiles(png);
   await Promise.all([o.waitForURL(/saved=1/), o.click('button:has-text("שמירה")')]);
   await o.goto(B + "/a/compliance");
   ok((await o.locator("tbody tr").count()) < before, "renewed document left the compliance list");
@@ -173,7 +173,7 @@ try {
   await o.waitForSelector("text=נוספו");
   ok((await o.locator("text=נוספו 2 קבלנים").count()) === 1, "pasted WhatsApp contacts imported");
   await o.goto(B + "/a/campaigns");
-  await Promise.all([o.waitForURL(/campaigns\/\d+/), o.click('button:has-text("יצירת ההצעה ושליחה")')]);
+  await Promise.all([o.waitForURL(/campaigns\/\d+/), o.click('button:has-text("בוואטסאפ")')]);
   const waHref = await o.locator('a:has-text("שליחה")').first().getAttribute("href");
   const r = await o.request.get(B + waHref, { maxRedirects: 0 });
   const wa = r.headers()["location"] || "";

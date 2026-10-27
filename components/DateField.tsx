@@ -13,9 +13,10 @@ export function DateField({ name, defaultValue = "", min, required, className = 
   const day = (iso: string) => new Intl.DateTimeFormat(intl, { weekday: "short", timeZone: "UTC" }).format(new Date(iso + "T12:00:00Z"));
   const label = v ? `${withDay ? `${day(v)} · ` : ""}${fmt.fullDate(v)}` : t("public.date.pick");
   return (
-    <div className={`input relative flex items-center justify-between ${className}`}>
-      <span className={`num ${v ? "" : "text-muted"}`}>{label}</span>
-      <svg viewBox="0 0 24 24" className="h-4 w-4 text-muted" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="M7 3v3M17 3v3M4 9h16M5 5h14v15H5z" /></svg>
+    <div className={`input relative flex items-center justify-between gap-2 ${className}`}>
+      {/* one line, always: in narrow form columns the weekday is what gets cut, not the date */}
+      <span className={`num min-w-0 truncate whitespace-nowrap ${v ? "" : "text-muted"}`}>{label}</span>
+      <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-muted" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="M7 3v3M17 3v3M4 9h16M5 5h14v15H5z" /></svg>
       <input
         type="date" name={name} value={v} min={min} required={required} onChange={(e) => setV(e.target.value)}
         aria-label={label}

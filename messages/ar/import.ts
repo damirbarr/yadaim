@@ -35,7 +35,6 @@ const m: Messages["import"] = {
     doc_visa: "صلاحية التأشيرة",
     doc_passport: "صلاحية جواز السفر",
     doc_insurance: "صلاحية التأمين",
-    doc_safety: "إرشاد السلامة",
     doc_heights: "العمل على ارتفاع",
     name: "الاسم",
     company: "الشركة",

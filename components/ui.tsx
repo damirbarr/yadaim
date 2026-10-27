@@ -36,7 +36,8 @@ export function Flag({ code, width = 18, className = "" }: { code: string | null
   if (!F) return null;
   const name = fmt.country(code!);
   return (
-    <span role="img" aria-label={name} className={`group/flag relative inline-flex ${className}`}>
+    // Positioned either way (the tooltip needs it): relative by default, or whatever position the caller passes.
+    <span role="img" aria-label={name} className={`group/flag inline-flex ${/\b(absolute|fixed|sticky)\b/.test(className) ? "" : "relative"} ${className}`}>
       <F aria-hidden className="block rounded-[2px] shadow-[0_0_0_1px_rgba(14,42,68,.25)]" style={{ width, height: (width * 2) / 3 }} />
       <span role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-[3px] bg-ink px-2 py-1 text-[12px] font-semibold leading-none text-white opacity-0 transition-opacity group-hover/flag:opacity-100">
         {name}
@@ -51,9 +52,9 @@ export function Avatar({ w, size = 48, className = "" }: { w: { worker_id?: numb
   const id = w.worker_id ?? w.id ?? 0;
   const face = w.photo ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={`/api/files/${w.photo}`} alt={w.first_name ?? ""} width={size} height={size} className="rounded-full border-[1.5px] border-ink object-cover" style={{ width: size, height: size }} />
+    <img src={`/api/files/${w.photo}`} alt={w.first_name ?? ""} width={size} height={size} className="h-full w-full rounded-[inherit] border-[1.5px] border-ink object-cover" />
   ) : (
-    <svg viewBox="0 0 48 48" width={size} height={size} className="rounded-full border-[1.5px] border-ink" style={{ background: "#e9e1d0" }} aria-hidden>
+    <svg viewBox="0 0 48 48" className="h-full w-full rounded-[inherit] border-[1.5px] border-ink" style={{ background: "#e9e1d0" }} aria-hidden>
       <circle cx="24" cy="26" r="9" fill={SKIN[id % SKIN.length]} />
       <path d="M8 48c1-9 7-13 16-13s15 4 16 13z" fill={SHIRT[id % SHIRT.length]} />
       <path d="M13 23a11 11 0 0 1 22 0z" fill={HELMET[w.trade] ?? "#d4f25a"} stroke="#0e2a44" strokeWidth=".8" />
@@ -61,9 +62,11 @@ export function Avatar({ w, size = 48, className = "" }: { w: { worker_id?: numb
     </svg>
   );
   return (
-    <span className={`relative inline-flex shrink-0 ${className}`} style={{ width: size, height: size }}>
+    // The frame owns size, shape and any ring passed in; the face fills it, so callers' classes keep working.
+    <span className={`relative inline-flex shrink-0 rounded-full ${className}`} style={{ width: size, height: size }}>
       {face}
-      <Flag code={w.country} width={Math.max(12, Math.round(size * 0.4))} className="absolute -bottom-0.5 -end-1" />
+      {/* z-10: in overlapping stacks of avatars the next face would otherwise cover this flag */}
+      <Flag code={w.country} width={Math.max(12, Math.round(size * 0.4))} className="absolute -bottom-0.5 -end-1 z-10" />
     </span>
   );
 }

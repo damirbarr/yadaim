@@ -30,7 +30,10 @@
 html { -webkit-tap-highlight-color: transparent; }
 body { background: var(--color-paper); color: var(--color-text); font-family: var(--font-sans); font-size: 16px; }
 h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
-.num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+/* Numbers, prices and dates inside RTL text. `plaintext` lets the content set its own direction (a run of digits,
+   %, ₪ has no strong letters, so it reads left to right) while the element keeps its parent's direction, so
+   margins (ms-/me-) and text alignment still follow the page. Forcing `direction: ltr` here flips both. */
+.num { font-variant-numeric: tabular-nums; unicode-bidi: plaintext; }
 
 /* Navy drafting sheet with a two-scale grid */
 .blueprint {

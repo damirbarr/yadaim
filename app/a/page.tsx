@@ -171,7 +171,7 @@ export default async function AgencyToday() {
                   <div className="mt-2 flex flex-wrap gap-2">
                     {b.workers.filter((w) => w.state === "assigned").map((w) => (
                       <span key={w.bw_id} className="flex items-center gap-1.5 rounded-full border border-line bg-paper py-0.5 pe-2.5 ps-0.5 text-[13px]">
-                        <Avatar w={w} size={24} className="!border" />{w.first_name}
+                        <Avatar w={w} size={26} />{w.first_name}
                         {w.identity_ok === "no" || w.trade_ok === "no" ? <span className="font-bold text-bad">{t("agency.today.noFit")}</span> : w.arrived === 0 ? <span className="font-bold text-bad">{t("agency.today.noShow")}</span> : w.checkin_at ? <span className="font-bold text-ok">✓</span> : <span className="text-muted">·</span>}
                       </span>
                     ))}

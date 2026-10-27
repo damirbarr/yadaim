@@ -24,7 +24,6 @@ const m: Messages["domain"] = {
     visa: { name: "تأشيرة عمل (ب/1) في قطاع البناء", short: "تأشيرة" },
     passport: { name: "جواز سفر", short: "جواز" },
     insurance: { name: "تأمين صحي", short: "تأمين" },
-    safety: { name: "إرشاد سلامة في الموقع", short: "سلامة" },
     heights: { name: "تصريح عمل على ارتفاعات", short: "ارتفاعات" },
   },
   phases: {

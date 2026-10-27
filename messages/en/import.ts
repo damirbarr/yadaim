@@ -35,7 +35,6 @@ const m: Messages["import"] = {
     doc_visa: "Visa expiry",
     doc_passport: "Passport expiry",
     doc_insurance: "Insurance expiry",
-    doc_safety: "Safety training",
     doc_heights: "Working at heights",
     name: "Name",
     company: "Company",

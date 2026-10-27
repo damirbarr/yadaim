@@ -182,9 +182,11 @@ export async function seed(q: Query) {
 
         // Document expiries: mostly comfortable, a handful about to lapse for the compliance demo.
         const exp = (minD: number, maxD: number) => addDays(today, between(minD, maxD));
-        let visa = exp(150, 720), insurance = exp(60, 330), safety = exp(90, 420), heights = exp(90, 600);
+        let visa = exp(150, 720), insurance = exp(60, 330);
+        exp(90, 420); // was the safety-document expiry; kept so the random sequence (and the demo) stays the same
+        let heights = exp(90, 600);
         if (ai === 0) {
-          if (i === 7) safety = addDays(today, -6); // expired
+          if (i === 7) insurance = addDays(today, -6); // expired
           if (i === 14) visa = addDays(today, 9);
           if (i === 30) insurance = addDays(today, 12);
           if (i === 22) heights = addDays(today, 41);
@@ -194,7 +196,6 @@ export async function seed(q: Query) {
         T.documents.add(id, "passport", `${p.country}${between(1000000, 9999999)}`, exp(700, 2400), "verified", verified);
         T.documents.add(id, "visa", `B1-${between(100000, 999999)}`, visa, "verified", verified);
         T.documents.add(id, "insurance", `POL-${between(10000, 99999)}`, insurance, "verified", verified);
-        T.documents.add(id, "safety", null, safety, "verified", verified);
         if (trade(p.trade).heights && !(ai === 0 && i === 41)) T.documents.add(id, "heights", null, heights, "verified", verified);
       });
       workersByAgency.push(ids);
@@ -335,4 +336,9 @@ export async function seed(q: Query) {
   }
   // FK order
   for (const t of [T.agencies, T.contractors, T.users, T.invites, T.workers, T.documents, T.bookings, T.bw, T.contacts, T.campaigns, T.recipients, T.events, T.audit]) await t.flush(q);
+  // Agency crews and site safety briefings live in their own modules; they read the rows flushed above.
+  const { seedCrews } = await import("./seed-crews");
+  await seedCrews(q);
+  const { seedBriefings } = await import("./seed-briefings");
+  await seedBriefings(q);
 }

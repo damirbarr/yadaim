@@ -24,7 +24,6 @@ export default {
     visa: { name: "אשרת עבודה (ב/1) בענף הבנייה", short: "אשרה" },
     passport: { name: "דרכון", short: "דרכון" },
     insurance: { name: "ביטוח רפואי", short: "ביטוח" },
-    safety: { name: "הדרכת בטיחות באתר", short: "בטיחות" },
     heights: { name: "אישור עבודה בגובה", short: "גובה" },
   },
   phases: {

@@ -27,4 +27,5 @@ export const IBed = P("M3 18V7M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5M7 11a1.5 1.
 export const IDoc = P("M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6");
 export const IPlus = P("M12 5v14M5 12h14");
 export const IX = P("M6 6l12 12M18 6 6 18");
+export const ICalendar = P("M4 6h16v14H4zM4 10h16M8 3v4M16 3v4");
 export const IChart = P("M4 20V10M10 20V4M16 20v-7M22 20H2");
