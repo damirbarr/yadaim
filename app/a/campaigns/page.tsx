@@ -1,16 +1,21 @@
 import Link from "next/link";
 import { requireAgency } from "@/lib/auth";
 import { can } from "@/lib/rbac";
-import { all, get, insert, run, tx } from "@/lib/db";
+import { all, get } from "@/lib/db";
 import { agencyReliability, displayName, getAgency, idleForecast, workerStats, getWorker } from "@/lib/queries";
-import { ddmm, IDLE_DAY_COST, ils, REGIONS, trade, TRADES } from "@/lib/domain";
+import { IDLE_DAY_COST, REGIONS } from "@/lib/domain";
 import { createCampaign } from "@/app/actions/agency";
 import { Avatar, Empty, PageHead } from "@/components/ui";
+import { getI18n } from "@/lib/i18n/server";
 
-export const metadata = { title: "שיווק לקבלנים" };
+export async function generateMetadata() {
+  const { t } = await getI18n();
+  return { title: t("market.campaigns.title") };
+}
 
 export default async function Campaigns({ searchParams }: { searchParams: Promise<{ trade?: string }> }) {
   const { user, agencyId } = await requireAgency();
+  const { t, rich, fmt, intl } = await getI18n();
   const send = can(user, "agency.campaigns.send");
   const sp = await searchParams;
   const a = (await getAgency(agencyId))!;
@@ -22,25 +27,33 @@ export default async function Campaigns({ searchParams }: { searchParams: Promis
      FROM campaigns c LEFT JOIN campaign_recipients r ON r.campaign_id = c.id WHERE c.agency_id = ? GROUP BY c.id ORDER BY c.id DESC`
   , agencyId)) as { id: number; trade: string; date_from: string; date_to: string; status: string; created_at: string; total: number; sent: number; opened: number; booked: number }[];
   const eligible = ((await get(`SELECT COUNT(*) AS n FROM crm_contacts WHERE agency_id = ? AND opted_out = 0 AND (last_sent_at IS NULL OR last_sent_at <= now_txt(interval '-3 days'))`, agencyId)) as { n: number }).n;
-  let message = "", avg = 0, top: Awaited<ReturnType<typeof getWorker>>[] = [];
+  const token = t("market.campaigns.nameToken");
+  let message = "", top: Awaited<ReturnType<typeof getWorker>>[] = [];
   if (sel) {
     const st = (await workerStats(sel.workerIds));
     const rated = sel.workerIds.map((id) => st.get(id)!.rating).filter((x): x is number => x != null);
-    avg = rated.length ? rated.reduce((x, y) => x + y, 0) / rated.length : 0;
+    const avg = rated.length ? rated.reduce((x, y) => x + y, 0) / rated.length : 0;
     top = await Promise.all(sel.workerIds.sort((x, y) => (st.get(y)!.rating ?? 0) - (st.get(x)!.rating ?? 0)).slice(0, 4).map(getWorker));
-    message = `היי {שם}, יש לנו ${sel.workerCount} ${trade(sel.trade).plural} פנויים בין ${ddmm(sel.from)} ל-${ddmm(sel.to)}. כולם עם אישורים בתוקף${avg ? ` ודירוג ממוצע ${avg.toFixed(1)} מקבלנים` : ""}. מחיר יומי סופי כולל הסעה, ואפשר להזמין גם ליום אחד:`;
+    // The offer is written in the sender's language, one natural sentence at a time; trade names read mid-sentence.
+    const lower = (s: string) => s.toLocaleLowerCase(intl);
+    message = [
+      t("market.campaigns.offer.intro", { n: sel.workerCount, name: token, trade: lower(fmt.trade(sel.trade)), trades: lower(fmt.trades(sel.trade)), from: fmt.date(sel.from), to: fmt.date(sel.to) }),
+      avg ? t("market.campaigns.offer.docsRated", { avg: fmt.num(avg, 1) }) : t("market.campaigns.offer.docs"),
+      a.min_days > 1 ? t("market.campaigns.offer.priceMin", { min: lower(fmt.minDays(a.min_days)) }) : t("market.campaigns.offer.priceOneDay"),
+      t("market.campaigns.offer.cta"),
+    ].join(" ");
   }
   return (
     <div className="space-y-6">
-      <PageHead title="יש ימים פנויים? המערכת משווקת בשבילכם" sub="המערכת מזהה ימי עבודה פנויים, מכינה הצעה עם הפרופילים והדירוגים, ובוחרת את הקבלנים הרלוונטיים מהמאגר. שום דבר לא יוצא בלי האישור שלכם." />
-      {idle.length === 0 ? <Empty title="אין ימים פנויים ב-10 ימי העבודה הקרובים">יפה מאוד. כשיהיו — ההצעה תחכה כאן.</Empty> : (
+      <PageHead title={t("market.campaigns.heading")} sub={t("market.campaigns.sub")} />
+      {idle.length === 0 ? <Empty title={t("market.campaigns.emptyTitle")}>{t("market.campaigns.emptyBody")}</Empty> : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {idle.map((i) => (
             <Link key={i.trade} href={`/a/campaigns?trade=${i.trade}`} className={`card p-4 transition hover:border-ink ${sel?.trade === i.trade ? "border-ink ring-2 ring-ink" : ""}`}>
-              <div className="text-sm text-muted">{trade(i.trade).plural}</div>
+              <div className="text-sm text-muted">{fmt.trades(i.trade)}</div>
               <div className="font-display text-3xl font-bold num">{i.idleDays}</div>
-              <div className="text-xs text-muted">ימי עבודה פנויים · {i.workerCount} עובדים</div>
-              <div className="mt-1 text-xs text-bad">עלות משוערת <span className="num">{ils(i.idleDays * IDLE_DAY_COST)}</span></div>
+              <div className="text-xs text-muted">{t("market.campaigns.idleDays", { n: i.idleDays })} · {t("market.campaigns.workers", { n: i.workerCount })}</div>
+              <div className="mt-1 text-xs text-bad">{rich("market.campaigns.cost", { num: (c) => <span className="num">{c}</span> }, { cost: fmt.money(i.idleDays * IDLE_DAY_COST) })}</div>
             </Link>
           ))}
         </div>
@@ -53,45 +66,45 @@ export default async function Campaigns({ searchParams }: { searchParams: Promis
           <input type="hidden" name="to" value={sel.to} />
           <input type="hidden" name="idle" value={sel.idleDays} />
           <div className="card space-y-4 p-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[20px] font-bold text-ink">הצעה מוכנה לאישור · {trade(sel.trade).plural}</h2>
-              {a.auto_campaign ? <span className="chip-hazard">דיוור אוטומטי פעיל</span> : null}
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-[20px] font-bold text-ink">{t("market.campaigns.ready", { trades: fmt.trades(sel.trade) })}</h2>
+              {a.auto_campaign ? <span className="chip-hazard">{t("market.campaigns.autoOn")}</span> : null}
             </div>
             <dl className="grid grid-cols-3 gap-2 text-sm">
-              <div className="rounded-[3px] bg-paper p-3"><dt className="text-xs text-muted">מה מציעים</dt><dd className="font-semibold">{sel.workerCount} עובדים · {sel.idleDays} ימים</dd><dd className="num text-xs text-muted">{ddmm(sel.from)}–{ddmm(sel.to)}</dd></div>
-              <div className="rounded-[3px] bg-paper p-3"><dt className="text-xs text-muted">למי</dt><dd className="font-semibold num">{eligible} קבלנים</dd><dd className="text-xs text-muted">שלא קיבלו הודעה ב-3 ימים</dd></div>
-              <div className="rounded-[3px] bg-paper p-3"><dt className="text-xs text-muted">ערוץ</dt><dd className="font-semibold">וואטסאפ</dd><dd className="text-xs text-ok">✓ קישור אישי לכל קבלן</dd></div>
+              <div className="rounded-[3px] bg-paper p-3"><dt className="text-xs text-muted">{t("market.campaigns.what")}</dt><dd className="font-semibold">{t("market.campaigns.workers", { n: sel.workerCount })} · {t("market.campaigns.days", { n: sel.idleDays })}</dd><dd className="num text-xs text-muted">{fmt.date(sel.from)}–{fmt.date(sel.to)}</dd></div>
+              <div className="rounded-[3px] bg-paper p-3"><dt className="text-xs text-muted">{t("market.campaigns.who")}</dt><dd className="font-semibold">{t("market.campaigns.contractorsN", { n: eligible })}</dd><dd className="text-xs text-muted">{t("market.campaigns.whoNote")}</dd></div>
+              <div className="rounded-[3px] bg-paper p-3"><dt className="text-xs text-muted">{t("market.campaigns.channel")}</dt><dd className="font-semibold">{t("market.campaigns.whatsapp")}</dd><dd className="text-xs text-ok">✓ {t("market.campaigns.personalLink")}</dd></div>
             </dl>
             <div>
-              <label className="label">ההודעה ({"{שם}"} יוחלף בשם הקבלן, והקישור יתווסף אוטומטית)</label>
+              <label className="label">{t("market.campaigns.messageLabel", { token })}</label>
               <textarea name="message" rows={4} className="input" defaultValue={message} />
             </div>
             <fieldset>
-              <legend className="label">אזורים</legend>
+              <legend className="label">{t("market.campaigns.regions")}</legend>
               <div className="flex flex-wrap gap-2">
                 {REGIONS.map((r) => (
                   <label key={r.key} className="chip-muted cursor-pointer px-3 py-1.5 has-[:checked]:bg-ink has-[:checked]:text-white">
-                    <input type="checkbox" name="regions" value={r.key} defaultChecked={a.regions.split(",").includes(r.key)} className="sr-only" />{r.label}
+                    <input type="checkbox" name="regions" value={r.key} defaultChecked={a.regions.split(",").includes(r.key)} className="sr-only" />{fmt.region(r.key)}
                   </label>
                 ))}
               </div>
             </fieldset>
             <ul className="space-y-1 text-xs text-muted">
-              <li>✓ לשלוח רק אחרי אישור שלי</li>
-              <li>✓ עד הודעה אחת ב-3 ימים לכל קבלן</li>
-              <li>✓ לא לשלוח למי שביקש הסרה</li>
+              <li>✓ {t("market.campaigns.rules.approval")}</li>
+              <li>✓ {t("market.campaigns.rules.cap")}</li>
+              <li>✓ {t("market.campaigns.rules.optOut")}</li>
             </ul>
-            <button className="btn-hazard px-6">יצירת ההצעה ושליחה</button>
+            <button className="btn-hazard px-6">{t("market.campaigns.submit")}</button>
           </div>
           <aside className="card h-fit bg-[#e7ddd0] p-4">
-            <div className="mb-2 text-xs text-muted">כך זה נראה אצל הקבלן</div>
-            <div className="rounded-[3px] rounded-tr-sm bg-white p-3 text-sm shadow-sm">
-              <p>{message.replace("{שם}", "משה")}</p>
+            <div className="mb-2 text-xs text-muted">{t("market.campaigns.preview")}</div>
+            <div className="rounded-[3px] rounded-ss-sm bg-white p-3 text-sm shadow-sm">
+              <p>{message.replace(token, t("market.campaigns.sampleName"))}</p>
               <div className="mt-2 overflow-hidden rounded-[3px] border border-line">
                 <div className="flex gap-1 bg-paper p-2">{top.map((w) => w && <div key={w.id} className="text-center text-[10px]"><Avatar w={w} size={48} /><div>{displayName(w)}</div></div>)}</div>
-                <div className="p-2 text-xs"><b>{a.name}</b><div className="text-muted">אמינות {rel.score} · {trade(sel.trade).plural} פנויים</div></div>
+                <div className="p-2 text-xs"><b>{a.name}</b><div className="text-muted">{t("market.campaigns.previewCard", { score: rel.score, trades: fmt.trades(sel.trade) })}</div></div>
               </div>
-              <div className="mt-2 text-xs text-info underline">לצפייה בעובדים ולהזמנה ←</div>
+              <div className="mt-2 text-xs text-info underline">{t("market.campaigns.previewLink")} <span className="inline-block flip-ltr">←</span></div>
             </div>
           </aside>
         </form>
@@ -99,20 +112,20 @@ export default async function Campaigns({ searchParams }: { searchParams: Promis
 
       {past.length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-[20px] font-bold text-ink">הצעות קודמות</h2>
+          <h2 className="text-[20px] font-bold text-ink">{t("market.campaigns.past")}</h2>
           <div className="card overflow-x-auto">
             <table className="tbl min-w-[560px]">
-              <thead><tr><th>תאריך</th><th>מקצוע</th><th>טווח</th><th>נשלחו</th><th>נפתחו</th><th>הזמנות</th><th /></tr></thead>
+              <thead><tr><th>{t("market.campaigns.cols.date")}</th><th>{t("market.campaigns.cols.trade")}</th><th>{t("market.campaigns.cols.range")}</th><th>{t("market.campaigns.cols.sent")}</th><th>{t("market.campaigns.cols.opened")}</th><th>{t("market.campaigns.cols.booked")}</th><th /></tr></thead>
               <tbody>
                 {past.map((c) => (
                   <tr key={c.id}>
-                    <td className="num">{ddmm(c.created_at.slice(0, 10))}</td>
-                    <td>{TRADES.find((t) => t.key === c.trade)?.plural}</td>
-                    <td className="num text-muted">{ddmm(c.date_from)}–{ddmm(c.date_to)}</td>
+                    <td className="num">{fmt.date(c.created_at.slice(0, 10))}</td>
+                    <td>{fmt.trades(c.trade)}</td>
+                    <td className="num text-muted">{fmt.date(c.date_from)}–{fmt.date(c.date_to)}</td>
                     <td className="num">{c.sent}/{c.total}</td>
                     <td className="num">{c.opened}</td>
-                    <td>{c.booked ? <span className="chip-ok">{c.booked}</span> : 0}</td>
-                    <td><Link href={`/a/campaigns/${c.id}`} className="text-xs underline">פתיחה</Link></td>
+                    <td>{c.booked ? <span className="chip-ok num">{c.booked}</span> : <span className="num">0</span>}</td>
+                    <td><Link href={`/a/campaigns/${c.id}`} className="text-xs underline">{t("market.campaigns.open")}</Link></td>
                   </tr>
                 ))}
               </tbody>

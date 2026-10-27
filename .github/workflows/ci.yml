@@ -16,6 +16,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run test:i18n
       - run: npm run build
       # End-to-end against an embedded Postgres (PGlite) with demo data — no external services needed.
       - run: npx playwright install --with-deps chromium
@@ -24,7 +25,7 @@ jobs:
           npm run dev > dev.log 2>&1 &
           npx --yes wait-on@8.0.1 -t 120000 http://localhost:3000/login
           for p in /c /a /admin /c/search /c/checkout /c/orders/1 /c/orders/1/site /c/crews /c/team /a/requests/1 /a/workers/1 /a/team /a/billing /a/campaigns /admin/users /admin/audit /onboarding /o/gesher; do curl -s -o /dev/null http://localhost:3000$p; done
-          npm run test:hebrew   # read-only, so it runs first on the fresh demo data
+          npm run test:lang     # read-only, so it runs first on the fresh demo data
           npm run test:e2e
       - if: failure()
         run: tail -200 dev.log

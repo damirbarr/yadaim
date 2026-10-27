@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
-/* "שרטוט" — blueprint design language: navy drafting sheets with a fine grid, warm paper,
+/* "שרטוט" - blueprint design language: navy drafting sheets with a fine grid, warm paper,
    lime as the single highlight, one sans family (Rubik) for display and body.
    Token names are semantic so components don't care about the palette:
    ink = navy (primary), hazard = lime (accent), signal = orange (rare emphasis). */
 @theme {
-  --font-sans: "Rubik", system-ui, sans-serif;
-  --font-display: "Rubik", system-ui, sans-serif;
+  --font-sans: "Rubik", "Noto Sans Arabic", system-ui, sans-serif;
+  --font-display: "Rubik", "Noto Sans Arabic", system-ui, sans-serif;
   --color-paper: #f4efe4;
   --color-paper-2: #ebe4d5;
   --color-ink: #0e2a44;
@@ -50,7 +50,7 @@ h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0
     linear-gradient(90deg, rgba(14,42,68,.045) 1px, transparent 1px);
   background-size: 24px 24px;
 }
-/* Dimension line: |——————| in lime, used as a small brand accent */
+/* Dimension line: |------| in lime, used as a small brand accent */
 .stripe {
   background:
     linear-gradient(var(--color-hazard), var(--color-hazard)) center / 100% 1.5px no-repeat,
@@ -87,3 +87,6 @@ h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0
   & :where(th) { @apply border-b border-ink/20 px-3 py-2 text-start align-bottom text-[12px] font-bold text-muted; }
   & :where(td) { @apply border-b border-dashed border-line px-3 py-2.5; }
 }
+
+/* Direction-aware icons: arrows and chevrons drawn for RTL get mirrored in LTR (English). */
+[dir="ltr"] .flip-ltr { transform: scaleX(-1); }

@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import { requireAgency } from "@/lib/auth";
 import { can } from "@/lib/rbac";
-import { all, get, insert, run, tx } from "@/lib/db";
+import { all } from "@/lib/db";
 import { bookingsWhere, bookingTotals, busyWorkers, displayName, docCheck, docsFor, workedWith, workerStats, type Worker } from "@/lib/queries";
-import { bookingPhase, ddmm, docType, ils, PHASE_LABEL, prettyDate, trade } from "@/lib/domain";
+import { bookingPhase } from "@/lib/domain";
+import { getI18n } from "@/lib/i18n/server";
 import { waLink } from "@/lib/wa";
 import { agencyCancel, rejectRequest, swapWorker } from "@/app/actions/agency";
 import { AssignForm, type Cand } from "@/components/AssignForm";
@@ -13,6 +14,7 @@ import { IWhatsapp } from "@/components/icons";
 export default async function RequestPage({ params }: { params: Promise<{ id: string }> }) {
   const { user, agencyId } = await requireAgency();
   const manage = can(user, "agency.requests.manage");
+  const { t, rich, fmt, intl } = await getI18n();
   const [b] = (await bookingsWhere(`b.id = ? AND b.agency_id = ?`, Number((await params).id), agencyId));
   if (!b) notFound();
   const phase = bookingPhase(b);
@@ -27,9 +29,11 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
     .map((w) => {
       const dc = docCheck(docs.get(w.id)!, b.trade, b.end_date);
       return {
-        id: w.id, name: displayName(w), trade: w.trade, years: w.years, photo: w.photo, requested: requestedIds.includes(w.id),
+        id: w.id, name: displayName(w), trade: w.trade, years: w.years, photo: w.photo, country: w.country, requested: requestedIds.includes(w.id),
         withContractor: hist.get(w.id) ?? 0, rating: stats.get(w.id)!.rating, busy: busy.has(w.id), docsOk: dc.ok,
-        docsNote: dc.ok ? (dc.expiring.length ? `אישורים בתוקף · ${docType(dc.expiring[0].type).short} עד ${ddmm(dc.expiring[0].expires)}` : "כל האישורים בתוקף לכל התקופה") : `חסר: ${dc.missing.map((m) => docType(m).short).join(", ")}`,
+        docsNote: dc.ok
+          ? (dc.expiring.length ? t("agency.request.docsValidUntil", { doc: fmt.docShort(dc.expiring[0].type), date: fmt.date(dc.expiring[0].expires) }) : t("agency.request.docsAllValid"))
+          : t("agency.request.docsMissing", { docs: new Intl.ListFormat(intl, { type: "unit", style: "short" }).format(dc.missing.map((m) => fmt.docShort(m))) }),
       };
     })
     .sort((x, y) => Number(y.requested) - Number(x.requested) || Number(x.busy) - Number(y.busy) || y.withContractor - x.withContractor || (y.rating ?? 0) - (x.rating ?? 0));
@@ -38,27 +42,32 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-5">
-      <PageHead back="/a/requests" title={`${b.status === "requested" ? "בקשה" : "הזמנה"} #${b.id} · ${b.company}`} sub={`${b.workers.length} ${trade(b.trade).plural} · ${prettyDate(b.date)}${b.days > 1 ? ` – ${prettyDate(b.end_date)} (${b.days} ימים)` : ""} · ${b.start_time}, ${b.hours} שעות`}>
-        <span className={b.status === "requested" ? "chip-hazard" : "chip-ok"}>{PHASE_LABEL[phase]}</span>
+      <PageHead back="/a/requests" title={t(b.status === "requested" ? "agency.request.titleRequest" : "agency.request.titleBooking", { id: b.id, company: b.company })}
+        sub={t("agency.request.sub", {
+          crew: t("agency.crew", { n: b.workers.length, trade: fmt.trade(b.trade), trades: fmt.trades(b.trade) }),
+          dates: b.days > 1 ? t("agency.request.range", { from: fmt.prettyDate(b.date), to: fmt.prettyDate(b.end_date), days: t("agency.days", { n: b.days }) }) : fmt.prettyDate(b.date),
+          time: b.start_time, hours: t("agency.hours", { n: b.hours }),
+        })}>
+        <span className={b.status === "requested" ? "chip-hazard" : "chip-ok"}>{fmt.phase(phase)}</span>
       </PageHead>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">
           {b.status === "requested" && !manage ? (
-            <section className="card p-5 text-sm text-muted">ממתין לאישור של מנהל בתאגיד. (יש לך הרשאת צפייה בלבד.)</section>
+            <section className="card p-5 text-sm text-muted">{t("agency.request.viewOnly")}</section>
           ) : b.status === "requested" ? (
             <>
-              <h2 className="text-[20px] font-bold text-ink">הצעת שיבוץ</h2>
+              <h2 className="text-[20px] font-bold text-ink">{t("agency.request.proposal")}</h2>
               <AssignForm id={b.id} cands={cands} need={b.workers.length} transport={b.transport === "agency"} defaults={{ pickup: "06:15" }} />
               <form action={rejectRequest} className="card flex flex-wrap items-end gap-2 p-4">
                 <input type="hidden" name="id" value={b.id} />
-                <div className="flex-1"><label className="label">דחיית הבקשה</label><input name="reason" className="input" placeholder="סיבה שהקבלן יראה (למשל: אין זמינות בתאריך)" /></div>
-                <button className="btn-ghost text-bad">דחייה</button>
+                <div className="flex-1"><label className="label" htmlFor="reject-reason">{t("agency.request.rejectLabel")}</label><input id="reject-reason" name="reason" className="input" placeholder={t("agency.request.rejectPlaceholder")} /></div>
+                <button className="btn-ghost text-bad">{t("agency.request.reject")}</button>
               </form>
             </>
           ) : (
             <section className="card">
-              <h2 className="border-b border-line px-5 py-3 text-[20px] font-bold text-ink">הצוות</h2>
+              <h2 className="border-b border-line px-5 py-3 text-[20px] font-bold text-ink">{t("agency.request.crew")}</h2>
               <ul>
                 {crew.map((w) => {
                   const noFit = w.arrived === 0 || w.identity_ok === "no" || w.trade_ok === "no";
@@ -69,18 +78,18 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
                         <div className="font-semibold">{displayName(w)}</div>
                         <div className="text-xs text-muted">{w.phone ?? ""}</div>
                       </div>
-                      {b.status === "completed" ? (w.hours_approved ? <span className="text-xs"><Rating value={w.rating} /> · <span className="num">{w.hours_approved}</span> ש׳</span> : <span className="chip-bad">לא תואם · לא חויב</span>)
-                        : noFit ? <span className="chip-bad">{w.arrived === 0 ? "לא הגיע" : "הקבלן סימן לא תואם"}</span>
-                        : w.checkin_at ? <span className="chip-ok">✓ באתר</span> : <span className="chip-muted">טרם צ׳ק־אין</span>}
+                      {b.status === "completed" ? (w.hours_approved ? <span className="text-xs"><Rating value={w.rating} /> · <span className="num">{t("agency.request.hoursShort", { n: w.hours_approved })}</span></span> : <span className="chip-bad">{t("agency.request.notBilled")}</span>)
+                        : noFit ? <span className="chip-bad">{w.arrived === 0 ? t("agency.request.noShow") : t("agency.request.markedNoFit")}</span>
+                        : w.checkin_at ? <span className="chip-ok">{t("agency.request.onSite")}</span> : <span className="chip-muted">{t("agency.request.notCheckedIn")}</span>}
                       {manage && b.status === "approved" && (!w.checkin_at || noFit) ? (
                         <form action={swapWorker} className="flex w-full gap-2 sm:w-auto">
                           <input type="hidden" name="id" value={b.id} />
                           <input type="hidden" name="out" value={w.worker_id} />
-                          <select name="in" className="input py-1.5 text-xs" defaultValue="">
-                            <option value="" disabled>החלפה ב…</option>
-                            {free.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.years} שנים</option>)}
+                          <select name="in" className="input py-1.5 text-xs" defaultValue="" aria-label={t("agency.request.swapWith")}>
+                            <option value="" disabled>{t("agency.request.swapWith")}</option>
+                            {free.map((c) => <option key={c.id} value={c.id}>{t("agency.request.swapOption", { name: c.name, years: t("agency.years", { n: c.years }) })}</option>)}
                           </select>
-                          <button className="btn-ghost btn-sm">החלפה</button>
+                          <button className="btn-ghost btn-sm">{t("agency.request.swap")}</button>
                         </form>
                       ) : null}
                     </li>
@@ -92,32 +101,31 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
           {manage && b.status === "approved" && ["approved", "locked"].includes(phase) && (
             <form action={agencyCancel} className="text-center">
               <input type="hidden" name="id" value={b.id} />
-              <input type="hidden" name="reason" value="בוטל ע״י התאגיד" />
-              <button className="text-xs text-muted underline hover:text-bad">ביטול ההזמנה (פוגע בציון האמינות)</button>
+              <button className="text-xs text-muted underline hover:text-bad">{t("agency.request.cancel")}</button>
             </form>
           )}
         </div>
 
         <aside className="space-y-4">
           <div className="card space-y-2 p-5 text-sm">
-            <h3 className="text-[18px] font-bold text-ink">הקבלן</h3>
+            <h3 className="text-[18px] font-bold text-ink">{t("agency.request.contractor")}</h3>
             <div>{b.company} · {b.contact_name}</div>
             <div className="flex flex-wrap gap-1">
-              <span className="chip-ok">✓ רשום ברשם הקבלנים · <span className="num">{b.registry_no}</span></span>
-              {b.classification && <span className="chip-muted">סיווג {b.classification}</span>}
+              <span className="chip-ok">{rich("agency.request.registered", { n: (c) => <span className="num">{c}</span> }, { no: b.registry_no })}</span>
+              {b.classification && <span className="chip-muted">{t("agency.request.classification", { c: b.classification })}</span>}
             </div>
             <div className="text-muted">{b.address}</div>
-            <div className="text-muted">לינה {b.lodging === "agency" ? "אצלכם" : "אצל הקבלן"} · הסעה {b.transport === "agency" ? "שלכם" : "של הקבלן"}</div>
+            <div className="text-muted">{t(b.lodging === "agency" ? "agency.lodgingAgency" : "agency.lodgingContractor")} · {t(b.transport === "agency" ? "agency.transportAgency" : "agency.transportContractor")}</div>
             {b.notes && <p className="rounded-[3px] bg-paper p-3">{b.notes}</p>}
-            {b.campaign_id && <span className="chip-info">הגיע מהצעה ששלחתם</span>}
-            <a href={waLink(b.contractor_phone, `שלום ${b.contact_name}, לגבי ההזמנה ל-${ddmm(b.date)}`)} target="_blank" className="btn-ghost btn-sm w-full"><IWhatsapp className="h-4 w-4" />וואטסאפ לקבלן</a>
+            {b.campaign_id && <span className="chip-info">{t("agency.request.fromOffer")}</span>}
+            <a href={waLink(b.contractor_phone, t("agency.request.waText", { name: b.contact_name, date: fmt.date(b.date) }))} target="_blank" className="btn-ghost btn-sm w-full"><IWhatsapp className="h-4 w-4" />{t("agency.request.whatsapp")}</a>
           </div>
           <div className="card p-5">
-            <div className="text-xs text-muted">{b.status === "completed" ? "לגבייה מהקבלן (שעות שאושרו)" : "שווי ההזמנה"}</div>
-            <div className="font-display text-2xl font-bold num">{ils(totals.net)}</div>
-            <div className="text-xs text-muted">+ מע״מ · הקבלן משלם לכם ישירות</div>
+            <div className="text-xs text-muted">{b.status === "completed" ? t("agency.request.toCollect") : t("agency.request.value")}</div>
+            <div className="font-display text-2xl font-bold num">{fmt.money(totals.net)}</div>
+            <div className="text-xs text-muted">{t("agency.request.vatNote")}</div>
           </div>
-          <Notice>התאגיד נשאר המעסיק החוקי ומאשר כל הצבה. המערכת מוודאת שהמזמין קבלן רשום ושכל עובד מחזיק אישורים בתוקף לכל תקופת ההצבה.</Notice>
+          <Notice>{t("agency.request.legal")}</Notice>
         </aside>
       </div>
     </div>

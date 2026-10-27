@@ -5,6 +5,7 @@ import { requireAgency, requireContractor, type User } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import type { OrgRole } from "@/lib/rbac";
 import type { FormState } from "./auth";
+import { getI18n } from "@/lib/i18n/server";
 
 const ORG_ROLES: OrgRole[] = ["owner", "manager", "viewer"];
 
@@ -20,12 +21,13 @@ async function org(kind: string): Promise<{ user: User; col: "agency_id" | "cont
 /** Invite a colleague by email. They join this organisation with the chosen role on their first Google sign-in. */
 export async function inviteMember(_: FormState, fd: FormData): Promise<FormState> {
   const o = await org(String(fd.get("kind")));
+  const { t } = await getI18n();
   const email = String(fd.get("email") ?? "").trim().toLowerCase();
   const orgRole = String(fd.get("org_role")) as OrgRole;
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "אימייל לא תקין" };
-  if (!ORG_ROLES.includes(orgRole)) return { error: "תפקיד לא תקין" };
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: t("team.errors.email") };
+  if (!ORG_ROLES.includes(orgRole)) return { error: t("team.errors.role") };
   const existing = await get<{ id: number; role: string; agency_id: number | null; contractor_id: number | null }>(`SELECT id, role, agency_id, contractor_id FROM users WHERE email = ?`, email);
-  if (existing && existing.role !== "pending") return { error: "המשתמש כבר שייך לארגון אחר. פנו למנהל המערכת." };
+  if (existing && existing.role !== "pending") return { error: t("team.errors.otherOrg") };
   if (existing) {
     await run(`UPDATE users SET role = ?, org_role = ?, ${o.col} = ? WHERE id = ?`, o.role, orgRole, o.id, existing.id);
   } else {
@@ -34,7 +36,8 @@ export async function inviteMember(_: FormState, fd: FormData): Promise<FormStat
   }
   await audit(o.user, "team.invite", email, orgRole);
   revalidatePath(o.path);
-  return { ok: existing ? `${email} צורף לצוות` : `נשלחה הזמנה ל-${email}. היא תופעל בכניסה הראשונה עם גוגל.` };
+  // Isolate the address so it reads correctly inside right-to-left text.
+  return { ok: t(existing ? "team.joined" : "team.sent", { email: `\u2068${email}\u2069` }) };
 }
 
 export async function changeMemberRole(fd: FormData) {

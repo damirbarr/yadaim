@@ -1,17 +1,17 @@
 "use client";
 import { useState } from "react";
-
-const DAYS = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
+import { useI18n } from "@/lib/i18n/client";
 
 /**
- * Date input that always displays the Israeli format (יום ד׳ · 28.10.2026) regardless of the browser language.
+ * Date input that always shows the Israeli day.month.year format in the app's language (יום ד׳ · 28.10.2026),
+ * whatever the browser's language.
  * The native picker sits invisibly on top, so tapping still opens the phone's calendar; the form submits YYYY-MM-DD.
  */
 export function DateField({ name, defaultValue = "", min, required, className = "", withDay = false }: { name: string; defaultValue?: string; min?: string; required?: boolean; className?: string; withDay?: boolean }) {
+  const { t, fmt, intl } = useI18n();
   const [v, setV] = useState(defaultValue);
-  const label = v
-    ? `${withDay ? `יום ${DAYS[new Date(v + "T12:00:00Z").getUTCDay()]} · ` : ""}${v.slice(8, 10)}.${v.slice(5, 7)}.${v.slice(0, 4)}`
-    : "בחירת תאריך";
+  const day = (iso: string) => new Intl.DateTimeFormat(intl, { weekday: "short", timeZone: "UTC" }).format(new Date(iso + "T12:00:00Z"));
+  const label = v ? `${withDay ? `${day(v)} · ` : ""}${fmt.fullDate(v)}` : t("public.date.pick");
   return (
     <div className={`input relative flex items-center justify-between ${className}`}>
       <span className={`num ${v ? "" : "text-muted"}`}>{label}</span>
@@ -32,7 +32,7 @@ export function TimeField({ name, defaultValue = "", className = "", from = 5, t
   for (let h = from; h <= to; h++) for (const m of ["00", "15", "30", "45"]) times.push(`${String(h).padStart(2, "0")}:${m}`);
   return (
     <select name={name} defaultValue={defaultValue} className={`input ${className}`} aria-label={placeholder}>
-      <option value="">{placeholder ?? "—"}</option>
+      <option value="">{placeholder ?? "-"}</option>
       {times.map((t) => <option key={t} value={t}>{t}</option>)}
     </select>
   );

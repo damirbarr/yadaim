@@ -8,12 +8,43 @@ import { saveUpload } from "@/lib/storage";
 import { audit } from "@/lib/audit";
 import type { Perm } from "@/lib/rbac";
 import { busyWorkers, docCheck, docsFor, getAgency, getBooking, getWorker } from "@/lib/queries";
-import { ALL_CITIES, COUNTRIES, DOC_TYPES, MIN_DAYS_OPTIONS, REGIONS, TRADES, bookingPhase, ddmm, hourlyFor, regionOf } from "@/lib/domain";
-import { CONTACT_FIELDS, WORKER_FIELDS, normalizeDate, normalizePhone, readImport, type ImportState } from "@/lib/importer";
+import { ALL_CITIES, COUNTRIES, DOC_TYPES, MIN_DAYS_OPTIONS, REGIONS, TRADES, bookingPhase, hourlyFor, regionOf } from "@/lib/domain";
+import { CONTACT_FIELDS, ImportError, WORKER_FIELDS, normalizeDate, normalizePhone, readImport, type ImportField, type ImportState } from "@/lib/importer";
+import { logEvent } from "@/lib/events";
+import { getI18n } from "@/lib/i18n/server";
+import type { MessageKey } from "@/lib/i18n/core";
+import { messages } from "@/messages";
 import type { FormState } from "./auth";
 
-async function event(agencyId: number, kind: string, text: string, bookingId?: number, contractorId?: number) {
-  (await run(`INSERT INTO events (agency_id, contractor_id, booking_id, kind, text) VALUES (?,?,?,?,?)`, agencyId, contractorId ?? null, bookingId ?? null, kind, text));
+/** Read an uploaded sheet, with field labels and errors in the user's language. */
+async function readSheetRows(file: File, fields: ImportField[], mapping: string | null) {
+  const { t, intl } = await getI18n();
+  const label = (k: string) => t(`import.fields.${k}` as MessageKey);
+  try {
+    return await readImport(file, fields, mapping, label);
+  } catch (e) {
+    // A file the sheet reader can't open is reported like any other unsupported file.
+    if (!(e instanceof ImportError)) return { error: t("import.errors.format") };
+    if (e.code !== "missing") return { error: t(`import.errors.${e.code}`) };
+    const either = new Intl.ListFormat(intl, { type: "disjunction" });
+    const list = new Intl.ListFormat(intl, { type: "unit", style: "short" });
+    return { error: t("import.errors.missing", { fields: list.format(e.groups.map((g) => either.format(g.map(label)))) }) };
+  }
+}
+
+/** Trade and country names as written in any of our languages (sheets come in Hebrew, Arabic or English). */
+const norm = (s: string) => s.trim().toLowerCase();
+function tradeFromText(s: string) {
+  const v = norm(s);
+  if (!v) return undefined;
+  return TRADES.find((t) => t.key === v
+    || Object.values(messages).some((m) => { const n = m.domain.trades[t.key]; return v.includes(norm(n.one)) || v.includes(norm(n.many)); }))?.key;
+}
+function countryFromText(s: string) {
+  const v = norm(s);
+  if (!v) return undefined;
+  return Object.entries(COUNTRIES).find(([k]) => k.toLowerCase() === v
+    || Object.values(messages).some((m) => { const n = m.domain.countries[k as keyof typeof m.domain.countries]; return !!n && v.includes(norm(n)); }))?.[0];
 }
 
 async function ownBooking(id: number, perm: Perm = "agency.requests.manage") {
@@ -33,17 +64,18 @@ async function ownWorker(id: number) {
 // ── Requests & assignment ──────────────────────────────────────────────
 export async function approveRequest(_: FormState, fd: FormData): Promise<FormState> {
   const { b, agencyId, user } = await ownBooking(Number(fd.get("id")));
-  if (b.status !== "requested") return { error: "הבקשה כבר טופלה" };
+  const { t } = await getI18n();
+  if (b.status !== "requested") return { error: t("agency.actions.alreadyHandled") };
   const a = (await getAgency(agencyId))!;
   const chosen = fd.getAll("w").map(Number).filter(Boolean);
-  if (!chosen.length) return { error: "צריך לשבץ לפחות עובד אחד" };
+  if (!chosen.length) return { error: t("agency.actions.pickOne") };
   const busy = (await busyWorkers(b.date, b.end_date, b.id));
   const docs = (await docsFor(chosen));
   for (const id of chosen) {
     const w = (await getWorker(id));
-    if (!w || w.agency_id !== agencyId || !w.active) return { error: "עובד לא תקין" };
-    if (busy.has(id)) return { error: `${w.first_name} כבר משובץ בתאריכים האלה` };
-    if (!docCheck(docs.get(id)!, b.trade, b.end_date).ok) return { error: `ל${w.first_name} חסר אישור בתוקף לכל התקופה` };
+    if (!w || w.agency_id !== agencyId || !w.active) return { error: t("agency.actions.badWorker") };
+    if (busy.has(id)) return { error: t("agency.actions.busy", { name: w.first_name }) };
+    if (!docCheck(docs.get(id)!, b.trade, b.end_date).ok) return { error: t("agency.actions.docsMissing", { name: w.first_name }) };
   }
   const pickup = String(fd.get("pickup_time") ?? "") || null;
   const driver = String(fd.get("driver_name") ?? "").trim() || null;
@@ -59,7 +91,7 @@ export async function approveRequest(_: FormState, fd: FormData): Promise<FormSt
     }
     (await run(`UPDATE bookings SET status = 'approved', approved_at = now_txt(), pickup_time = ?, driver_name = ?, vehicle_no = ?, agency_note = ? WHERE id = ?`, pickup, driver, vehicle, note, b.id));
   });
-  await event(agencyId, "approved", `אישרתם את הזמנה #${b.id} (${ddmm(b.date)}) עם ${chosen.length} עובדים`, b.id, b.contractor_id);
+  await logEvent("approved", { agency: agencyId, contractor: b.contractor_id, booking: b.id }, "approved", { id: b.id, date: b.date, n: chosen.length });
   await audit(user, "booking.approve", `booking:${b.id}`, `${chosen.length} workers`);
   revalidatePath("/a", "layout");
   redirect(`/a/requests?approved=${b.id}`);
@@ -68,9 +100,10 @@ export async function approveRequest(_: FormState, fd: FormData): Promise<FormSt
 export async function rejectRequest(fd: FormData) {
   const { b, agencyId, user } = await ownBooking(Number(fd.get("id")));
   if (b.status !== "requested") return;
-  const reason = String(fd.get("reason") ?? "").trim() || "אין זמינות";
+  // The reason is shown to the contractor as written.
+  const reason = String(fd.get("reason") ?? "").trim() || (await getI18n()).t("agency.actions.noAvailability");
   (await run(`UPDATE bookings SET status = 'rejected', agency_note = ? WHERE id = ?`, reason, b.id));
-  await event(agencyId, "rejected", `דחיתם את הזמנה #${b.id}: ${reason}`, b.id, b.contractor_id);
+  await logEvent("rejected", { agency: agencyId, contractor: b.contractor_id, booking: b.id }, "rejected", { id: b.id, reason });
   await audit(user, "booking.reject", `booking:${b.id}`, reason);
   revalidatePath("/a", "layout");
   redirect("/a/requests");
@@ -83,12 +116,12 @@ export async function updateTransport(fd: FormData) {
   revalidatePath(`/a/requests/${b.id}`);
 }
 
-/** Agency-side cancellation after approval — allowed, but it costs reliability points. */
+/** Agency-side cancellation after approval - allowed, but it costs reliability points. */
 export async function agencyCancel(fd: FormData) {
   const { b, agencyId } = await ownBooking(Number(fd.get("id")));
   if (b.status !== "approved" || !["approved", "locked"].includes(bookingPhase(b))) return;
-  (await run(`UPDATE bookings SET status = 'cancelled', agency_note = ? WHERE id = ?`, String(fd.get("reason") ?? "") || "בוטל ע״י התאגיד", b.id));
-  await event(agencyId, "agency_cancel", `ביטלתם הזמנה מאושרת #${b.id} — נספר בציון האמינות`, b.id, b.contractor_id);
+  (await run(`UPDATE bookings SET status = 'cancelled', agency_note = ? WHERE id = ?`, String(fd.get("reason") ?? "").trim() || (await getI18n()).t("agency.actions.cancelledByAgency"), b.id));
+  await logEvent("agency_cancel", { agency: agencyId, contractor: b.contractor_id, booking: b.id }, "agencyCancel", { id: b.id });
   revalidatePath("/a", "layout");
   redirect("/a/requests");
 }
@@ -106,7 +139,7 @@ export async function swapWorker(fd: FormData) {
     (await run(`UPDATE booking_workers SET state = 'removed' WHERE booking_id = ? AND worker_id = ? AND checkin_at IS NULL`, b.id, out));
     (await run(`INSERT INTO booking_workers (booking_id, worker_id, hourly_rate) VALUES (?,?,?)`, b.id, inn, hourlyFor(w.hourly_rate, a, b)));
   });
-  await event(agencyId, "swap", `החלפתם עובד בהזמנה #${b.id}`, b.id, b.contractor_id);
+  await logEvent("swap", { agency: agencyId, contractor: b.contractor_id, booking: b.id }, "swap", { id: b.id });
   revalidatePath(`/a/requests/${b.id}`);
 }
 
@@ -116,12 +149,13 @@ export async function saveWorker(_: FormState, fd: FormData): Promise<FormState>
   const id = Number(fd.get("id")) || 0;
   if (id) await ownWorker(id);
   const f = (k: string) => String(fd.get(k) ?? "").trim();
+  const { t, fmt } = await getI18n();
   const tradeKey = f("trade"), country = f("country");
-  if (!f("first_name") || !f("last_name")) return { error: "שם פרטי ושם משפחה חובה" };
-  if (!TRADES.some((t) => t.key === tradeKey)) return { error: "מקצוע לא תקין" };
-  if (!COUNTRIES[country]) return { error: "ארץ מוצא לא תקינה" };
+  if (!f("first_name") || !f("last_name")) return { error: t("agency.actions.nameRequired") };
+  if (!TRADES.some((x) => x.key === tradeKey)) return { error: t("agency.actions.badTrade") };
+  if (!COUNTRIES[country]) return { error: t("agency.actions.badCountry") };
   const rate = Number(f("hourly_rate"));
-  if (!(rate >= 40 && rate <= 200)) return { error: "תעריף שעתי בין 40 ל-200 ₪" };
+  if (!(rate >= 40 && rate <= 200)) return { error: t("agency.actions.badRate", { min: fmt.money(40), max: fmt.money(200) }) };
   let photo: string | null = null;
   try {
     photo = await saveUpload(fd.get("photo") as File | null, "p");
@@ -164,18 +198,13 @@ export async function setWorkerActive(fd: FormData) {
 
 export async function importWorkers(_: ImportState, fd: FormData): Promise<ImportState> {
   const { agencyId, user } = await requireAgency("agency.workers.edit");
+  const { t } = await getI18n();
   const file = fd.get("file") as File | null;
-  if (!file || !file.size) return { error: "בחרו קובץ" };
-  let rows: Record<string, string>[];
-  try {
-    const res = await readImport(file, WORKER_FIELDS, (fd.get("mapping") as string) || null);
-    if ("mapping" in res) return { mapping: res.mapping };
-    rows = res.rows;
-  } catch (e) {
-    return { error: (e as Error).message };
-  }
-  const tradeByLabel = (s: string) => TRADES.find((t) => s.includes(t.label) || t.key === s.toLowerCase() || s.includes(t.plural))?.key;
-  const countryBy = (s: string) => Object.entries(COUNTRIES).find(([k, v]) => k === s.toUpperCase() || s.includes(v.label))?.[0];
+  if (!file || !file.size) return { error: t("agency.actions.chooseFile") };
+  const res = await readSheetRows(file, WORKER_FIELDS, (fd.get("mapping") as string) || null);
+  if ("error" in res) return { error: res.error };
+  if ("mapping" in res) return { mapping: res.mapping };
+  const rows = res.rows;
   let added = 0, skipped = 0;
   await tx(async () => {
     for (const r of rows) {
@@ -185,8 +214,8 @@ export async function importWorkers(_: ImportState, fd: FormData): Promise<Impor
         first = parts[0];
         last = last || parts.slice(1).join(" ");
       }
-      const tk = tradeByLabel(r.trade);
-      const ck = countryBy(r.country);
+      const tk = tradeFromText(r.trade);
+      const ck = countryFromText(r.country);
       if (!first || !tk || !ck) { skipped++; continue; }
       const wid = Number((await insert(`INSERT INTO workers (agency_id, first_name, last_name, trade, years, country, lang, phone, passport_no, hourly_rate, token) VALUES (?,?,?,?,?,?,?,?,?,?,?)`, agencyId, first, last || "-", tk, Number(r.years) || 0, ck, COUNTRIES[ck].lang,
         normalizePhone(r.phone), r.passport_no || null, Number(r.rate) || 75, randomToken(9))));
@@ -199,7 +228,7 @@ export async function importWorkers(_: ImportState, fd: FormData): Promise<Impor
   });
   await audit(user, "workers.import", `agency:${agencyId}`, `${file.name}: ${added} added, ${skipped} skipped`);
   revalidatePath("/a", "layout");
-  return { ok: `נוספו ${added} עובדים${skipped ? ` · ${skipped} שורות דולגו (חסר שם, מקצוע או ארץ)` : ""}` };
+  return { ok: [t("agency.actions.workersAdded", { n: added }), skipped ? t("agency.actions.rowsSkipped", { n: skipped }) : ""].filter(Boolean).join(" · ") };
 }
 
 // ── Compliance ─────────────────────────────────────────────────────────
@@ -217,32 +246,31 @@ export async function addContact(_: FormState, fd: FormData): Promise<FormState>
   const name = String(fd.get("name") ?? "").trim();
   const phone = normalizePhone(String(fd.get("phone") ?? ""));
   const city = String(fd.get("city") ?? "");
-  if (!name || !phone) return { error: "שם וטלפון חובה" };
+  const { t } = await getI18n();
+  if (!name || !phone) return { error: t("agency.actions.nameAndPhone") };
   const r = (await run(`INSERT INTO crm_contacts (agency_id, name, company, phone, city, region, trades, source) VALUES (?,?,?,?,?,?,?, 'manual') ON CONFLICT DO NOTHING RETURNING id`, agencyId, name, String(fd.get("company") ?? "") || null, phone, city || null, city ? regionOf(city) : null, fd.getAll("trades").join(",") || null));
   revalidatePath("/a", "layout");
-  return r.length ? { ok: `${name} נוסף למאגר` } : { error: "המספר כבר קיים במאגר" };
+  return r.length ? { ok: t("agency.actions.contactAdded", { name }) } : { error: t("agency.actions.phoneExists") };
 }
 
 export async function importContacts(_: ImportState, fd: FormData): Promise<ImportState> {
   const { agencyId } = await requireAgency("agency.crm.manage");
   const file = fd.get("file") as File | null;
   const pasted = String(fd.get("pasted") ?? "").trim();
+  const { t } = await getI18n();
   let rows: Record<string, string>[] = [];
-  try {
-    if (file && file.size) {
-      const res = await readImport(file, CONTACT_FIELDS, (fd.get("mapping") as string) || null);
-      if ("mapping" in res) return { mapping: res.mapping };
-      rows = res.rows;
-    } else if (pasted) {
+  if (file && file.size) {
+    const res = await readSheetRows(file, CONTACT_FIELDS, (fd.get("mapping") as string) || null);
+    if ("error" in res) return { error: res.error };
+    if ("mapping" in res) return { mapping: res.mapping };
+    rows = res.rows;
+  } else if (pasted) {
       // WhatsApp group members / phone contacts pasted as lines: "name, phone" or just phones
-      rows = pasted.split(/\n+/).map((line) => {
-        const phone = (line.match(/\+?\d[\d\s-]{7,}\d/) ?? [""])[0];
-        return { name: line.replace(phone, "").replace(/[,;:\t~]+/g, " ").trim(), phone, company: "", city: "" };
-      });
-    } else return { error: "בחרו קובץ או הדביקו רשימה" };
-  } catch (e) {
-    return { error: (e as Error).message };
-  }
+    rows = pasted.split(/\n+/).map((line) => {
+      const phone = (line.match(/\+?\d[\d\s-]{7,}\d/) ?? [""])[0];
+      return { name: line.replace(phone, "").replace(/[,;:\t~،]+/g, " ").trim(), phone, company: "", city: "" }; // i18n-data: Arabic comma
+    });
+  } else return { error: t("agency.actions.fileOrPaste") };
   const source = file && file.size ? "csv" : "whatsapp";
   let added = 0, dup = 0, bad = 0;
   await tx(async () => {
@@ -251,12 +279,12 @@ export async function importContacts(_: ImportState, fd: FormData): Promise<Impo
       if (!phone || phone.replace(/\D/g, "").length < 9) { bad++; continue; }
       const city = r.city;
       const known = ALL_CITIES.includes(city) ? city : null;
-      const res = (await run(`INSERT INTO crm_contacts (agency_id, name, company, phone, city, region, source) VALUES (?,?,?,?,?,?,?) ON CONFLICT DO NOTHING RETURNING id`, agencyId, r.name || "ללא שם", r.company || null, phone, known, known ? regionOf(known) : null, source));
+      const res = (await run(`INSERT INTO crm_contacts (agency_id, name, company, phone, city, region, source) VALUES (?,?,?,?,?,?,?) ON CONFLICT DO NOTHING RETURNING id`, agencyId, r.name || t("agency.actions.noName"), r.company || null, phone, known, known ? regionOf(known) : null, source));
       if (res.length) added++; else dup++;
     }
   });
   revalidatePath("/a", "layout");
-  return { ok: `נוספו ${added} קבלנים · ${dup} כפולים מוזגו${bad ? ` · ${bad} שורות בלי טלפון תקין` : ""}` };
+  return { ok: [t("agency.actions.contactsAdded", { n: added }), dup ? t("agency.actions.duplicates", { n: dup }) : "", bad ? t("agency.actions.badPhones", { n: bad }) : ""].filter(Boolean).join(" · ") };
 }
 
 export async function toggleOptOut(fd: FormData) {
@@ -299,13 +327,14 @@ export async function markCampaignSent(fd: FormData) {
 // ── Settings ───────────────────────────────────────────────────────────
 export async function saveSettings(_: FormState, fd: FormData): Promise<FormState> {
   const { agencyId, user } = await requireAgency("agency.settings.edit");
+  const { t } = await getI18n();
   const regions = fd.getAll("regions").map(String).filter((r) => REGIONS.some((x) => x.key === r));
-  if (!regions.length) return { error: "בחרו לפחות אזור אחד" };
+  if (!regions.length) return { error: t("agency.actions.pickRegion") };
   const minDays = Number(fd.get("min_days"));
-  if (!MIN_DAYS_OPTIONS.some((o) => o.v === minDays)) return { error: "משך מינימלי לא תקין" };
+  if (!MIN_DAYS_OPTIONS.some((o) => o.v === minDays)) return { error: t("agency.actions.badMinDays") };
   (await run(`UPDATE agencies SET name = ?, phone = ?, about = ?, regions = ?, min_days = ?, lodging_discount = ?, transport_rate = ?, auto_campaign = ? WHERE id = ?`, String(fd.get("name") ?? "").trim(), String(fd.get("phone") ?? "").trim(), String(fd.get("about") ?? "").trim(), regions.join(","), minDays,
     Math.max(0, Number(fd.get("lodging_discount")) || 0), Math.max(0, Number(fd.get("transport_rate")) || 0), fd.get("auto_campaign") ? 1 : 0, agencyId));
   await audit(user, "agency.settings", `agency:${agencyId}`, `min_days=${minDays}`);
   revalidatePath("/a", "layout");
-  return { ok: "נשמר" };
+  return { ok: t("agency.actions.saved") };
 }

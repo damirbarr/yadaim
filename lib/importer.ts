@@ -1,9 +1,10 @@
 import { readSheet } from "read-excel-file/node";
 
-/** One field the app understands in an imported sheet. `aliases` are header names recognised automatically
- *  (Hebrew and English, compared case- and punctuation-insensitively). Fields that share a `need` key are
- *  alternatives: at least one of them must be mapped (e.g. full name OR first name). */
-export type ImportField = { key: string; label: string; aliases: string[]; need?: string };
+/** One field the app understands in an imported sheet. Its label is `import.fields.<key>` in the messages.
+ *  `aliases` are header names recognised automatically (Hebrew, Arabic and English, compared case- and
+ *  punctuation-insensitively). Fields that share a `need` key are alternatives: at least one of them must be
+ *  mapped (e.g. full name OR first name). */
+export type ImportField = { key: string; aliases: string[]; need?: string };
 
 /** Sent back to the browser when the sheet doesn't match the template, so the user maps columns to fields. */
 export type MappingRequest = {
@@ -15,21 +16,30 @@ export type MappingRequest = {
 };
 export type ImportState = { ok?: string; error?: string; mapping?: MappingRequest } | undefined;
 
+/** A problem with the uploaded file. The caller turns `code` into a message in the user's language;
+ *  for "missing", `groups` lists the required field groups (field keys) that have no column. */
+export class ImportError extends Error {
+  constructor(public code: "empty" | "format" | "missing" | "badMapping", public groups: string[][] = []) {
+    super(code);
+  }
+}
+
 /** Read the file and turn it into rows keyed by field. A sheet whose every column is recognised imports
- *  straight away; anything else (unknown or missing columns) asks the user to confirm the mapping first. */
-export async function readImport(file: File, fields: ImportField[], mappingJson: string | null): Promise<{ rows: Record<string, string>[] } | { mapping: MappingRequest }> {
+ *  straight away; anything else (unknown or missing columns) asks the user to confirm the mapping first.
+ *  `label` gives a field's name in the user's language for the mapping screen. */
+export async function readImport(file: File, fields: ImportField[], mappingJson: string | null, label: (key: string) => string): Promise<{ rows: Record<string, string>[] } | { mapping: MappingRequest }> {
   const { headers, rows } = await parseSheet(file);
   let map: Record<string, number>;
   if (mappingJson) {
-    map = JSON.parse(mappingJson);
+    try { map = JSON.parse(mappingJson); } catch { throw new ImportError("badMapping"); }
     const missing = missingNeeds(fields, map);
-    if (missing.length) throw new Error(`חסרה התאמה ל: ${missing.join(", ")}`);
+    if (missing.length) throw new ImportError("missing", missing);
   } else {
     map = autoMap(headers, fields);
     const used = new Set(Object.values(map));
     const perfect = !missingNeeds(fields, map).length && headers.every((h, i) => !h.trim() || used.has(i));
     if (!perfect) {
-      return { mapping: { fields: fields.map(({ key, label, need }) => ({ key, label, need })), headers, sample: rows.slice(0, 3), suggested: Object.fromEntries(fields.map((f) => [f.key, map[f.key] ?? -1])) } };
+      return { mapping: { fields: fields.map(({ key, need }) => ({ key, label: label(key), need })), headers, sample: rows.slice(0, 3), suggested: Object.fromEntries(fields.map((f) => [f.key, map[f.key] ?? -1])) } };
     }
   }
   return { rows: rows.map((r) => Object.fromEntries(fields.map((f) => [f.key, map[f.key] >= 0 ? (r[map[f.key]] ?? "").trim() : ""]))) };
@@ -37,30 +47,30 @@ export async function readImport(file: File, fields: ImportField[], mappingJson:
 
 /** Columns of the workers sheet. Doc fields are keyed `doc_<DOC_TYPES key>` and hold an expiry date. */
 export const WORKER_FIELDS: ImportField[] = [
-  { key: "full_name", label: "שם מלא", aliases: ["שם מלא", "שם העובד", "שם", "name", "full name", "worker"], need: "name" },
-  { key: "first_name", label: "שם פרטי", aliases: ["שם פרטי", "first name", "first"], need: "name" },
-  { key: "last_name", label: "שם משפחה", aliases: ["שם משפחה", "last name", "last", "surname"] },
-  { key: "trade", label: "מקצוע", aliases: ["מקצוע", "תפקיד", "trade", "profession", "job"], need: "trade" },
-  { key: "country", label: "ארץ מוצא", aliases: ["ארץ", "ארץ מוצא", "נתינות", "מדינה", "country", "nationality"], need: "country" },
-  { key: "years", label: "שנות ניסיון", aliases: ["שנות ניסיון", "ותק", "ניסיון", "years", "experience"] },
-  { key: "phone", label: "טלפון", aliases: ["טלפון", "נייד", "פלאפון", "phone", "mobile"] },
-  { key: "passport_no", label: "מספר דרכון", aliases: ["דרכון", "מספר דרכון", "מס דרכון", "passport", "passport no"] },
-  { key: "rate", label: "תעריף שעתי", aliases: ["תעריף", "תעריף שעתי", "שכר שעתי", "rate", "hourly"] },
-  { key: "doc_visa", label: "תוקף אשרה", aliases: ["תוקף אשרה", "אשרה", "תוקף ויזה", "ויזה", "visa", "visa expiry"] },
-  { key: "doc_passport", label: "תוקף דרכון", aliases: ["תוקף דרכון", "passport expiry"] },
-  { key: "doc_insurance", label: "תוקף ביטוח", aliases: ["תוקף ביטוח", "ביטוח", "ביטוח רפואי", "insurance"] },
-  { key: "doc_safety", label: "הדרכת בטיחות", aliases: ["הדרכת בטיחות", "בטיחות", "safety"] },
-  { key: "doc_heights", label: "עבודה בגובה", aliases: ["עבודה בגובה", "גובה", "heights"] },
+  { key: "full_name", aliases: ["שם מלא", "שם העובד", "שם", "الاسم الكامل", "اسم العامل", "الاسم", "name", "full name", "worker"], need: "name" }, // i18n-data
+  { key: "first_name", aliases: ["שם פרטי", "الاسم الشخصي", "الاسم الأول", "first name", "first"], need: "name" }, // i18n-data
+  { key: "last_name", aliases: ["שם משפחה", "اسم العائلة", "last name", "last", "surname"] }, // i18n-data
+  { key: "trade", aliases: ["מקצוע", "תפקיד", "المهنة", "مهنة", "trade", "profession", "job"], need: "trade" }, // i18n-data
+  { key: "country", aliases: ["ארץ", "ארץ מוצא", "נתינות", "מדינה", "البلد", "بلد المنشأ", "الجنسية", "country", "nationality"], need: "country" }, // i18n-data
+  { key: "years", aliases: ["שנות ניסיון", "ותק", "ניסיון", "سنوات الخبرة", "الخبرة", "years", "experience"] }, // i18n-data
+  { key: "phone", aliases: ["טלפון", "נייד", "פלאפון", "الهاتف", "هاتف", "الجوال", "phone", "mobile"] }, // i18n-data
+  { key: "passport_no", aliases: ["דרכון", "מספר דרכון", "מס דרכון", "رقم الجواز", "رقم جواز السفر", "جواز السفر", "passport", "passport no"] }, // i18n-data
+  { key: "rate", aliases: ["תעריף", "תעריף שעתי", "שכר שעתי", "الأجر بالساعة", "الأجر", "rate", "hourly"] }, // i18n-data
+  { key: "doc_visa", aliases: ["תוקף אשרה", "אשרה", "תוקף ויזה", "ויזה", "صلاحية التأشيرة", "التأشيرة", "visa", "visa expiry"] }, // i18n-data
+  { key: "doc_passport", aliases: ["תוקף דרכון", "صلاحية جواز السفر", "صلاحية الجواز", "passport expiry"] }, // i18n-data
+  { key: "doc_insurance", aliases: ["תוקף ביטוח", "ביטוח", "ביטוח רפואי", "صلاحية التأمين", "التأمين", "insurance"] }, // i18n-data
+  { key: "doc_safety", aliases: ["הדרכת בטיחות", "בטיחות", "إرشاد السلامة", "السلامة", "safety"] }, // i18n-data
+  { key: "doc_heights", aliases: ["עבודה בגובה", "גובה", "العمل على ارتفاع", "heights"] }, // i18n-data
 ];
 
 export const CONTACT_FIELDS: ImportField[] = [
-  { key: "name", label: "שם", aliases: ["שם", "איש קשר", "שם מלא", "name", "contact"] },
-  { key: "company", label: "חברה", aliases: ["חברה", "שם חברה", "קבלן", "company"] },
-  { key: "phone", label: "טלפון", aliases: ["טלפון", "נייד", "פלאפון", "phone", "mobile"], need: "phone" },
-  { key: "city", label: "עיר", aliases: ["עיר", "אזור", "יישוב", "city"] },
+  { key: "name", aliases: ["שם", "איש קשר", "שם מלא", "الاسم", "جهة الاتصال", "الاسم الكامل", "name", "contact"] }, // i18n-data
+  { key: "company", aliases: ["חברה", "שם חברה", "קבלן", "الشركة", "اسم الشركة", "المقاول", "company"] }, // i18n-data
+  { key: "phone", aliases: ["טלפון", "נייד", "פלאפון", "الهاتف", "هاتف", "الجوال", "phone", "mobile"], need: "phone" }, // i18n-data
+  { key: "city", aliases: ["עיר", "אזור", "יישוב", "المدينة", "البلدة", "city"] }, // i18n-data
 ];
 
-const norm = (s: string) => s.toLowerCase().replace(/["'׳״`()\[\]{}:.,_-]/g, " ").replace(/\s+/g, " ").trim();
+const norm = (s: string) => s.toLowerCase().replace(/["'׳״`()\[\]{}:.,_-]/g, " ").replace(/\s+/g, " ").trim(); // i18n-data: Hebrew quote marks
 
 /** Exact alias matches first, then "header contains alias" (longest alias wins). Each column is used once. */
 export function autoMap(headers: string[], fields: ImportField[]): Record<string, number> {
@@ -83,12 +93,11 @@ export function autoMap(headers: string[], fields: ImportField[]): Record<string
   return map;
 }
 
-/** Labels of required groups that have no column mapped. */
-export function missingNeeds(fields: { key: string; label: string; need?: string }[], map: Record<string, number>): string[] {
+/** Required field groups (as lists of field keys) that have no column mapped. */
+export function missingNeeds(fields: { key: string; need?: string }[], map: Record<string, number>): string[][] {
   const groups = new Map<string, string[]>();
   for (const f of fields) if (f.need) groups.set(f.need, [...(groups.get(f.need) ?? []), f.key]);
-  return [...groups.values()].filter((keys) => !keys.some((k) => (map[k] ?? -1) >= 0))
-    .map((keys) => keys.map((k) => fields.find((f) => f.key === k)!.label).join(" או "));
+  return [...groups.values()].filter((keys) => !keys.some((k) => (map[k] ?? -1) >= 0));
 }
 
 /** Parse an uploaded CSV or XLSX file into its header row and data rows. */
@@ -101,9 +110,9 @@ export async function parseSheet(file: File): Promise<{ headers: string[]; rows:
     table = data.map((row) => row.map((c) => (c instanceof Date ? c.toISOString().slice(0, 10) : c == null ? "" : String(c))));
   } else if (name.endsWith(".csv") || name.endsWith(".txt")) {
     table = parseCSV(buf.toString("utf8").replace(/^\uFEFF/, ""));
-  } else throw new Error("קובץ אקסל או CSV בלבד");
+  } else throw new ImportError("format");
   const [head, ...rest] = table.filter((r) => r.some((c) => c.trim()));
-  if (!head) throw new Error("הקובץ ריק");
+  if (!head) throw new ImportError("empty");
   return { headers: head.map((h) => h.trim()), rows: rest.map((r) => head.map((_, i) => (r[i] ?? "").trim())) };
 }
 

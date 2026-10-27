@@ -2,6 +2,7 @@
 import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import type { ImportState, MappingRequest } from "@/lib/importer";
 import { IUpload } from "./icons";
+import { useI18n } from "@/lib/i18n/client";
 
 type Action = (s: ImportState, fd: FormData) => Promise<ImportState>;
 
@@ -10,6 +11,7 @@ type Action = (s: ImportState, fd: FormData) => Promise<ImportState>;
  *  columns and the user maps them to our fields once, then the same file is sent again with the mapping.
  *  The optional paste box is the one place that needs a button, since typing has no natural "done". */
 export function ImportForm({ action, title, hint, templates, paste }: { action: Action; title: string; hint: string; templates: { label: string; href: string }[]; paste?: boolean }) {
+  const { t } = useI18n();
   const [state, run, pending] = useActionState<ImportState, FormData>(action, undefined);
   const file = useRef<File | null>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -44,17 +46,17 @@ export function ImportForm({ action, title, hint, templates, paste }: { action: 
         >
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[3px] bg-hazard"><IUpload /></span>
           <div className="min-w-0">
-            <div className="font-semibold">{pending ? "קוראים את הקובץ…" : title}</div>
+            <div className="font-semibold">{pending ? t("import.reading") : title}</div>
             <div className="text-xs text-muted">{hint}</div>
           </div>
-          <span className="btn-primary col-span-2 sm:col-span-1"><IUpload className="h-4 w-4" />בחירת קובץ</span>
+          <span className="btn-primary col-span-2 sm:col-span-1"><IUpload className="h-4 w-4" />{t("import.choose")}</span>
           <input ref={input} type="file" name="file" accept=".csv,.xlsx,.txt" className="sr-only" onChange={(e) => pick(e.target.files?.[0])} />
         </label>
       )}
       {paste && !state?.mapping && (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <textarea name="pasted" rows={3} value={text} onChange={(e) => setText(e.target.value)} className="input flex-1" placeholder={"או הדביקו רשימה, שורה לכל קבלן:\nמשה כהן 052-1234567\nאבי לוי, 054-7654321"} />
-          <button type="button" className="btn-primary shrink-0" disabled={pending || !text.trim()} onClick={() => send({ pasted: text })}>הוספת הרשימה</button>
+          <textarea name="pasted" rows={3} value={text} onChange={(e) => setText(e.target.value)} className="input flex-1" placeholder={t("import.pastePlaceholder")} />
+          <button type="button" className="btn-primary shrink-0" disabled={pending || !text.trim()} onClick={() => send({ pasted: text })}>{t("import.addList")}</button>
         </div>
       )}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
@@ -68,42 +70,45 @@ export function ImportForm({ action, title, hint, templates, paste }: { action: 
 
 /** One row per field we understand; each picks a column of the user's sheet, with sample values to recognise it. */
 function ColumnMapper({ req, fileName, pending, onCancel, onConfirm }: { req: MappingRequest; fileName: string; pending: boolean; onCancel: () => void; onConfirm: (m: Record<string, number>) => void }) {
+  const { t, rich, intl } = useI18n();
   const [map, setMap] = useState<Record<string, number>>(req.suggested);
-  const col = (i: number) => req.headers[i]?.trim() || `עמודה ${i + 1}`;
+  const col = (i: number) => req.headers[i]?.trim() || t("import.column", { n: i + 1 });
+  const either = new Intl.ListFormat(intl, { type: "disjunction" });
+  const list = new Intl.ListFormat(intl, { type: "unit", style: "short" });
   const sample = (i: number) => req.sample.map((r) => r[i]).filter(Boolean).slice(0, 2).join(" · ");
   const needs = [...new Set(req.fields.map((f) => f.need).filter(Boolean))] as string[];
   const missing = needs.filter((n) => !req.fields.some((f) => f.need === n && (map[f.key] ?? -1) >= 0))
-    .map((n) => req.fields.filter((f) => f.need === n).map((f) => f.label).join(" או "));
+    .map((n) => either.format(req.fields.filter((f) => f.need === n).map((f) => f.label)));
   const used = new Set(Object.values(map).filter((i) => i >= 0));
   const unused = req.headers.map((_, i) => i).filter((i) => req.headers[i].trim() && !used.has(i));
   return (
     <div className="space-y-3">
       <div>
-        <div className="font-semibold">התאימו את העמודות בקובץ</div>
-        <div className="text-xs text-muted">הקובץ <span dir="ltr">{fileName}</span> לא בנוי בדיוק כמו התבנית. בחרו לכל שדה את העמודה המתאימה. מה שכבר זיהינו מסומן.</div>
+        <div className="font-semibold">{t("import.mapTitle")}</div>
+        <div className="text-xs text-muted">{rich("import.mapHint", { file: (c) => <span dir="ltr">{c}</span> }, { name: fileName })}</div>
       </div>
       <div className="divide-y divide-dashed divide-line border-y border-line">
         {req.fields.map((f) => {
           const i = map[f.key] ?? -1;
           return (
             <div key={f.key} className="grid gap-1 py-2 sm:grid-cols-[180px_1fr] sm:items-center sm:gap-3">
-              <div className="text-sm font-semibold">{f.label}{f.need && <span className="ms-1 text-xs font-normal text-muted">{req.fields.filter((x) => x.need === f.need).length > 1 ? "(אחד מהשניים חובה)" : "(חובה)"}</span>}</div>
+              <div className="text-sm font-semibold">{f.label}{f.need && <span className="ms-1 text-xs font-normal text-muted">{req.fields.filter((x) => x.need === f.need).length > 1 ? t("import.requiredEither") : t("import.required")}</span>}</div>
               <div className="min-w-0">
                 <select aria-label={f.label} value={i} onChange={(e) => setMap({ ...map, [f.key]: Number(e.target.value) })} className={`input py-1.5 text-sm ${i >= 0 ? "border-ink" : ""}`}>
-                  <option value={-1}>לא לייבא</option>
+                  <option value={-1}>{t("import.skip")}</option>
                   {req.headers.map((_, h) => <option key={h} value={h}>{col(h)}</option>)}
                 </select>
-                {i >= 0 && sample(i) && <div className="mt-0.5 truncate text-xs text-muted">למשל: {sample(i)}</div>}
+                {i >= 0 && sample(i) && <div className="mt-0.5 truncate text-xs text-muted">{t("import.example", { v: sample(i) })}</div>}
               </div>
             </div>
           );
         })}
       </div>
-      {unused.length > 0 && <p className="text-xs text-muted">עמודות שלא ייובאו: {unused.map(col).join(", ")}</p>}
-      {missing.length > 0 && <p className="text-sm text-bad">חסרה עמודה ל: {missing.join(", ")}</p>}
+      {unused.length > 0 && <p className="text-xs text-muted">{t("import.unused", { cols: list.format(unused.map(col)) })}</p>}
+      {missing.length > 0 && <p className="text-sm text-bad">{t("import.missing", { fields: list.format(missing) })}</p>}
       <div className="flex flex-wrap gap-2">
-        <button type="button" className="btn-primary" disabled={pending || missing.length > 0} onClick={() => onConfirm(map)}>{pending ? "מייבאים…" : "ייבוא מהקובץ"}</button>
-        <button type="button" className="btn-ghost" disabled={pending} onClick={onCancel}>ביטול</button>
+        <button type="button" className="btn-primary" disabled={pending || missing.length > 0} onClick={() => onConfirm(map)}>{pending ? t("import.importing") : t("import.submit")}</button>
+        <button type="button" className="btn-ghost" disabled={pending} onClick={onCancel}>{t("common.cancel")}</button>
       </div>
     </div>
   );

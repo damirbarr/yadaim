@@ -1,5 +1,5 @@
 /**
- * Database CLI — works against PGlite (no DATABASE_URL) or Supabase / any Postgres (DATABASE_URL set).
+ * Database CLI - works against PGlite (no DATABASE_URL) or Supabase / any Postgres (DATABASE_URL set).
  *
  *   npm run db:new -- add_latin_name   create supabase/migrations/<timestamp>_add_latin_name.sql
  *   npm run db:migrate                 apply pending migrations
@@ -29,7 +29,7 @@ async function main() {
   if (cmd === "reset") {
     if (process.env.DATABASE_URL) throw new Error("db:reset is for the local PGlite database only. Use `npm run db:seed -- --force` against Supabase.");
     for (const d of ["pglite", "uploads"]) fs.rmSync(path.join(process.cwd(), "data", d), { recursive: true, force: true });
-    console.log("local database and uploads deleted — it will be recreated with demo data on next `npm run dev`");
+    console.log("local database and uploads deleted - it will be recreated with demo data on next `npm run dev`");
     return;
   }
   const { driver } = await import("../lib/db");
@@ -45,7 +45,7 @@ async function main() {
     await migrate(d);
     const [{ n }] = await d.query(`select count(*)::int as n from users`, []);
     if (n && !process.argv.includes("--force")) {
-      console.log(`database already has ${n} users — nothing to do (use --force to wipe and reseed)`);
+      console.log(`database already has ${n} users - nothing to do (use --force to wipe and reseed)`);
     } else {
       if (n) {
         const tables = (await d.query(`select tablename from pg_tables where schemaname = 'public'`, [])).map((r) => `"${r.tablename}"`);

@@ -5,8 +5,8 @@ import { config } from "./config";
 import { migrate } from "./migrations";
 
 // One async API over two Postgres drivers:
-//   • DATABASE_URL set  → postgres.js (Supabase / any Postgres)            — production
-//   • otherwise         → PGlite, embedded Postgres in ./data/pglite       — zero-setup local dev
+//   • DATABASE_URL set  → postgres.js (Supabase / any Postgres)            - production
+//   • otherwise         → PGlite, embedded Postgres in ./data/pglite       - zero-setup local dev
 // The schema lives in supabase/migrations/ (see lib/migrations.ts).
 // SQL is written with `?` placeholders; they are converted to $1..$n here.
 

@@ -3,6 +3,8 @@ import { get, insert, run, tx } from "./db";
 import { audit } from "./audit";
 import { isPlatformAdmin } from "./auth";
 
+// Audit details are machine words (translated on /admin/audit via admin.audit.words and roles.*), never UI text.
+
 /**
  * Map a verified Google identity to an app user.
  *   1. Existing user → refresh profile; admin follows ADMIN_EMAILS both ways (added → admin, removed → pending).
@@ -21,7 +23,7 @@ export async function upsertFromIdentity(id: { email: string; name: string; avat
       if (isAdmin && existing.role !== "admin") await run(`UPDATE users SET role = 'admin', org_role = 'owner' WHERE id = ?`, existing.id);
       if (!isAdmin && existing.role === "admin") {
         await run(`UPDATE users SET role = 'pending' WHERE id = ?`, existing.id);
-        await audit({ id: existing.id }, "admin.revoked", email, "הוסר מרשימת האדמינים");
+        await audit({ id: existing.id }, "admin.revoked", email, "removed_from_admins");
         existing.role = "pending";
       }
       if (existing.role === "pending") await applyInvite(existing.id, email);
@@ -32,7 +34,7 @@ export async function upsertFromIdentity(id: { email: string; name: string; avat
       email, id.name || email.split("@")[0], isAdmin ? "admin" : "pending", "owner", id.avatar, id.subject
     );
     if (!isAdmin) await applyInvite(uid, email);
-    await audit({ id: uid }, "user.created", email, isAdmin ? "admin (ADMIN_EMAILS)" : null);
+    await audit({ id: uid }, "user.created", email, isAdmin ? "admin:admin_emails" : null);
     return { id: uid, disabled: false };
   });
 }

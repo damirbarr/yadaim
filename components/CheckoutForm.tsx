@@ -2,12 +2,15 @@
 import { useActionState, useMemo, useState } from "react";
 import { createBooking } from "@/app/actions/contractor";
 import type { FormState } from "@/app/actions/auth";
+import { useI18n } from "@/lib/i18n/client";
+import { LOCK_HOUR, VAT } from "@/lib/domain";
 import { Avatar } from "./ui";
 
-type W = { id: number; name: string; trade: string; tradeLabel: string; years: number; base: number; agencyId: number; agency: string; lodgingDiscount: number; transportRate: number; photo: string | null; docsUntil: string };
-const fmt = (n: number, d = 0) => n.toLocaleString("he-IL", { minimumFractionDigits: d, maximumFractionDigits: d });
+type W = { id: number; name: string; trade: string; years: number; base: number; agencyId: number; agency: string; lodgingDiscount: number; transportRate: number; photo: string | null; country: string; docsUntil: string };
 
-export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: { trade: string; city: string; date: string; days: number; lodging: string; transport: string; hours: number; dateLabel: string }; defaultAddress: string }) {
+export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: { trade: string; city: string; date: string; days: number; lodging: string; transport: string; hours: number }; defaultAddress: string }) {
+  const { t, fmt } = useI18n();
+  const n = fmt.num;
   const [lodging, setLodging] = useState(q.lodging);
   const [transport, setTransport] = useState(q.transport);
   const [hours, setHours] = useState(q.hours);
@@ -22,7 +25,7 @@ export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: 
     });
     const perDay = rows.reduce((a, r) => a + r.day, 0);
     const net = perDay * q.days;
-    return { rows, perDay, net, vat: net * 0.18, gross: net * 1.18 };
+    return { rows, perDay, net, vat: net * VAT, gross: net * (1 + VAT) };
   }, [workers, lodging, transport, hours, q.days]);
   const avgBase = workers.reduce((a, w) => a + w.base, 0) / workers.length;
   const avgL = workers.reduce((a, w) => a + w.lodgingDiscount, 0) / workers.length;
@@ -43,12 +46,12 @@ export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: 
         <div className="card divide-y divide-line">
           {workers.map((w) => (
             <div key={w.id} className="flex items-center gap-3 p-4">
-              <Avatar w={{ id: w.id, trade: w.trade, photo: w.photo }} size={44} />
+              <Avatar w={{ id: w.id, trade: w.trade, photo: w.photo, country: w.country }} size={44} />
               <div className="flex-1">
                 <div className="font-semibold">{w.name}</div>
-                <div className="text-xs text-muted">{w.tradeLabel} · {w.years} שנים · {w.agency}</div>
+                <div className="text-xs text-muted">{fmt.trade(w.trade)} · {t("contractor.count.years", { n: w.years })} · {w.agency}</div>
               </div>
-              <span className="chip-ok">אישורים בתוקף עד סוף העבודה</span>
+              <span className="chip-ok">{t("contractor.checkout.docsValid")}</span>
             </div>
           ))}
         </div>
@@ -56,65 +59,65 @@ export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: 
         <div className="card space-y-4 p-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <div className="label">לינה</div>
+              <div className="label">{t("contractor.prices.lodging")}</div>
               <div className="seg">
-                <label><input type="radio" checked={lodging === "contractor"} onChange={() => setLodging("contractor")} />אצלי (−₪{fmt(avgL)}/ש׳)</label>
-                <label><input type="radio" checked={lodging === "agency"} onChange={() => setLodging("agency")} />אצל התאגיד</label>
+                <label><input type="radio" checked={lodging === "contractor"} onChange={() => setLodging("contractor")} />{t("contractor.prices.lodgingOursAdj", { amount: fmt.money(avgL) })}</label>
+                <label><input type="radio" checked={lodging === "agency"} onChange={() => setLodging("agency")} />{t("contractor.prices.lodgingAgency")}</label>
               </div>
             </div>
             <div>
-              <div className="label">הסעה לאתר</div>
+              <div className="label">{t("contractor.prices.transport")}</div>
               <div className="seg">
-                <label><input type="radio" checked={transport === "agency"} onChange={() => setTransport("agency")} />התאגיד מסיע (+₪{fmt(avgT)}/ש׳)</label>
-                <label><input type="radio" checked={transport === "contractor"} onChange={() => setTransport("contractor")} />אני מסדר</label>
+                <label><input type="radio" checked={transport === "agency"} onChange={() => setTransport("agency")} />{t("contractor.prices.transportAgencyAdj", { amount: fmt.money(avgT) })}</label>
+                <label><input type="radio" checked={transport === "contractor"} onChange={() => setTransport("contractor")} />{t("contractor.prices.transportOurs")}</label>
               </div>
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-[1fr_140px_140px]">
             <div>
-              <label className="label">כתובת האתר ב{q.city}</label>
-              <input className="input" name="address" required defaultValue={defaultAddress} placeholder="רחוב ומספר / שם הפרויקט" />
+              <label className="label">{t("contractor.checkout.address", { city: fmt.city(q.city) })}</label>
+              <input className="input" name="address" required defaultValue={defaultAddress} placeholder={t("contractor.checkout.addressPlaceholder")} />
             </div>
             <div>
-              <label className="label">שעת התחלה</label>
+              <label className="label">{t("contractor.checkout.startTime")}</label>
               <select className="input" name="start_time" defaultValue="07:00">
-                {["06:00", "06:30", "07:00", "07:30", "08:00"].map((t) => <option key={t}>{t}</option>)}
+                {["06:00", "06:30", "07:00", "07:30", "08:00"].map((x) => <option key={x}>{x}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">שעות ביום</label>
+              <label className="label">{t("contractor.checkout.hoursPerDay")}</label>
               <select className="input" name="hours" value={hours} onChange={(e) => setHours(Number(e.target.value))}>
                 {[6, 7, 8, 9, 10].map((h) => <option key={h} value={h}>{h}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="label">הערות לתאגיד (לא חובה)</label>
-            <textarea className="input" name="notes" rows={2} placeholder="למשל: עבודה בקומה 6, להביא כלי עבודה אישיים" />
+            <label className="label">{t("contractor.checkout.notes")}</label>
+            <textarea className="input" name="notes" rows={2} placeholder={t("contractor.checkout.notesPlaceholder")} />
           </div>
         </div>
       </div>
 
       <aside className="card h-fit p-5 lg:sticky lg:top-20">
-        <h2 className="mb-3 text-[20px] font-bold text-ink">פירוט מחיר</h2>
+        <h2 className="mb-3 text-[20px] font-bold text-ink">{t("contractor.checkout.priceTitle")}</h2>
         <dl className="space-y-1.5 text-sm">
-          <Row k={`תעריף בסיס · ${hours} × ₪${fmt(avgBase)}`} v={fmt(avgBase * hours)} />
-          <Row k={`לינה אצלי · ${hours} × −₪${fmt(avgL)}`} v={lodging === "contractor" ? "−" + fmt(avgL * hours) : "—"} />
-          <Row k={`הסעה · ${hours} × ₪${fmt(avgT)}`} v={transport === "agency" ? fmt(avgT * hours) : "—"} />
-          <Row k="ליום לעובד (ממוצע)" v={fmt(calc.perDay / workers.length)} strong />
-          <Row k={`${workers.length} עובדים × ${q.days} ${q.days > 1 ? "ימים" : "יום"}`} v={fmt(calc.net)} />
-          <Row k="מע״מ 18%" v={fmt(calc.vat, 2)} />
+          <Row k={t("contractor.checkout.rowBase", { hours, rate: fmt.money(avgBase) })} v={n(avgBase * hours)} />
+          <Row k={t("contractor.checkout.rowLodging", { hours, rate: fmt.money(avgL) })} v={lodging === "contractor" ? "−" + n(avgL * hours) : "-"} />
+          <Row k={t("contractor.checkout.rowTransport", { hours, rate: fmt.money(avgT) })} v={transport === "agency" ? n(avgT * hours) : "-"} />
+          <Row k={t("contractor.checkout.rowPerWorker")} v={n(calc.perDay / workers.length)} strong />
+          <Row k={t("contractor.checkout.rowTotal", { workers: t("contractor.count.workers", { n: workers.length }), days: t("contractor.count.days", { n: q.days }) })} v={n(calc.net)} />
+          <Row k={t("contractor.checkout.rowVat", { pct: Math.round(VAT * 100) })} v={n(calc.vat, 2)} />
         </dl>
         <div className="mt-3 flex items-baseline justify-between border-t border-line pt-3">
-          <span className="text-sm text-muted">סה״כ</span>
-          <span className="font-display text-3xl font-bold num">₪{fmt(calc.gross, 2)}</span>
+          <span className="text-sm text-muted">{t("contractor.checkout.total")}</span>
+          <span className="font-display text-3xl font-bold num">{fmt.money(calc.gross, 2)}</span>
         </div>
         {state?.error && <p className="mt-3 text-sm text-bad">{state.error}</p>}
-        <button className="btn-hazard mt-4 w-full py-3 text-base" disabled={pending}>{pending ? "שולח…" : agencies > 1 ? `שליחה ל-${agencies} תאגידים` : "שליחת הזמנה לתאגיד"}</button>
+        <button className="btn-hazard mt-4 w-full py-3 text-base" disabled={pending}>{pending ? t("contractor.checkout.sending") : t("contractor.checkout.send", { n: agencies })}</button>
         <ul className="mt-3 space-y-1 text-xs text-muted">
-          <li>• התשלום ישירות לתאגיד בסוף העבודה, לפי השעות שאישרת באפליקציה.</li>
-          <li>• התאמה מובטחת: מי שהגיע לא תואם — לא משלמים על היום.</li>
-          <li>• ב-18:00 ערב לפני הצוות ננעל ותקבל שמות, תמונות ושעת איסוף.</li>
+          <li>• {t("contractor.checkout.payNote")}</li>
+          <li>• {t("contractor.checkout.fitNote")}</li>
+          <li>• {t("contractor.checkout.lockNote", { time: LOCK_HOUR })}</li>
         </ul>
       </aside>
     </form>

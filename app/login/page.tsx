@@ -2,14 +2,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser, devBypass, googleEnabled, homeFor } from "@/lib/auth";
 import { Logo, Notice } from "@/components/ui";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { getI18n } from "@/lib/i18n/server";
 
-export const metadata = { title: "כניסה" };
+export async function generateMetadata() {
+  const { t } = await getI18n();
+  return { title: t("public.login.title") };
+}
 
-const ERR: Record<string, string> = {
-  oauth: "ההתחברות עם גוגל לא הושלמה. נסו שוב.",
-  disabled: "החשבון הושבת. פנו למנהל המערכת.",
-  google_not_configured: "ההתחברות עם גוגל עוד לא הוגדרה בשרת הזה. ראו את מדריך הפריסה.",
-};
+const ERRORS = ["oauth", "disabled", "google_not_configured"] as const;
 
 function GoogleButton({ intent, children, primary }: { intent?: string; children: React.ReactNode; primary?: boolean }) {
   return (
@@ -30,44 +31,46 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   const u = await currentUser();
   if (u && !u.dev) redirect(homeFor(u.role));
   const google = googleEnabled();
+  const { t } = await getI18n();
+  const err = sp.error && (ERRORS as readonly string[]).includes(sp.error) ? t(`public.login.errors.${sp.error as (typeof ERRORS)[number]}`) : t("public.login.errors.other");
   return (
     <main className="grid min-h-dvh md:grid-cols-[1fr_1.1fr]">
       <section className="blueprint relative hidden flex-col justify-between p-10 md:flex">
         <Link href="/"><Logo dark /></Link>
         <div>
-          <div className="text-[13px] font-bold tracking-[.02em] text-hazard">כניסה למערכת</div>
-          <h2 className="mt-3 text-[56px] font-bold leading-[1.03] text-white">בונים על אנשים.<br /><em className="not-italic text-hazard">לא על הבטחות.</em></h2>
+          <div className="text-[13px] font-bold text-hazard">{t("public.login.sideEyebrow")}</div>
+          <h2 className="mt-3 text-[48px] font-bold leading-[1.05] text-white">{t("public.landing.h1a")}<br /><em className="not-italic text-hazard">{t("public.landing.h1b")}</em></h2>
           <svg viewBox="0 0 400 40" className="mt-8 w-72" aria-hidden><g stroke="#d4f25a" strokeWidth="1.2"><path d="M4 20h392M4 12v16M396 12v16" /></g></svg>
-          <p className="mt-2 max-w-sm text-[15px] text-[#c9d6e3]">קבלנים מזמינים עובד מסוים לפי מקצוע ויום. תאגידים ממלאים ימים פנויים ושומרים על תוקף האישורים.</p>
+          <p className="mt-2 max-w-sm text-[15px] text-[#c9d6e3]">{t("public.login.sideText")}</p>
         </div>
-        <span className="text-[13px] text-white/45">התאגיד הוא המעסיק החוקי ומאשר כל הצבה</span>
+        <div className="flex items-center justify-between gap-3"><span className="text-[13px] text-white/45">{t("public.login.sideFoot")}</span><LanguageSwitcher dark /></div>
       </section>
 
       <section className="grid content-center gap-6 px-4 py-10 md:px-14">
-        <Link href="/" className="justify-self-center md:hidden"><Logo /></Link>
+        <div className="grid justify-items-center gap-3 md:hidden"><Link href="/"><Logo /></Link><LanguageSwitcher /></div>
         <div className="mx-auto w-full max-w-md space-y-6">
           <div className="sheet space-y-3 border-t-[3px] border-t-ink p-6 md:p-8">
-            <div className="eyebrow">ברוכים הבאים</div>
-            <h1 className="text-[34px] font-bold leading-tight text-ink">כניסה</h1>
-            {sp.error && <Notice tone="bad">{ERR[sp.error] ?? "שגיאה בהתחברות"}</Notice>}
+            <div className="eyebrow">{t("public.login.welcome")}</div>
+            <h1 className="text-[34px] font-bold leading-tight text-ink">{t("public.login.title")}</h1>
+            {sp.error && <Notice tone="bad">{err}</Notice>}
             {google ? (
               <>
-                <GoogleButton intent="contractor" primary={sp.intent !== "agency"}>כניסה כקבלן עם גוגל</GoogleButton>
-                <GoogleButton intent="agency" primary={sp.intent === "agency"}>כניסה כתאגיד עם גוגל</GoogleButton>
-                <p className="border-t border-dashed border-line pt-3 text-[13px] text-muted">משתמשים קיימים נכנסים לאזור שלהם אוטומטית. בכניסה ראשונה נבקש כמה פרטים על החברה או התאגיד. הוזמנתם לצוות? היכנסו עם אותו אימייל.</p>
+                <GoogleButton intent="contractor" primary={sp.intent !== "agency"}>{t("public.login.googleContractor")}</GoogleButton>
+                <GoogleButton intent="agency" primary={sp.intent === "agency"}>{t("public.login.googleAgency")}</GoogleButton>
+                <p className="border-t border-dashed border-line pt-3 text-[13px] text-muted">{t("public.login.help")}</p>
               </>
             ) : (
-              <Notice tone="warn">ההתחברות עם גוגל עוד לא הוגדרה בסביבה הזו. ראו את מדריך הפריסה.</Notice>
+              <Notice tone="warn">{t("public.login.noGoogle")}</Notice>
             )}
           </div>
           {devBypass() && (
             <div className="sheet paper-grid space-y-2 border-dashed p-5 text-[14px]">
-              <div className="flex items-center gap-2 font-bold text-ink"><span className="stripe h-3 w-6" />מצב פיתוח · אין צורך להתחבר</div>
-              <p className="text-muted">כל האזורים פתוחים עם משתמשי הדגמה. להחלפת משתמש או תפקיד יש כפתור "מצב פיתוח" בפינת המסך.</p>
+              <div className="flex items-center gap-2 font-bold text-ink"><span className="stripe h-3 w-6" />{t("public.login.dev.title")}</div>
+              <p className="text-muted">{t("public.login.dev.text")}</p>
               <div className="grid grid-cols-3 gap-2">
-                <Link href="/c" className="btn-ghost btn-sm">אזור קבלן</Link>
-                <Link href="/a" className="btn-ghost btn-sm">אזור תאגיד</Link>
-                <Link href="/admin" className="btn-ghost btn-sm">אדמין</Link>
+                <Link href="/c" className="btn-ghost btn-sm">{t("public.login.dev.contractor")}</Link>
+                <Link href="/a" className="btn-ghost btn-sm">{t("public.login.dev.agency")}</Link>
+                <Link href="/admin" className="btn-ghost btn-sm">{t("public.login.dev.admin")}</Link>
               </div>
             </div>
           )}

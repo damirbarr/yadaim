@@ -6,6 +6,7 @@ import { DEV_PERSONA, currentUser, devBypass, endImpersonation, endSession, home
 import { audit } from "@/lib/audit";
 import { ALL_CITIES, REGIONS } from "@/lib/domain";
 import type { Role } from "@/lib/rbac";
+import { getI18n } from "@/lib/i18n/server";
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
@@ -45,13 +46,14 @@ export async function completeOnboarding(_: FormState, fd: FormData): Promise<Fo
   const number = String(fd.get("number") ?? "").trim();
   const phone = String(fd.get("phone") ?? "").trim();
   const city = String(fd.get("city") ?? "");
-  if (!name || !company || !number || !phone) return { error: "יש למלא את כל השדות" };
-  if (!ALL_CITIES.includes(city)) return { error: "יש לבחור עיר" };
+  const { t } = await getI18n();
+  if (!name || !company || !number || !phone) return { error: t("public.onboarding.errors.fillAll") };
+  if (!ALL_CITIES.includes(city)) return { error: t("public.onboarding.errors.city") };
   try {
     await tx(async () => {
       if (kind === "agency") {
         const regions = fd.getAll("regions").map(String).filter((r) => REGIONS.some((x) => x.key === r));
-        if (!regions.length) throw new Error("יש לבחור לפחות אזור פעילות אחד");
+        if (!regions.length) throw new Error(t("public.onboarding.errors.regions"));
         const aid = await insert(`INSERT INTO agencies (name, slug, license_no, city, regions, phone) VALUES (?,?,?,?,?,?)`, company, slugify(company), number, city, regions.join(","), phone);
         await run(`UPDATE users SET name = ?, role = 'agency', org_role = 'owner', agency_id = ? WHERE id = ?`, name, aid, u.id);
         await audit(u, "onboarding.agency", `agency:${aid}`, company);
@@ -62,7 +64,7 @@ export async function completeOnboarding(_: FormState, fd: FormData): Promise<Fo
         );
         await run(`UPDATE users SET name = ?, role = 'contractor', org_role = 'owner', contractor_id = ? WHERE id = ?`, name, cid, u.id);
         await audit(u, "onboarding.contractor", `contractor:${cid}`, company);
-      } else throw new Error("בחרו קבלן או תאגיד");
+      } else throw new Error(t("public.onboarding.errors.kind"));
     });
   } catch (e) {
     return { error: (e as Error).message };

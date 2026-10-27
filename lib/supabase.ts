@@ -5,9 +5,9 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { config } from "./config";
 
 // The only file that creates Supabase clients. What we use Supabase for:
-//   • Auth    — Google sign-in only (identity). Sessions and permissions are the app's own (lib/auth.ts).
-//   • Storage — a private bucket behind lib/storage.ts.
-//   • Postgres — through DATABASE_URL in lib/db.ts, not through supabase-js.
+//   • Auth    - Google sign-in only (identity). Sessions and permissions are the app's own (lib/auth.ts).
+//   • Storage - a private bucket behind lib/storage.ts.
+//   • Postgres - through DATABASE_URL in lib/db.ts, not through supabase-js.
 // To use another Supabase feature (Realtime, Edge Functions…), add a function here that returns the client.
 
 /** Request-bound client, used for the OAuth handshake (it keeps the PKCE verifier in cookies). */

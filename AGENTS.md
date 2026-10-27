@@ -72,7 +72,17 @@ Only one `next dev` can run per directory. Seed data is generated relative to **
 
 **A new permission:** `lib/rbac.ts` → `PERMISSIONS` (Hebrew label) plus `MATRIX`. The team page table updates itself.
 
-**UI language:** everything a user sees is **Hebrew**, with no English words, labels or codes. That includes browser controls: use `FileField` (not a raw `<input type="file">`), `DateField` / `TimeField` (not native date or time inputs, which show the browser's locale), and Hebrew labels for audit actions. Email addresses are the only Latin text allowed. Check with the Latin-text scan described in `docs/LOCAL_DEV.md`.
+**Languages (Hebrew, Arabic, English).** No user-facing text lives in components, pages, actions or `lib/`. Every string is a key in `messages/<locale>/<namespace>.ts`.
+- Hebrew (`messages/he/`) is the source; its shape defines the keys. `messages/ar/` and `messages/en/` are typed as `Messages["<namespace>"]`, so a missing key fails `npm run typecheck`.
+- Server components, server actions, route handlers: `const { t, rich, fmt } = await getI18n();` (`@/lib/i18n/server`). Client components: `const { t, rich, fmt } = useI18n();` (`@/lib/i18n/client`). Page titles: `export async function generateMetadata() { const { t } = await getI18n(); return { title: t("…") }; }`.
+- Placeholders: `t("ns.key", { name })` with `{name}` in the message. Counts: `plural({ one, other, … })` in the message, `t("ns.key", { n })` in code (Arabic may add `zero/two/few/many`). Inline markup: `<b>…</b>` or `<link>…</link>` in the message, `rich("ns.key", { b: (c) => <b>{c}</b>, link: (c) => <Link href="…">{c}</Link> })` in code. Never build a sentence by concatenating pieces; word order differs between languages.
+- Values: `fmt.money()`, `fmt.date()` (27.10), `fmt.fullDate()`, `fmt.prettyDate()` (weekday + date), `fmt.relDay(iso, today)`, `fmt.trade(k)` / `fmt.trades(k)` (plural), `fmt.region()`, `fmt.city()`, `fmt.country()`, `fmt.doc()` / `fmt.docShort()`, `fmt.phase()`, `fmt.minDays()`, `fmt.tag()`. Don't use the Hebrew `label` fields in `lib/domain.ts` or `lib/rbac.ts` for display.
+- Data stays as entered (names, addresses, cities stored in Hebrew; `fmt.city()` translates the known cities).
+- Direction: Hebrew and Arabic are RTL, English is LTR (`<html dir>` is set from the locale). Use logical classes (`ms-/me-/ps-/pe-/start-/end-/text-start/text-end`), never `ml-/mr-/left-/right-/text-left/text-right`, and `rtl:`/`ltr:` variants when something must differ. Arrows and directional icons get `className="flip-ltr"`.
+- Namespaces: `common` (layouts, nav, shared bits), `domain` (trades, places, documents, phases), `roles` (account kinds, permission levels, permission names, activity-log actions), and one per area. Add a key to all three languages in the same change.
+- Never use the em dash character (U+2014) anywhere in the app or in messages; `npm run test:i18n` fails on it. Never promise a worker photo (not every worker has one).
+- Copy: write each language natively, as a person in that market would say it, not a word-for-word translation. Short, concrete, plural/neutral address in Hebrew ("בחרו", "העלו"). Arabic: Modern Standard Arabic as used in Israeli Arab business communication, plural address ("اختاروا"). English: plain international English. Hebrew: תאגיד; Arabic: شركة القوى العاملة / الشركة; English: agency. Contractor: קבלן / مقاول / contractor.
+- Adding a language: add it to `lib/i18n/locales.ts`, copy `messages/he/` to `messages/<code>/`, translate, register it in `messages/index.ts`, typecheck.
 
 ## Conventions
 - TypeScript strict, Server Components by default, `"use client"` only for interactive pieces (`components/*Form.tsx`, `ResultsGrid`, `PriceToggles`, `Nav`).

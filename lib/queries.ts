@@ -29,7 +29,7 @@ export type BW = {
 };
 
 export const displayName = (w: Pick<Worker, "first_name" | "last_name">) => `${w.first_name} ${w.last_name.charAt(0)}.`;
-export const maskPassport = (p: string | null) => (p ? `•••${p.slice(-4)}` : "—");
+export const maskPassport = (p: string | null) => (p ? `•••${p.slice(-4)}` : "-");
 const marks = (n: number) => Array(n).fill("?").join(",");
 
 export const getAgency = (id: number) => get<Agency>(`SELECT * FROM agencies WHERE id = ?`, id);
@@ -61,7 +61,7 @@ export async function workerStats(ids: number[]): Promise<Map<number, WorkerStat
 }
 
 // ── Agency reliability (drives search ranking; low score = out of search) ──
-export type Reliability = { score: number; arrival: number; match: number; quality: number; cancels: number; tier: { label: string; tone: "good" | "ok" | "warn" | "bad" } };
+export type Reliability = { score: number; arrival: number; match: number; quality: number; cancels: number; tier: { tone: "good" | "ok" | "warn" | "bad" } }; // shown as t(`domain.reliability.${tone}`)
 export async function agencyReliability(agencyId: number): Promise<Reliability> {
   const since = addDays(todayISO(), -90);
   const r = (await get<{ arrival: number | null; match: number | null; rating: number | null }>(
@@ -76,10 +76,10 @@ export async function agencyReliability(agencyId: number): Promise<Reliability> 
   const arrival = r.arrival ?? 1, match = r.match ?? 1, quality = r.rating ? r.rating / 5 : 0.9;
   const score = Math.max(0, Math.min(100, Math.round(100 * arrival * match * quality) - cancels * 4));
   const tier =
-    score >= 90 ? { label: "תאגיד אמין", tone: "good" as const }
-    : score >= 75 ? { label: "תקין", tone: "ok" as const }
-    : score >= 60 ? { label: "במעקב", tone: "warn" as const }
-    : { label: "מושעה מהחיפוש", tone: "bad" as const };
+    score >= 90 ? { tone: "good" as const }
+    : score >= 75 ? { tone: "ok" as const }
+    : score >= 60 ? { tone: "warn" as const }
+    : { tone: "bad" as const };
   return { score, arrival, match, quality, cancels, tier };
 }
 

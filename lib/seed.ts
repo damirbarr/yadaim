@@ -1,6 +1,8 @@
 import { randomToken } from "./tokens";
 import { addDays, endOfBlock, isWorkday, todayISO, nextWorkday, COUNTRIES, REGIONS, TRADES, trade, hourlyFor } from "./domain";
 
+// i18n-data-file: demo data (names, companies, addresses) is Hebrew on purpose, like real entered data.
+
 // Deterministic PRNG so the demo looks the same on every fresh install.
 function rng(seed: number) {
   return () => {
@@ -74,7 +76,7 @@ export async function seed(q: Query) {
     contacts: new Table("crm_contacts", ["agency_id", "name", "company", "phone", "city", "region", "trades", "source", "opted_out", "last_sent_at"]),
     campaigns: new Table("campaigns", ["agency_id", "trade", "date_from", "date_to", "idle_days", "message", "status", "created_at", "sent_at"]),
     recipients: new Table("campaign_recipients", ["campaign_id", "contact_id", "ref", "sent_at", "opened_at", "booked_at"]),
-    events: new Table("events", ["agency_id", "contractor_id", "booking_id", "kind", "text", "created_at"]),
+    events: new Table("events", ["agency_id", "contractor_id", "booking_id", "kind", "msg", "params", "created_at"]),
     audit: new Table("audit_log", ["actor_id", "impersonator_id", "action", "target", "details", "created_at"]),
   };
   {
@@ -82,9 +84,9 @@ export async function seed(q: Query) {
     const agencies = [
       ["בנייה הצפון כוח אדם בע\"מ", "bniya-hatzafon", "ת-2023-0412", 1, "חדרה", "sharon,north,center", "04-6331200", "תאגיד בנייה מורשה מ-2023. מתמחים בטפסנות וברזלנות, הסעות מחדרה, נתניה וחיפה.", 8, 6],
       ["אסיה כוח אדם ובנייה", "asia-koach-adam", "ת-2024-0877", 1, "ראשון לציון", "center,south,sharon", "03-9512277", "עובדים מהודו וסרי לנקה. ריצוף, טיח וגבס.", 9, 6],
-      ["גשר — תאגיד בנייה", "gesher", "ת-2024-1130", 1, "ירושלים", "jerusalem,center", "02-6250014", "צוותי שלד וטפסנות לירושלים והמרכז.", 7, 7],
+      ["גשר תאגיד בנייה", "gesher", "ת-2024-1130", 1, "ירושלים", "jerusalem,center", "02-6250014", "צוותי שלד וטפסנות לירושלים והמרכז.", 7, 7],
       ["מזרח-מערב השמה", "mizrach-maarav", "ת-2025-0219", 1, "אשדוד", "south,center", "08-8564410", "עובדים מאוזבקיסטן ומולדובה לדרום.", 8, 5],
-      ["אופק כוח אדם", "ofek", "ת-2026-0091", 0, "פתח תקווה", "center", "03-9300100", "תאגיד חדש — ממתין לאימות רישיון.", 8, 6],
+      ["אופק כוח אדם", "ofek", "ת-2026-0091", 0, "פתח תקווה", "center", "03-9300100", "תאגיד חדש, ממתין לאימות רישיון.", 8, 6],
     ] as const;
     const minDays = [1, 1, 5, 1, 1];
     const agencyIds = agencies.map((a, i) => T.agencies.add(...a, minDays[i]));
@@ -319,15 +321,16 @@ export async function seed(q: Query) {
     contacts.forEach((c, i) => T.recipients.add(camp, c.id, randomToken(6), addDays(today, -13), i < 26 ? addDays(today, -13) : null, i < 3 ? addDays(today, -12) : null));
 
     const ev = { run: (...v: unknown[]) => T.events.add(...v) };
-    ev.run(A0, null, null, "info", "מערכת הוקמה עם נתוני הדגמה", addDays(today, -30) + " 08:00:00");
-    ev.run(A0, null, null, "campaign", "הצעת ברזלנים נשלחה ל-40 קבלנים · 26 צפו · 3 הזמינו", addDays(today, -13) + " 09:05:00");
+    // Feed entries are message keys + params (lib/events.ts), rendered in the reader's language.
+    ev.run(A0, null, null, "info", "setup", "{}", addDays(today, -30) + " 08:00:00");
+    ev.run(A0, null, null, "campaign", "campaign", JSON.stringify({ trade: "rebar", n: 40, opened: 26, booked: 3 }), addDays(today, -13) + " 09:05:00");
     const reqs = T.bookings.rows.filter((row) => row[2] === A0 && row[13] === "requested").map((row) => ({
       id: row[0] as number, date: row[4] as string, days: row[6] as number, trade: row[3] as string, city: row[9] as string,
       company: T.contractors.col(row[1] as number, "company") as string, n: T.bw.rows.filter((x) => x[1] === row[0]).length,
     }));
-    for (const q of reqs) ev.run(A0, null, q.id, "request", `בקשה חדשה מ${q.company}: ${q.n} ${trade(q.trade).plural} ל-${q.date.slice(8, 10)}.${q.date.slice(5, 7)}${q.days > 1 ? ` (${q.days} ימים)` : ""}, ${q.city}`, today + " 07:45:00");
-    T.audit.add(admin, null, "org.verify", "agency:1", "אימות היתר תאגיד", addDays(today, -60) + " 10:00:00");
-    T.audit.add(yossi, null, "workers.import", "agency:1", "ייבוא 42 עובדים מאקסל", addDays(today, -59) + " 11:20:00");
+    for (const q of reqs) ev.run(A0, null, q.id, "request", q.days > 1 ? "requestDays" : "request", JSON.stringify({ company: q.company, n: q.n, trade: q.trade, date: q.date, city: q.city, days: q.days }), today + " 07:45:00");
+    T.audit.add(admin, null, "org.verify", "agency:1", null, addDays(today, -60) + " 10:00:00");
+    T.audit.add(yossi, null, "workers.import", "agency:1", "workers.xlsx: 42 added, 0 skipped", addDays(today, -59) + " 11:20:00");
     T.audit.add(yossi, null, "team.invite", "office@bniya-hatzafon.co.il", "manager", addDays(today, -2) + " 09:10:00");
   }
   // FK order

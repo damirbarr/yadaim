@@ -5,19 +5,18 @@ import { revalidatePath } from "next/cache";
 import { all, get, insert, run, tx } from "@/lib/db";
 import { requireContractor } from "@/lib/auth";
 import { busyWorkers, docCheck, docsFor, getAgency, getBooking, getContractor, getWorker } from "@/lib/queries";
-import { bookingPhase, ALL_CITIES, endOfBlock, hourlyFor, todayISO, TRADES, trade, ddmm } from "@/lib/domain";
+import { bookingPhase, ALL_CITIES, endOfBlock, hourlyFor, todayISO, TRADES } from "@/lib/domain";
 import { audit } from "@/lib/audit";
+import { logEvent } from "@/lib/events";
+import { getI18n } from "@/lib/i18n/server";
 import type { Perm } from "@/lib/rbac";
 import type { FormState } from "./auth";
 
-async function event(kind: string, text: string, ids: { agency?: number; contractor?: number; booking?: number }) {
-  (await run(`INSERT INTO events (agency_id, contractor_id, booking_id, kind, text) VALUES (?,?,?,?,?)`, ids.agency ?? null, ids.contractor ?? null, ids.booking ?? null, kind, text));
-}
-
 export async function createBooking(_: FormState, fd: FormData): Promise<FormState> {
   const { contractorId, user } = await requireContractor("contractor.book");
+  const { t } = await getI18n();
   const c = (await getContractor(contractorId))!;
-  if (!c.verified) return { error: "החשבון עדיין לא אומת ברשם הקבלנים" };
+  if (!c.verified) return { error: t("contractor.errors.notVerified") };
 
   const ids = String(fd.get("w") ?? "").split(",").map(Number).filter(Boolean);
   const tradeKey = String(fd.get("trade"));
@@ -31,10 +30,10 @@ export async function createBooking(_: FormState, fd: FormData): Promise<FormSta
   const transport = fd.get("transport") === "contractor" ? "contractor" : "agency";
   const notes = String(fd.get("notes") ?? "").trim() || null;
 
-  if (!ids.length) return { error: "לא נבחרו עובדים" };
-  if (!TRADES.some((t) => t.key === tradeKey) || !ALL_CITIES.includes(city)) return { error: "פרטי הזמנה לא תקינים" };
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < todayISO()) return { error: "תאריך לא תקין" };
-  if (address.length < 4) return { error: "יש למלא כתובת אתר" };
+  if (!ids.length) return { error: t("contractor.errors.noWorkers") };
+  if (!TRADES.some((t) => t.key === tradeKey) || !ALL_CITIES.includes(city)) return { error: t("contractor.errors.badDetails") };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < todayISO()) return { error: t("contractor.errors.badDate") };
+  if (address.length < 4) return { error: t("contractor.errors.noAddress") };
 
   const end = endOfBlock(date, days);
   const ref = (await cookies()).get("yd_ref")?.value;
@@ -46,15 +45,15 @@ export async function createBooking(_: FormState, fd: FormData): Promise<FormSta
       const byAgency = new Map<number, number[]>();
       for (const id of ids) {
         const w = (await getWorker(id));
-        if (!w || !w.active || w.trade !== tradeKey) throw new Error("עובד לא זמין");
-        if (busy.has(id)) throw new Error("אחד העובדים הוזמן הרגע ע״י קבלן אחר. חזרו לחיפוש.");
-        if (!docCheck(docs.get(id)!, w.trade, end).ok) throw new Error("לאחד העובדים אין אישורים בתוקף לכל התקופה");
+        if (!w || !w.active || w.trade !== tradeKey) throw new Error(t("contractor.errors.unavailable"));
+        if (busy.has(id)) throw new Error(t("contractor.errors.justBooked"));
+        if (!docCheck(docs.get(id)!, w.trade, end).ok) throw new Error(t("contractor.errors.docs"));
         byAgency.set(w.agency_id, [...(byAgency.get(w.agency_id) ?? []), id]);
       }
       const out: number[] = [];
       for (const [agencyId, wids] of byAgency) {
         const a = (await getAgency(agencyId))!;
-        if (days < a.min_days) throw new Error(`${a.name} מציב לתקופה של ${a.min_days} ימים לפחות`);
+        if (days < a.min_days) throw new Error(t("contractor.errors.minDays", { agency: a.name, n: a.min_days }));
         let campaignId: number | null = null;
         if (ref) {
           const rec = (await get(`SELECT r.id, r.campaign_id FROM campaign_recipients r JOIN campaigns c ON c.id = r.campaign_id WHERE r.ref = ? AND c.agency_id = ?`, ref, agencyId)) as { id: number; campaign_id: number } | undefined;
@@ -73,7 +72,7 @@ export async function createBooking(_: FormState, fd: FormData): Promise<FormSta
           const w = (await getWorker(wid))!;
           (await run(`INSERT INTO booking_workers (booking_id, worker_id, hourly_rate) VALUES (?,?,?)`, bid, wid, hourlyFor(w.hourly_rate, a, { lodging, transport })));
         }
-        await event("request", `בקשה חדשה מ${c.company}: ${wids.length} ${trade(tradeKey).plural} ל-${ddmm(date)}${days > 1 ? ` (${days} ימים)` : ""}, ${city}`, { agency: agencyId, contractor: contractorId, booking: bid });
+        await logEvent("request", { agency: agencyId, contractor: contractorId, booking: bid }, days > 1 ? "requestDays" : "request", { company: c.company, n: wids.length, trade: tradeKey, date, city, days });
         out.push(bid);
       }
       return out;
@@ -98,7 +97,7 @@ export async function cancelBooking(fd: FormData) {
   const phase = bookingPhase(b);
   if (!["requested", "approved"].includes(phase)) return;
   (await run(`UPDATE bookings SET status = 'cancelled' WHERE id = ?`, b.id));
-  await event("cancel", `הקבלן ביטל את הזמנה #${b.id} (${ddmm(b.date)})`, { agency: b.agency_id, contractor: contractorId, booking: b.id });
+  await logEvent("cancel", { agency: b.agency_id, contractor: contractorId, booking: b.id }, "cancel", { id: b.id, date: b.date });
   revalidatePath(`/c/orders/${b.id}`);
 }
 
@@ -114,11 +113,11 @@ export async function siteCheck(fd: FormData) {
   if (!["today", "locked", "awaiting_hours"].includes(bookingPhase(b))) return;
   if (field === "arrived") {
     (await run(`UPDATE booking_workers SET arrived = ?, checkin_at = CASE WHEN ? = 1 THEN now_txt() ELSE NULL END WHERE id = ?`, value === "1" ? 1 : 0, value === "1" ? 1 : 0, bwId));
-    if (value === "0") await event("noshow", `עובד לא הגיע לאתר — הזמנה #${b.id}`, { agency: b.agency_id, contractor: contractorId, booking: b.id });
+    if (value === "0") await logEvent("noshow", { agency: b.agency_id, contractor: contractorId, booking: b.id }, "noshow", { id: b.id });
   } else {
     if (!["yes", "partial", "no"].includes(value)) return;
     (await run(`UPDATE booking_workers SET ${field} = ?, arrived = 1, checkin_at = COALESCE(checkin_at, now_txt()) WHERE id = ?`, value, bwId));
-    if (value === "no") await event("nofit", `הקבלן סימן “לא תואם” (${field === "identity_ok" ? "זהות" : "מקצוע"}) — הזמנה #${b.id}. לא יחויב על היום.`, { agency: b.agency_id, contractor: contractorId, booking: b.id });
+    if (value === "no") await logEvent("nofit", { agency: b.agency_id, contractor: contractorId, booking: b.id }, field === "identity_ok" ? "nofitIdentity" : "nofitSkill", { id: b.id });
   }
   revalidatePath(`/c/orders/${b.id}/site`);
 }
@@ -140,7 +139,7 @@ export async function approveHours(fd: FormData) {
     if (review) (await run(`UPDATE booking_workers SET review = ? WHERE booking_id = ? AND rating IS NOT NULL`, review, b.id));
     (await run(`UPDATE bookings SET status = 'completed', completed_at = now_txt() WHERE id = ?`, b.id));
   });
-  await event("hours", `הקבלן אישר שעות להזמנה #${b.id}`, { agency: b.agency_id, contractor: contractorId, booking: b.id });
+  await logEvent("hours", { agency: b.agency_id, contractor: contractorId, booking: b.id }, "hours", { id: b.id });
   revalidatePath(`/c/orders/${b.id}`);
   redirect(`/c/orders/${b.id}?done=1`);
 }
@@ -148,7 +147,9 @@ export async function approveHours(fd: FormData) {
 export async function saveCrew(fd: FormData) {
   const { b, contractorId } = await ownBooking(Number(fd.get("id")), "contractor.crews.edit");
   const ids = ((await all(`SELECT worker_id FROM booking_workers WHERE booking_id = ? AND state = 'assigned'`, b.id)) as { worker_id: number }[]).map((r) => r.worker_id);
-  const name = String(fd.get("name") ?? "").trim() || `צוות ${trade(b.trade).plural} · ${b.city}`;
+  const { t, fmt } = await getI18n();
+  // The crew name is the contractor's own label, so the default is written in their language.
+  const name = String(fd.get("name") ?? "").trim() || t("contractor.order.crewName", { trades: fmt.trades(b.trade), city: fmt.city(b.city) });
   (await run(`INSERT INTO crews (contractor_id, name, worker_ids) VALUES (?,?,?)`, contractorId, name, ids.join(",")));
   redirect("/c/crews");
 }

@@ -16,7 +16,7 @@ export function parseSearch(sp: SP): SearchQuery {
   };
   return {
     trade: TRADES.some((x) => x.key === t) ? t! : "formwork",
-    city: c && ALL_CITIES.includes(c) ? c : "נתניה",
+    city: c && ALL_CITIES.includes(c) ? c : "נתניה", // i18n-data
     date: d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= today ? d : nextWorkday(today),
     days: Math.min(22, Math.max(1, Number(one(sp.days)) || 1)),
     count: Math.min(20, Math.max(1, Number(one(sp.count)) || 1)),

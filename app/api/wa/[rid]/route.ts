@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@/lib/auth";
-import { all, get, insert, run, tx } from "@/lib/db";
+import { get, run } from "@/lib/db";
 import { appUrl, waLink } from "@/lib/wa";
+import { getLocale } from "@/lib/i18n/server";
+import { messages } from "@/messages";
+import type { Locale } from "@/lib/i18n/locales";
 
 /** Marks a campaign recipient as sent and forwards to WhatsApp with the personal message + tracking link. */
 export async function GET(_: Request, { params }: { params: Promise<{ rid: string }> }) {
@@ -14,6 +17,11 @@ export async function GET(_: Request, { params }: { params: Promise<{ rid: strin
   if (!r) return new NextResponse("not found", { status: 404 });
   (await run(`UPDATE campaign_recipients SET sent_at = COALESCE(sent_at, now_txt()) WHERE id = ?`, r.id));
   (await run(`UPDATE crm_contacts SET last_sent_at = now_txt() WHERE id = ?`, r.contact_id));
-  const text = `${r.message.replace("{שם}", r.name.split(" ")[0])}\n${appUrl(`/r/${r.ref}`)}\n\nלהסרה מהודעות השיבו "הסר"`;
+  // The opt-out line follows the offer's language (known from its name placeholder), else the sender's.
+  const all = Object.entries(messages) as [Locale, (typeof messages)[Locale]][];
+  const lang = all.find(([, m]) => r.message.includes(m.market.campaigns.nameToken))?.[0] ?? (await getLocale());
+  const first = r.name.split(" ")[0];
+  const body = all.reduce((s, [, m]) => s.replaceAll(m.market.campaigns.nameToken, first), r.message);
+  const text = `${body}\n${appUrl(`/r/${r.ref}`)}\n\n${messages[lang].market.campaigns.offer.optOut}`;
   return NextResponse.redirect(waLink(r.phone, text));
 }

@@ -13,13 +13,16 @@
     "db:new": "tsx scripts/db.ts new",
     "db:status": "tsx scripts/db.ts status",
     "test:e2e": "node tests/e2e.mjs",
-    "test:hebrew": "node tests/hebrew-scan.mjs"
+    "test:lang": "node tests/language-scan.mjs",
+    "test:i18n": "node tests/i18n-check.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.12",
+    "@fontsource/noto-sans-arabic": "^5.3.0",
     "@fontsource/rubik": "^5.3.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
+    "country-flag-icons": "^1.6.20",
     "next": "^16.4.3",
     "postgres": "^3.4.9",
     "react": "^19.3.1",

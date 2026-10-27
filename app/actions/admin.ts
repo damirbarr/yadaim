@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { get, run } from "@/lib/db";
 import { beginImpersonation, requireAdmin } from "@/lib/auth";
 import { audit } from "@/lib/audit";
+import { getI18n } from "@/lib/i18n/server";
 import type { OrgRole, Role } from "@/lib/rbac";
 import type { FormState } from "./auth";
 
@@ -62,18 +63,19 @@ export async function setDisabled(fd: FormData) {
   revalidatePath("/admin/users");
 }
 
-/** Pre-register someone (e.g. another admin, or the owner of a newly signed agency). Applied on first Google sign-in. */
+/** Pre-register an agency or contractor user (e.g. the owner of a newly signed agency). Applied on first Google sign-in. Never grants admin. */
 export async function adminInvite(_: FormState, fd: FormData): Promise<FormState> {
   const me = await requireAdmin("admin.users");
+  const { t } = await getI18n();
   const email = String(fd.get("email") ?? "").trim().toLowerCase();
   const role = String(fd.get("role")) as Role;
   const orgRole = String(fd.get("org_role")) as OrgRole;
   const org = Number(fd.get("org")) || null;
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "אימייל לא תקין" };
-  if (!["agency", "contractor"].includes(role) || !ORG_ROLES.includes(orgRole)) return { error: "תפקיד לא תקין" };
-  if (!org) return { error: "בחרו ארגון" };
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: t("admin.users.invite.badEmail") };
+  if (!["agency", "contractor"].includes(role) || !ORG_ROLES.includes(orgRole)) return { error: t("admin.users.invite.badRole") };
+  if (!org) return { error: t("admin.users.invite.pickOrg") };
   const u = await get<{ id: number; role: Role }>(`SELECT id, role FROM users WHERE email = ?`, email);
-  if (u?.role === "admin") return { error: "זה חשבון אדמין. אדמינים מוגדרים רק בהגדרות השרת." };
+  if (u?.role === "admin") return { error: t("admin.users.invite.isAdmin") };
   if (u) {
     await run(`UPDATE users SET role = ?, org_role = ?, agency_id = ?, contractor_id = ? WHERE id = ?`, role, orgRole, role === "agency" ? org : null, role === "contractor" ? org : null, u.id);
   } else {
@@ -81,7 +83,7 @@ export async function adminInvite(_: FormState, fd: FormData): Promise<FormState
   }
   await audit(me, "admin.invite", email, `${role}:${orgRole}`);
   revalidatePath("/admin/users");
-  return { ok: u ? "המשתמש עודכן" : "ההזמנה נשמרה — תופעל בכניסה הראשונה עם גוגל" };
+  return { ok: u ? t("admin.users.invite.updated") : t("admin.users.invite.saved") };
 }
 
 /** Support "view as": open the app exactly as this user sees it. Logged, time-limited, reversible from the banner. */

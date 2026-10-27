@@ -47,6 +47,16 @@ try {
   await anon.goto(B + "/login");
   ok((await anon.locator("text=מצב פיתוח").count()) > 0, "login page shows dev-mode shortcuts");
 
+  step("Languages: one tap switches the whole app, direction included");
+  const lang = await as(U.agencyOwner);
+  await lang.goto(B + "/a/workers");
+  for (const [code, dir] of [["en", "ltr"], ["ar", "rtl"], ["he", "rtl"]]) {
+    await Promise.all([lang.waitForResponse((r) => r.request().method() === "POST"), lang.locator(`button[lang=${code}]`).first().click()]);
+    await lang.waitForFunction((c) => document.documentElement.lang === c, code);
+    ok((await lang.locator("html").getAttribute("dir")) === dir, `${code}: page switched (dir=${dir})`);
+  }
+  ok((await lang.locator("h1").first().innerText()).includes("העובדים שלי"), "back in Hebrew, same page");
+
   step("Contractor (owner) books two tilers");
   const c = await as(U.contractorOwner, { mobile: true });
   await c.goto(B + "/c/search?trade=tiling&city=" + encodeURIComponent("נתניה") + "&days=1&count=2");

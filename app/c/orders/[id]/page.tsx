@@ -3,16 +3,25 @@ import { notFound } from "next/navigation";
 import { requireContractor } from "@/lib/auth";
 import { can } from "@/lib/rbac";
 import { bookingsWhere, bookingTotals, displayName } from "@/lib/queries";
-import { addDays, bookingPhase, ddmm, ils, LOCK_HOUR, PHASE_LABEL, prettyDate, todayISO, trade } from "@/lib/domain";
+import { addDays, bookingPhase, LOCK_HOUR, todayISO } from "@/lib/domain";
+import { toQS } from "@/lib/params";
 import { waLink } from "@/lib/wa";
+import { getI18n } from "@/lib/i18n/server";
+import type { MessageKey } from "@/lib/i18n/core";
 import { cancelBooking, saveCrew } from "@/app/actions/contractor";
 import { Avatar, Notice, PageHead, Rating } from "@/components/ui";
 import { IBed, IClock, IPin, ITruck, IWhatsapp } from "@/components/icons";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { t } = await getI18n();
+  return { title: t("contractor.order.title", { id: (await params).id }) };
+}
 
 export default async function Order({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ sent?: string; done?: string }> }) {
   const { user, contractorId } = await requireContractor();
   const [b] = (await bookingsWhere(`b.id = ? AND b.contractor_id = ?`, Number((await params).id), contractorId));
   if (!b) notFound();
+  const { t, rich, fmt } = await getI18n();
   const sp = await searchParams;
   const phase = bookingPhase(b);
   const crew = b.workers.filter((w) => w.state === "assigned");
@@ -22,25 +31,28 @@ export default async function Order({ params, searchParams }: { params: Promise<
   const order = ["requested", "approved", "locked", "today", "completed"];
   const at = completed ? 4 : phase === "awaiting_hours" ? 3.5 : order.indexOf(phase);
   const steps = [
-    { k: "נשלח", sub: ddmm(b.created_at.slice(0, 10)) },
-    { k: "התאגיד אישר", sub: b.approved_at ? ddmm(b.approved_at.slice(0, 10)) : "" },
-    { k: "צוות ננעל", sub: `${ddmm(addDays(b.date, -1))} ${LOCK_HOUR}` },
-    { k: "באתר", sub: b.start_time },
-    { k: "שעות אושרו", sub: b.completed_at ? ddmm(b.completed_at.slice(0, 10)) : "" },
+    { k: t("contractor.order.stepSent"), sub: fmt.date(b.created_at.slice(0, 10)) },
+    { k: t("contractor.order.stepApproved"), sub: b.approved_at ? fmt.date(b.approved_at.slice(0, 10)) : "" },
+    { k: t("contractor.order.stepLocked"), sub: `${fmt.date(addDays(b.date, -1))} ${LOCK_HOUR}` },
+    { k: t("contractor.order.stepOnSite"), sub: b.start_time },
+    { k: t("contractor.order.stepHours"), sub: b.completed_at ? fmt.date(b.completed_at.slice(0, 10)) : "" },
   ];
+  const dates = b.days > 1 ? t("contractor.dateRange", { from: fmt.prettyDate(b.date), to: fmt.prettyDate(b.end_date) }) : fmt.prettyDate(b.date);
+  const alt = `/c/search?${toQS({ trade: b.trade, city: b.city, date: b.date >= today ? b.date : "", days: b.days, count: crew.length })}`;
+  const altLink = { link: (c: React.ReactNode) => <Link className="underline" href={alt}>{c}</Link> };
   return (
     <div className="space-y-5">
-      <PageHead back="/c/orders" title={`הזמנה #${b.id}`} sub={`${crew.length} ${trade(b.trade).plural} · ${prettyDate(b.date)}${b.days > 1 ? ` – ${prettyDate(b.end_date)}` : ""} · ${b.agency_name}`}>
-        <a href={waLink(b.agency_phone, `שלום, לגבי הזמנה #${b.id} ל-${ddmm(b.date)}`)} target="_blank" className="btn-ghost"><IWhatsapp className="h-4 w-4" />לתאגיד</a>
+      <PageHead back="/c/orders" title={t("contractor.order.title", { id: b.id })} sub={`${t(`contractor.count.${b.trade}` as MessageKey, { n: crew.length })} · ${dates} · ${b.agency_name}`}>
+        <a href={waLink(b.agency_phone, t("contractor.order.whatsappText", { id: b.id, date: fmt.date(b.date) }))} target="_blank" className="btn-ghost"><IWhatsapp className="h-4 w-4" />{t("contractor.order.whatsapp")}</a>
       </PageHead>
-      {sp.sent && <Notice tone="ok">ההזמנה נשלחה ל{b.agency_name}. התאגיד מאשר בדרך כלל תוך שעה — נעדכן כאן.</Notice>}
-      {sp.done && <Notice tone="ok">השעות אושרו והדירוג נשמר. התשלום לתאגיד לפי השעות שאישרת.</Notice>}
-      {b.status === "rejected" && <Notice tone="bad">התאגיד דחה את ההזמנה{b.agency_note ? `: ${b.agency_note}` : ""}. <Link className="underline" href={`/c/search?trade=${b.trade}&city=${b.city}&date=${b.date >= today ? b.date : ""}&days=${b.days}&count=${crew.length}`}>חיפוש חלופה</Link></Notice>}
+      {sp.sent && <Notice tone="ok">{t("contractor.order.sentNotice", { agency: b.agency_name })}</Notice>}
+      {sp.done && <Notice tone="ok">{t("contractor.order.doneNotice")}</Notice>}
+      {b.status === "rejected" && <Notice tone="bad">{b.agency_note ? rich("contractor.order.rejectedNote", altLink, { note: b.agency_note }) : rich("contractor.order.rejected", altLink)}</Notice>}
 
       {!["rejected", "cancelled"].includes(b.status) && (
         <ol className="card grid grid-cols-5 p-4 text-center text-xs">
           {steps.map((s, i) => (
-            <li key={s.k} className="relative">
+            <li key={i} className="relative">
               <div className={`mx-auto grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold ${i < at ? "bg-ink text-white" : i === Math.floor(at) || i === at ? "bg-hazard text-ink ring-4 ring-hazard/30" : "bg-paper text-muted"}`}>{i + 1}</div>
               <div className={`mt-1 font-semibold ${i <= at ? "" : "text-muted"}`}>{s.k}</div>
               <div className="num text-muted">{s.sub}</div>
@@ -51,63 +63,67 @@ export default async function Order({ params, searchParams }: { params: Promise<
 
       {(phase === "today" || phase === "awaiting_hours") && can(user, "contractor.site") && (
         <Link href={`/c/orders/${b.id}/site`} className="btn-hazard w-full py-3 text-base">
-          {phase === "today" && today < b.end_date ? "צ׳ק־אין באתר" : phase === "today" ? "צ׳ק־אין · אישור שעות בסוף היום" : "אישור שעות ודירוג"}
+          {phase === "today" && today < b.end_date ? t("contractor.order.checkin") : phase === "today" ? t("contractor.order.checkinAndHours") : t("contractor.order.approveHours")}
         </Link>
       )}
 
       <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
         <section className="card">
-          <h2 className="border-b border-line px-5 py-3 text-[20px] font-bold text-ink">{phase === "requested" ? "מי שביקשת" : "מי מגיע"}</h2>
+          <h2 className="border-b border-line px-5 py-3 text-[20px] font-bold text-ink">{phase === "requested" ? t("contractor.order.requestedCrew") : completed ? t("contractor.order.worked") : t("contractor.order.crew")}</h2>
           <ul>
             {crew.map((w) => (
               <li key={w.bw_id} className="flex items-center gap-3 border-b border-line px-5 py-3 last:border-0">
                 <Avatar w={w} size={48} />
                 <div className="flex-1">
                   <div className="font-semibold">{displayName(w)}</div>
-                  <div className="text-xs text-muted">{trade(w.trade).label} · {w.years} שנים</div>
+                  <div className="text-xs text-muted">{fmt.trade(w.trade)} · {t("contractor.count.years", { n: w.years })}</div>
                 </div>
                 {completed ? (
-                  w.hours_approved ? <div className="text-left text-xs"><Rating value={w.rating} /><div className="num text-muted">{w.hours_approved} ש׳</div></div> : <span className="chip-bad">לא תואם · לא חויב</span>
+                  w.hours_approved ? <div className="text-end text-xs"><Rating value={w.rating} /><div className="num text-muted">{t("contractor.count.hours", { n: w.hours_approved })}</div></div> : <span className="chip-bad">{t("contractor.order.noFitNotBilled")}</span>
                 ) : w.checkin_at ? (
-                  <span className={w.identity_ok === "no" || w.trade_ok === "no" ? "chip-bad" : "chip-ok"}>{w.identity_ok === "no" || w.trade_ok === "no" ? "לא תואם" : "✓ באתר"}</span>
+                  <span className={w.identity_ok === "no" || w.trade_ok === "no" ? "chip-bad" : "chip-ok"}>{w.identity_ok === "no" || w.trade_ok === "no" ? t("contractor.order.noFit") : t("contractor.order.onSite")}</span>
                 ) : (
-                  <span className={phase === "requested" ? "chip-warn" : "chip-ok"}>{phase === "requested" ? "ממתין" : phase === "locked" || phase === "today" ? "✓ ננעל" : "✓ אושר"}</span>
+                  <span className={phase === "requested" ? "chip-warn" : "chip-ok"}>{phase === "requested" ? t("contractor.order.waiting") : phase === "locked" || phase === "today" ? t("contractor.order.locked") : t("contractor.order.approved")}</span>
                 )}
               </li>
             ))}
           </ul>
-          {b.agency_note && b.status !== "rejected" && <p className="border-t border-line px-5 py-3 text-sm text-muted">הערת התאגיד: {b.agency_note}</p>}
+          {b.agency_note && b.status !== "rejected" && <p className="border-t border-line px-5 py-3 text-sm text-muted">{t("contractor.order.agencyNote", { note: b.agency_note })}</p>}
         </section>
 
         <aside className="space-y-4">
           <div className="card space-y-3 p-5 text-sm">
             <div className="flex gap-2"><IPin className="h-4 w-4 shrink-0 text-muted" /><span>{b.address}</span></div>
-            <div className="flex gap-2"><IClock className="h-4 w-4 shrink-0 text-muted" /><span>התחלה <span className="num">{b.start_time}</span> · {b.hours} שעות ביום</span></div>
-            <div className="flex gap-2"><ITruck className="h-4 w-4 shrink-0 text-muted" /><span>{b.transport === "agency" ? (b.pickup_time && ["locked", "today"].includes(phase) ? <>הסעה של התאגיד · נהג {b.driver_name} · <span className="num">{b.vehicle_no}</span> · יוצאים <span className="num">{b.pickup_time}</span></> : "הסעה של התאגיד · פרטי נהג ב-18:00 ערב לפני") : "הסעה עליך"}</span></div>
-            <div className="flex gap-2"><IBed className="h-4 w-4 shrink-0 text-muted" /><span>לינה {b.lodging === "agency" ? "אצל התאגיד" : "אצלך"}</span></div>
+            <div className="flex gap-2"><IClock className="h-4 w-4 shrink-0 text-muted" /><span>{t("contractor.order.start", { time: b.start_time, hours: b.hours })}</span></div>
+            <div className="flex gap-2"><ITruck className="h-4 w-4 shrink-0 text-muted" /><span>{b.transport === "agency"
+              ? (b.pickup_time && ["locked", "today"].includes(phase)
+                ? t("contractor.order.transportDriver", { driver: b.driver_name ?? "", vehicle: b.vehicle_no ?? "", time: b.pickup_time })
+                : ["requested", "approved"].includes(phase) ? t("contractor.order.transportPending", { time: LOCK_HOUR }) : t("contractor.order.transportAgency"))
+              : t("contractor.order.transportOurs")}</span></div>
+            <div className="flex gap-2"><IBed className="h-4 w-4 shrink-0 text-muted" /><span>{b.lodging === "agency" ? t("contractor.order.lodgingAgency") : t("contractor.order.lodgingOurs")}</span></div>
             {b.notes && <p className="rounded-[3px] bg-paper p-3 text-muted">{b.notes}</p>}
           </div>
           <div className="card p-5">
-            <div className="flex items-baseline justify-between">
-              <span className="text-sm text-muted">{completed ? "לתשלום לתאגיד (לפי שעות שאושרו)" : "הערכה (לפני אישור שעות)"}</span>
-              <span className="font-display text-2xl font-bold num">{ils(totals.gross, 2)}</span>
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-sm text-muted">{completed ? t("contractor.order.toPay") : t("contractor.order.estimate")}</span>
+              <span className="font-display text-2xl font-bold num">{fmt.money(totals.gross, 2)}</span>
             </div>
-            <div className="text-xs text-muted">כולל מע״מ · <span className="num">{ils(totals.net)}</span> לפני מע״מ</div>
+            <div className="text-xs text-muted">{t("contractor.order.inclVat", { net: fmt.money(totals.net) })}</div>
           </div>
           {["requested", "approved"].includes(phase) && can(user, "contractor.book") && (
             <form action={cancelBooking}>
               <input type="hidden" name="id" value={b.id} />
-              <button className="btn-ghost w-full text-bad">ביטול הזמנה</button>
-              <p className="mt-1 text-center text-xs text-muted">אפשר לבטל בלי עלות עד 18:00 ערב לפני.</p>
+              <button className="btn-ghost w-full text-bad">{t("contractor.order.cancel")}</button>
+              <p className="mt-1 text-center text-xs text-muted">{t("contractor.order.cancelNote", { time: LOCK_HOUR })}</p>
             </form>
           )}
           {completed && crew.some((w) => w.hours_approved) && can(user, "contractor.crews.edit") && (
             <form action={saveCrew} className="card space-y-2 p-4">
               <input type="hidden" name="id" value={b.id} />
-              <label className="label">שמירת הצוות להזמנה חוזרת</label>
+              <label className="label">{t("contractor.order.saveCrew")}</label>
               <div className="flex gap-2">
-                <input className="input" name="name" placeholder={`צוות ${trade(b.trade).plural} · ${b.city}`} />
-                <button className="btn-primary">שמירה</button>
+                <input className="input" name="name" placeholder={t("contractor.order.crewName", { trades: fmt.trades(b.trade), city: fmt.city(b.city) })} />
+                <button className="btn-primary">{t("common.save")}</button>
               </div>
             </form>
           )}
