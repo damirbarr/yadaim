@@ -9,3 +9,4 @@ tests/.tmp-*
 next-env.d.ts
 .env*
 !.env.example
+out-demo/

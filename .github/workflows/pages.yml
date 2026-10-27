@@ -1,0 +1,67 @@
+# Publishes a static, view-only snapshot of the demo to GitHub Pages (scripts/snapshot.mjs).
+# The app needs a server, so CI builds it, runs it with fresh demo data (embedded PGlite, dev personas),
+# crawls every screen in he/ar/en and uploads the saved pages. Enable once: Settings → Pages → Source: GitHub Actions.
+name: Demo snapshot (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run build
+
+      # No DATABASE_URL: PGlite in ./data, migrated and seeded with demo data (relative to today) on boot.
+      - name: Start the app with demo data
+        run: |
+          AUTH_DEV_BYPASS=1 nohup npm start > app.log 2>&1 &
+          npx --yes wait-on@8.0.1 --timeout 120000 http://localhost:3000/login
+
+      - name: Snapshot
+        run: node scripts/snapshot.mjs
+        env:
+          BASE_URL: http://localhost:3000
+          OUT_DIR: out-demo
+          SNAPSHOT_BASE: /${{ github.event.repository.name }}
+
+      - name: Server log
+        if: failure()
+        run: tail -n 200 app.log
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out-demo
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}he/
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
