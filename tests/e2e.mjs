@@ -103,36 +103,58 @@ try {
   await m.goto(B + "/a/team");
   ok(m.url().includes("/forbidden"), "manager → team management is forbidden");
 
-  step("Contractor site: check-in, no-fit, hours, rating, saved crew");
-  await c.goto(B + "/c/orders");
-  const today = c.locator('a:has-text("היום באתר")');
-  ok((await today.count()) >= 1, "a crew is on site today");
-  await today.first().click();
-  await c.click('a:has-text("צ׳ק־אין")');
-  await c.waitForURL(/site/);
-  const sections = c.locator("section");
-  // Each answer is a server action; wait for its response and the re-render before the next tap.
-  const answer = async (i, nth, label) => {
-    const btn = sections.nth(i).locator(`button:has-text("${label}")`).nth(nth);
-    await Promise.all([c.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/site")), btn.click()]);
-    await c.waitForLoadState("networkidle");
-    await c.waitForTimeout(250);
-  };
-  for (let i = 0; i < 3; i++) {
-    await answer(i, 0, "כן");
-    await answer(i, 1, i === 2 ? "לא" : "כן");
-  }
-  await c.reload();
-  ok((await c.locator("text=לא יחויב").count()) >= 1, "no-fit worker flagged as not billed");
+  step("Contractor work day: arrival, first-arrival questions, no-show, entry/exit, end of day, hours, rating, saved crew");
+  await c.goto(B + "/c");
+  const start = c.locator('[data-today] a[data-act="work-day"]').filter({ hasText: "בן גוריון" });
+  ok((await start.count()) === 1 && (await start.innerText()).includes("תחילת יום עבודה"), "home opens the work day of today's crew");
+  await Promise.all([c.waitForURL(/\/site/), start.click()]);
+  const dayCards = c.locator("section[data-bw]");
+  ok((await dayCards.count()) === 3, "one card per worker");
+  // Every tap and every picked time is a server action; wait for its response and the re-render before the next one.
+  const posted = () => c.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/site"));
+  const settle = async () => { await c.waitForLoadState("networkidle"); await c.waitForTimeout(250); };
+  const tap = async (i, act) => { await Promise.all([posted(), dayCards.nth(i).locator(`button[data-act="${act}"]`).click()]); await settle(); };
+  const pick = async (i, name, v) => { await Promise.all([posted(), dayCards.nth(i).locator(`select[name=${name}]`).selectOption(v)]); await settle(); };
+  await tap(0, "arrive"); await tap(0, "identity_ok-yes"); await tap(0, "trade_ok-yes");
+  await tap(1, "arrive"); await tap(1, "identity_ok-yes"); await tap(1, "trade_ok-no");
+  await tap(2, "noshow");
+  ok((await dayCards.nth(2).innerText()).includes("היום הזה לא יחויב"), "no-show marked, the day is not billed");
+  ok((await dayCards.nth(1).innerText()).includes("לא תואם · לא יחויב"), "no-fit worker flagged as not billed");
+  await pick(0, "start", "07:00");
+  ok((await c.locator('button[data-act="end-day"]').count()) === 1, "one tap ends the day for everyone still on site");
+  await Promise.all([posted(), c.click('button[data-act="end-day"]')]); await settle();
+  await pick(0, "end", "16:30");
+  ok((await dayCards.nth(0).locator("[data-hours]").innerText()).includes("9"), "07:00 to 16:30 is 9 paid hours after the break");
   await shot(c, "04-site");
+  ok((await c.locator('input[name^="hours_"]').count()) === 1 && (await c.locator('input[name^="hours_"]').inputValue()) === "9", "hours approval is pre-filled from attendance, only for the billable worker");
   await Promise.all([c.waitForURL(/done=1/), c.click('button:has-text("אישור שעות ודירוג")')]);
-  ok((await c.locator("text=לא תואם · לא חויב").count()) === 1, "completed; one worker not billed");
+  ok((await c.locator("text=לא תואם · לא חויב").count()) === 1 && (await c.locator("text=לא הגיע · לא חויב").count()) === 1, "completed; no-fit and no-show workers not billed");
   await c.fill("input[name=name]", "ברזלנים טובים");
   await Promise.all([c.waitForURL(/crews/), c.click('button:has-text("שמירה")')]);
   ok((await c.locator("text=ברזלנים טובים").count()) === 1, "crew saved");
   const f = await as(U.foreman);
   await f.goto(B + "/c/team");
   ok(f.url().includes("/forbidden"), "foreman (manager) cannot manage the contractor team");
+
+  step("Multi-day booking: daily attendance by the foreman, read-only for the agency");
+  const fm = await as(U.foreman, { mobile: true });
+  await fm.goto(B + "/c");
+  const md = fm.locator('[data-today] a[data-act="work-day"]').filter({ hasText: "שמואל הנציב" });
+  ok((await md.count()) === 1 && (await md.innerText()).includes("יום 4 מתוך 6"), "foreman sees day 4 of 6 of the multi-day crew");
+  const mdId = (await md.getAttribute("href")).match(/orders\/(\d+)/)[1];
+  await Promise.all([fm.waitForURL(/\/site/), md.click()]);
+  const strip = fm.locator('nav[aria-label="ימי ההזמנה"] li');
+  ok((await strip.count()) === 6, "the day strip shows all six work days");
+  const mdCards = fm.locator("section[data-bw]");
+  await Promise.all([fm.waitForResponse((r) => r.request().method() === "POST"), mdCards.nth(0).locator('button[data-act="arrive"]').click()]);
+  await fm.waitForLoadState("networkidle");
+  ok((await mdCards.nth(0).locator("select[name=start]").count()) === 1 && (await mdCards.nth(0).innerText()).includes("נבדק בהגעה הראשונה"), "arrival records the entry time; the questions are not asked again");
+  await Promise.all([fm.waitForURL(/d=/), strip.first().locator("a").click()]);
+  ok((await fm.locator("section[data-bw] [data-hours]").first().innerText()).includes("9"), "an earlier day shows its recorded hours");
+  const ag = await as(U.agencyOwner);
+  await ag.goto(B + `/a/requests/${mdId}`);
+  const att = ag.locator("[data-attendance]");
+  ok((await att.count()) === 1 && (await att.innerText()).includes("לא הגיע"), "the agency sees the daily attendance, missed day included");
 
   step("Compliance: renewal request over WhatsApp, then the agency renews the document with a scan");
   const o = await as(U.agencyOwner);

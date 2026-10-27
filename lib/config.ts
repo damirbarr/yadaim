@@ -10,12 +10,17 @@ export const config = {
   get appUrl() { return (env("APP_URL") ?? "http://localhost:3000").replace(/\/$/, ""); },
   get production() { return process.env.NODE_ENV === "production"; },
   get onVercel() { return !!env("VERCEL"); },
+  /** A shareable demo with no setup: open access with the DEV persona switcher, an embedded database seeded with
+   *  demo data, files kept locally. On Vercel the data lives in /tmp, so it resets whenever an instance restarts. */
+  get demo() { return flag("DEMO_MODE", false); },
+  /** Where the embedded database and local uploads live. Serverless disks are read-only except /tmp. */
+  get dataDir() { return config.demo && config.onVercel ? "/tmp/yadaim" : `${process.cwd()}/data`; },
 
   db: {
     /** Supabase (or any Postgres) connection string. Unset → embedded PGlite in ./data/pglite. */
     get url() { return env("DATABASE_URL"); },
     get poolMax() { return Number(env("DB_POOL_MAX") ?? 5); },
-    get pgliteDir() { return env("PGLITE_DIR"); },
+    get pgliteDir() { return env("PGLITE_DIR") ?? `${config.dataDir}/pglite`; },
     /** Apply pending migrations on boot. Default: on for PGlite, off for Supabase (use `npm run db:migrate`). */
     get autoMigrate() { return flag("DB_AUTO_MIGRATE", !config.db.url); },
     /** Load demo data into an empty database on boot. Default: on for PGlite only. */
@@ -34,7 +39,7 @@ export const config = {
     /** Platform admins: the people who build and run Yadaim. The only way to become one. */
     get adminEmails() { return (env("ADMIN_EMAILS") ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean); },
     /** Dev mode (no sign-in). On in `next dev`, off in production unless AUTH_DEV_BYPASS=1. */
-    get devBypass() { return flag("AUTH_DEV_BYPASS", !config.production); },
+    get devBypass() { return flag("AUTH_DEV_BYPASS", !config.production || config.demo); },
     get secureCookies() { return config.production && env("INSECURE_COOKIES") !== "1"; },
   },
 };

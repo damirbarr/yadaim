@@ -1,5 +1,15 @@
 # דיפלוי: GitHub, Supabase, Google, Vercel
 
+## דמו לשיתוף, בלי שום הגדרה (5 דקות)
+לשיתוף מהיר של המערכת עם משקיעים, תאגידים או קבלנים, בלי Supabase ובלי Google:
+1. ב-https://vercel.com לוחצים **Add New ← Project** ומייבאים את הריפו `damirbarr/yadaim`.
+2. ב-**Environment Variables** מוסיפים משתנה אחד: `DEMO_MODE` = `1`.
+3. **Deploy.** הכתובת שמתקבלת (למשל `https://yadaim.vercel.app`) היא הדמו.
+
+מה מקבלים: כל המסכים עובדים, עם נתוני ההדגמה וכפתור "מצב פיתוח" להחלפה בין תאגיד, קבלן ואדמין. הנתונים נשמרים בזיכרון של השרת ומתאפסים מדי פעם (כשהשרת מופעל מחדש). לא להגדיר `DEMO_MODE` בפריסה אמיתית.
+
+**צילום סטטי ב-GitHub Pages:** כל דחיפה ל-`main` מייצרת גם עותק לצפייה בלבד של כל המסכים בשלוש השפות (`.github/workflows/pages.yml`). כדי להפעיל: בריפו ב-GitHub, **Settings ← Pages ← Source: GitHub Actions**. בריפו פרטי זה דורש מנוי GitHub Pro. הכתובת: `https://damirbarr.github.io/yadaim/`.
+
 ## מה נפרס לאן
 | רכיב | שירות | מה יש בו |
 |---|---|---|

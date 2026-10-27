@@ -31,6 +31,14 @@ export default {
   },
   // Activity-log actions (the `action` passed to audit()), dots → underscores.
   audit: {
+    attendance_arrive: "סימון הגעה לאתר",
+    attendance_noshow: "סימון ״לא הגיע״",
+    attendance_clear: "ביטול סימון נוכחות",
+    attendance_hours: "שינוי שעות כניסה ויציאה",
+    attendance_endday: "סיום יום עבודה",
+    hours_approve: "אישור שעות",
+    checkin_nofit: "סימון ״לא תואם״",
+    promotion_end: "הפסקת מבצע",
     briefing_sign: "רישום הדרכת בטיחות באתר",
     crew_create: "יצירת צוות",
     crew_delete: "פירוק צוות",

@@ -16,7 +16,7 @@ interface FileStore {
   get(name: string): Promise<Buffer | null>;
 }
 
-export const UPLOAD_DIR = path.join(process.cwd(), "data", "uploads");
+export const UPLOAD_DIR = path.join(config.dataDir, "uploads");
 
 const localStore: FileStore = {
   async put(name, data) {
@@ -45,8 +45,9 @@ const supabaseStore: FileStore = {
 
 async function store(): Promise<FileStore> {
   if (features.supabaseStorage) return supabaseStore;
-  // Serverless disks are wiped between requests, so a missing key there is a setup error, not a fallback.
-  if (config.onVercel) {
+  // Serverless disks are wiped between requests, so a missing key there is a setup error, not a fallback
+  // (except in a demo, where losing an uploaded photo on restart is fine).
+  if (config.onVercel && !config.demo) {
     console.error("file storage is not configured: SUPABASE_SERVICE_ROLE_KEY is missing");
     throw new Error((await getI18n()).t("agency.upload.notConfigured"));
   }

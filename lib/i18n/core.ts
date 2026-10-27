@@ -27,7 +27,8 @@ function lookup(messages: Messages, key: string): string | Plural | undefined {
 export function makeI18n(locale: Locale, messages: Messages) {
   const L = LOCALES[locale];
   const rules = new Intl.PluralRules(L.intl);
-  const fill = (s: string, p?: Params) => (p ? s.replace(/\{(\w+)\}/g, (m, k) => (k in p ? String(typeof p[k] === "number" ? num(p[k] as number) : p[k]) : m)) : s);
+  // Numbers are formatted for the locale (1,200), except identifiers: a booking is "#1021", not "#1,021".
+  const fill = (s: string, p?: Params) => (p ? s.replace(/\{(\w+)\}/g, (m, k) => (k in p ? String(typeof p[k] === "number" && !/(^id$|Id$|^ref$)/.test(k) ? num(p[k] as number) : p[k]) : m)) : s);
   const num = (n: number, digits = 0) => n.toLocaleString(L.intl, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
   function t(key: MessageKey, params?: Params): string {
@@ -60,6 +61,9 @@ export function makeI18n(locale: Locale, messages: Messages) {
     date: (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}`,
     /** 27.10.2026 */
     fullDate: (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`,
+    /** For "{from} – {to}" messages: wraps the whole range in one left-to-right isolate, so 28.10–10.11 keeps its
+     *  order inside Hebrew/Arabic text (a lone number needs nothing; see .num in globals.css). */
+    range: (from: string, to: string) => ({ from: `\u2066${from}`, to: `${to}\u2069` }),
     /** 10.2026 */
     month: (iso: string) => `${iso.slice(5, 7)}.${iso.slice(0, 4)}`,
     weekday: (iso: string) => new Intl.DateTimeFormat(L.intl, { weekday: "long", timeZone: "UTC" }).format(day(iso)),

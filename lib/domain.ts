@@ -79,6 +79,14 @@ export function hourlyFor(base: number, a: AgencyRates, o: Pick<PriceOpts, "lodg
 }
 export const DEFAULT_OPTS: PriceOpts = { lodging: "contractor", transport: "agency", hours: 9 };
 
+// Sale prices (מחירי מבצע, lib/promotions.ts): a percentage off the final hourly price, rounded to the agora.
+// The quick choices are what agencies actually offer; the custom range keeps a typo from giving workers away.
+export const SALE_PCTS = [10, 15, 20] as const;
+export const SALE_MIN = 5;
+export const SALE_MAX = 50;
+export const validSalePct = (pct: number) => Number.isInteger(pct) && pct >= SALE_MIN && pct <= SALE_MAX;
+export const salePrice = (hourly: number, pct: number) => (pct > 0 ? Math.round(hourly * (100 - pct)) / 100 : hourly);
+
 /** A signed site safety briefing is usually valid for a year. */
 export const BRIEFING_VALID_DAYS = 365;
 
@@ -99,7 +107,8 @@ export function addDays(iso: string, n: number) {
 export function diffDays(a: string, b: string) {
   return Math.round((new Date(b + "T12:00:00Z").getTime() - new Date(a + "T12:00:00Z").getTime()) / 86400000);
 }
-export const isWorkday = (iso: string) => new Date(iso + "T12:00:00Z").getUTCDay() <= 4; // Sun–Thu
+// Construction works Sunday to Friday (Friday is a full, legitimate work day in the industry); Saturday is off.
+export const isWorkday = (iso: string) => new Date(iso + "T12:00:00Z").getUTCDay() <= 5;
 export function nextWorkday(iso: string) {
   let d = addDays(iso, 1);
   while (!isWorkday(d)) d = addDays(d, 1);

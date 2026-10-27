@@ -3,14 +3,16 @@ import { useActionState, useMemo, useState } from "react";
 import { createBooking } from "@/app/actions/contractor";
 import type { FormState } from "@/app/actions/auth";
 import { useI18n } from "@/lib/i18n/client";
-import { LOCK_HOUR, VAT } from "@/lib/domain";
+import { LOCK_HOUR, VAT, salePrice } from "@/lib/domain";
 import { Avatar } from "./ui";
 import type { MessageKey } from "@/lib/i18n/core";
 
-type W = { id: number; name: string; trade: string; years: number; base: number; agencyId: number; agency: string; lodgingDiscount: number; transportRate: number; photo: string | null; country: string; docsUntil: string };
+type W = { id: number; name: string; trade: string; years: number; base: number; agencyId: number; agency: string; lodgingDiscount: number; transportRate: number; photo: string | null; country: string; docsUntil: string;
+  /** The agency's sale for these dates (0 = none). The server applies the same rule again when it stores the booking. */
+  salePct: number };
 
 export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: { trade: string; city: string; date: string; days: number; lodging: string; transport: string; hours: number }; defaultAddress: string }) {
-  const { t, fmt } = useI18n();
+  const { t, rich, fmt } = useI18n();
   const n = fmt.num;
   const [lodging, setLodging] = useState(q.lodging);
   const [transport, setTransport] = useState(q.transport);
@@ -21,12 +23,14 @@ export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: 
     const rows = workers.map((w) => {
       const lodgingAdj = lodging === "contractor" ? -w.lodgingDiscount : 0;
       const transportAdj = transport === "agency" ? w.transportRate : 0;
-      const hourly = w.base + lodgingAdj + transportAdj;
-      return { w, lodgingAdj, transportAdj, hourly, day: hourly * hours };
+      const regular = w.base + lodgingAdj + transportAdj;
+      const hourly = salePrice(regular, w.salePct);
+      return { w, lodgingAdj, transportAdj, hourly, day: hourly * hours, regularDay: regular * hours };
     });
     const perDay = rows.reduce((a, r) => a + r.day, 0);
+    const saved = rows.reduce((a, r) => a + r.regularDay - r.day, 0);
     const net = perDay * q.days;
-    return { rows, perDay, net, vat: net * VAT, gross: net * (1 + VAT) };
+    return { rows, perDay, saved, net, vat: net * VAT, gross: net * (1 + VAT) };
   }, [workers, lodging, transport, hours, q.days]);
   const avgBase = workers.reduce((a, w) => a + w.base, 0) / workers.length;
   const avgL = workers.reduce((a, w) => a + w.lodgingDiscount, 0) / workers.length;
@@ -60,7 +64,7 @@ export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: 
                 <span className="text-[12px] text-muted">{t("contractor.checkout.groupNote")}</span>
               </div>
               <ul className="divide-y divide-dashed divide-line">
-                {g.rows.map(({ w, day }) => (
+                {g.rows.map(({ w, day, regularDay }) => (
                   <li key={w.id} className="flex items-center gap-3 px-4 py-3">
                     <Avatar w={{ id: w.id, trade: w.trade, photo: w.photo, country: w.country }} size={44} />
                     <div className="min-w-0 flex-1">
@@ -68,8 +72,10 @@ export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: 
                       <div className="text-xs text-muted">{fmt.trade(w.trade)} · {t("contractor.count.years", { n: w.years })}</div>
                       <div className="text-xs text-ok">✓ {t("contractor.checkout.docsValid")}</div>
                     </div>
-                    <div className="shrink-0 text-end">
+                    <div className="shrink-0 text-end" data-sale={w.salePct || undefined}>
+                      {w.salePct > 0 && <div className="mb-1"><span className="chip-hazard whitespace-nowrap">{t("contractor.results.sale")}</span></div>}
                       <div className="font-display text-[18px] font-bold leading-none num">{fmt.money(Math.round(day))}</div>
+                      {w.salePct > 0 && <div className="whitespace-nowrap text-[12px] text-muted">{rich("contractor.results.saleWas", { s: (c) => <s className="num">{c}</s> }, { price: fmt.money(Math.round(regularDay)) })}</div>}
                       <div className="text-[11px] text-muted">{t("contractor.checkout.perWorkerDay")}</div>
                     </div>
                   </li>
@@ -127,6 +133,7 @@ export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: 
           <Row k={t("contractor.checkout.rowBase", { hours, rate: fmt.money(avgBase) })} v={n(avgBase * hours)} />
           <Row k={t("contractor.checkout.rowLodging", { hours, rate: fmt.money(avgL) })} v={lodging === "contractor" ? "−" + n(avgL * hours) : "-"} />
           <Row k={t("contractor.checkout.rowTransport", { hours, rate: fmt.money(avgT) })} v={transport === "agency" ? n(avgT * hours) : "-"} />
+          {calc.saved > 0 && <Row k={t("contractor.checkout.rowSale")} v={"−" + n(calc.saved / workers.length)} />}
           <Row k={t("contractor.checkout.rowPerWorker")} v={n(calc.perDay / workers.length)} strong />
           <Row k={t("contractor.checkout.rowTotal", { workers: t("contractor.count.workers", { n: workers.length }), days: t("contractor.count.days", { n: q.days }) })} v={n(calc.net)} />
           <Row k={t("contractor.checkout.rowVat", { pct: Math.round(VAT * 100) })} v={n(calc.vat, 2)} />

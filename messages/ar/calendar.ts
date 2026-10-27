@@ -11,13 +11,13 @@ const m: Messages["calendar"] = {
 
   agency: {
     title: "التقويم",
-    eyebrow: "نظرة على الشهر",
-    sub: "كم عاملًا مُعيَّن وكم عاملًا متاح في كل يوم عمل. اختاروا يومًا لتروا من يعمل وأين.",
+    eyebrow: "نظرة شهرية",
+    sub: "عدد العمّال المُعيَّنين والمتاحين في كل يوم عمل. اختاروا يومًا لمعرفة من يعمل وأين.",
     allTrades: "كل المهن",
     assigned: plural({ one: "مُعيَّن واحد", two: "مُعيَّنان", few: "{n} مُعيَّنين", many: "{n} مُعيَّنًا", other: "{n} مُعيَّن" }),
     free: plural({ one: "متاح واحد", two: "متاحان", few: "{n} متاحين", many: "{n} متاحًا", other: "{n} متاح" }),
-    ofTotal: "من {n}",
-    cellAria: "{date}: {assigned} مُعيَّنون، {free} متاحون",
+    ofTotal: "من أصل {n}",
+    cellAria: "{date}: مُعيَّنون {assigned}، متاحون {free}",
     legendAssigned: "مُعيَّنون",
     legendFree: "متاحون",
     assignedTitle: "مُعيَّنون",
@@ -25,15 +25,16 @@ const m: Messages["calendar"] = {
     workers: plural({ one: "عامل واحد", two: "عاملان", few: "{n} عمّال", many: "{n} عاملًا", other: "{n} عامل" }),
     noneAssigned: "لا يوجد عامل مُعيَّن في هذا اليوم.",
     noneFree: "كل العمّال مُعيَّنون في هذا اليوم.",
-    weekend: "الجمعة والسبت ليسا يومَي عمل.",
-    market: "لتسويق الأيام المتاحة",
+    weekend: "السبت ليس يوم عمل.",
+    offerSale: "عرض بسعر مخفّض للمقاولين",
+    offerSaleFor: "عرض بسعر مخفّض للمقاولين: {trades}",
     noWorkers: "لا يوجد عمّال نشطون بعد. أضيفوا عمّالًا لرؤية التوفّر.",
     open: "تفاصيل الطلب",
   },
 
   contractor: {
-    empty: "لا توجد طلبات في هذا الشهر.",
-    emptyLink: "لطلب جديد",
+    empty: "لا توجد حجوزات في هذا الشهر.",
+    emptyLink: "حجز جديد",
   },
 
   availability: {
@@ -41,7 +42,7 @@ const m: Messages["calendar"] = {
     title: "الأسبوعان القادمان",
     free: "متاح",
     busy: "مُعيَّن",
-    aria: "{free} من {total} أيام عمل متاحة، {pct}%",
+    aria: "أيام العمل المتاحة: {free} من أصل {total}، {pct}%",
   },
 };
 export default m;

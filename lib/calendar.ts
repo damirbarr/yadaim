@@ -86,7 +86,7 @@ export const contractorCalendar = (contractorId: number, from: string, to: strin
 // ── Worker availability in the near future ──────────────────────────────
 export type WorkerAvailability = { free: number; total: number; pct: number; days: { date: string; busy: boolean }[] };
 
-/** The next `workdays` work days (Sun–Thu) from `from`, inclusive when `from` is a work day. */
+/** The next `workdays` work days (Sun–Fri) from `from`, inclusive when `from` is a work day. */
 export function workdaysFrom(from: string, workdays = 10) {
   const out: string[] = [];
   for (let d = from; out.length < workdays; d = addDays(d, 1)) if (isWorkday(d)) out.push(d);

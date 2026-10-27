@@ -37,7 +37,7 @@ export async function MonthCalendar({ month, today, selected, href, day, linkDay
   const anything = rows.some((r) => r.some((c) => c.content != null));
   const thisMonth = today.slice(0, 7);
   // Phone week headers name the week's work days inside this month, e.g. 25.10 to 29.10.
-  const weekLabel = (ds: string[]) => (ds.length ? t("calendar.week", { from: fmt.date(ds[0]), to: fmt.date(ds[ds.length - 1]) }) : null);
+  const weekLabel = (ds: string[]) => (ds.length ? t("calendar.week", fmt.range(fmt.date(ds[0]), fmt.date(ds[ds.length - 1]))) : null);
 
   return (
     <section className="space-y-3" aria-label={title}>

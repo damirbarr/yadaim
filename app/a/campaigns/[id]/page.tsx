@@ -4,7 +4,9 @@ import type { ReactNode } from "react";
 import { requireAgency } from "@/lib/auth";
 import { can } from "@/lib/rbac";
 import { all, get } from "@/lib/db";
-import { addDays } from "@/lib/domain";
+import { addDays, todayISO } from "@/lib/domain";
+import { campaignPromotion } from "@/lib/promotions";
+import { endPromotion } from "@/app/actions/agency";
 import { appUrl } from "@/lib/wa";
 import { PageHead } from "@/components/ui";
 import { IPhone, IWhatsapp } from "@/components/icons";
@@ -30,6 +32,8 @@ export default async function Campaign({ params }: { params: Promise<{ id: strin
   const send = can(user, "agency.campaigns.send");
   const c = (await get(`SELECT * FROM campaigns WHERE id = ? AND agency_id = ?`, Number((await params).id), agencyId)) as { id: number; trade: string; date_from: string; date_to: string; message: string; created_at: string } | undefined;
   if (!c) notFound();
+  const promo = await campaignPromotion(c.id, agencyId);
+  const promoLive = !!promo && !promo.ended_at && promo.date_to >= todayISO();
   const recs = (await all(
     `SELECT r.id, r.ref, r.sent_at, r.opened_at, r.booked_at, k.name, k.company, k.phone, k.city, k.opted_out, k.last_sent_at,
             (k.last_sent_at IS NOT NULL AND k.last_sent_at > now_txt(interval '-3 days')) AS recent
@@ -94,8 +98,25 @@ export default async function Campaign({ params }: { params: Promise<{ id: strin
       <PageHead
         back="/a/campaigns"
         eyebrow={t("market.campaigns.detail.eyebrow", { date: fmt.date(c.created_at.slice(0, 10)) })}
-        title={rich("market.campaigns.detail.title", { num: (x) => <span className="num">{x}</span> }, { trades: fmt.trades(c.trade), from: fmt.date(c.date_from), to: fmt.date(c.date_to) })}
+        title={rich("market.campaigns.detail.title", { num: (x) => <span className="num" dir="ltr">{x}</span> }, { trades: fmt.trades(c.trade), from: fmt.date(c.date_from), to: fmt.date(c.date_to) })}
       />
+
+      {promo && (
+        <section className="sheet flex flex-wrap items-center gap-3 px-4 py-3" data-testid="campaign-sale">
+          <span className={promoLive ? "chip-hazard" : "chip-muted"}>{t("market.campaigns.pastSale", { pct: promo.pct })}</span>
+          <span className="min-w-0 flex-1 text-[14px]">
+            {promoLive
+              ? (promo.date_from === promo.date_to ? t("market.campaigns.sale.ruleDay", { date: fmt.date(promo.date_from) }) : t("market.campaigns.sale.rule", { from: fmt.date(promo.date_from), to: fmt.date(promo.date_to) }))
+              : t("market.campaigns.detail.saleOver")}
+          </span>
+          {promoLive && send && (
+            <form action={endPromotion}>
+              <input type="hidden" name="id" value={promo.id} />
+              <button className="btn-ghost btn-sm min-h-10">{t("market.campaigns.detail.endSale")}</button>
+            </form>
+          )}
+        </section>
+      )}
 
       {/* Where the agency is in sending, and the one button that moves it forward. */}
       <section className="blueprint rounded-[3px] p-5">

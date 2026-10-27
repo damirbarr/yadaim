@@ -3,7 +3,7 @@ import { requireAgency } from "@/lib/auth";
 import { can } from "@/lib/rbac";
 import { all } from "@/lib/db";
 import { bookingsWhere, bookingTotals, busyWorkers, displayName, docCheck, docsFor, workedWith, workerStats, type Worker } from "@/lib/queries";
-import { bookingPhase } from "@/lib/domain";
+import { bookingPhase, todayISO } from "@/lib/domain";
 import { getI18n } from "@/lib/i18n/server";
 import { agencyCrews } from "@/lib/crews";
 import { waLink } from "@/lib/wa";
@@ -11,6 +11,7 @@ import { agencyCancel, rejectRequest, swapWorker } from "@/app/actions/agency";
 import { AssignForm, type Cand, type CrewOption } from "@/components/AssignForm";
 import { Avatar, Notice, PageHead, Rating } from "@/components/ui";
 import { IWhatsapp } from "@/components/icons";
+import { AttendanceTable } from "@/app/c/orders/[id]/AttendanceTable";
 
 export default async function RequestPage({ params }: { params: Promise<{ id: string }> }) {
   const { user, agencyId } = await requireAgency();
@@ -109,6 +110,8 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
               </ul>
             </section>
           )}
+          {/* Daily attendance as the contractor records it on site, read-only, from the first work day on. */}
+          {((b.status === "approved" && b.date <= todayISO()) || crew.some((w) => w.attendance.length > 0)) && <AttendanceTable b={b} note={t("agency.request.attendanceNote")} />}
           {manage && b.status === "approved" && ["approved", "locked"].includes(phase) && (
             <form action={agencyCancel} className="text-center">
               <input type="hidden" name="id" value={b.id} />

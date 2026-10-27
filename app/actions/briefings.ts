@@ -26,7 +26,9 @@ export async function recordBriefing(fd: FormData) {
   try {
     file = await saveUpload(fd.get("file") as File | null, "d");
   } catch {
-    redirect(`/c/orders/${b.id}/site?briefingError=${bwId}#bw-${bwId}`);
+    // Back to the same work day the briefing was recorded from.
+    const d = String(fd.get("d") ?? "");
+    redirect(`/c/orders/${b.id}/site?${/^\d{4}-\d{2}-\d{2}$/.test(d) ? `d=${d}&` : ""}briefingError=${bwId}#bw-${bwId}`);
   }
   const signed = todayISO();
   await insert(

@@ -90,10 +90,10 @@ Only one `next dev` can run per directory. Seed data is generated relative to **
 - Styling: Tailwind 4 with design tokens in `app/globals.css` and utilities `card`/`sheet`, `btn-primary|hazard|ghost|ok`, `btn-sm`, `input`, `label`, `chip-*`, `seg`, `tbl`, `num` (wrap numbers in `.num` for LTR digits inside RTL). UI primitives live in `components/ui.tsx` (`PageHead`, `Stat`, `Empty`, `Avatar`, `ScoreRing`, `Notice`, `Logo`).
 - **Design language "שרטוט" (blueprint), chosen by the owner in round 5.** Keep new screens in it; don't drift back to generic rounded cards:
   - Colours: navy `ink` #0e2a44 (frames, primary buttons), paper `paper` #f4efe4 (page background), white sheets with 1px `line` #d9cfbc borders, lime `hazard` #d4f25a as the single accent (only on navy or as a highlight, never as body text on paper), orange `signal` #ff7a45 for "now/attention" dots. Status: `ok/warn/bad/info` (+ `-soft`).
-  - Type: **Rubik** for everything (headings, numbers, body), chosen by the owner. Headings and big numbers are bold (`font-display` keeps working as a hook). Use the `eyebrow` class (small, muted) above titles, e.g. "גיליון יומי · 27.10". No wide letter-spacing on Hebrew text.
+  - Type: **Rubik** for everything (headings, numbers, body), chosen by the owner. Headings and big numbers are bold (`font-display` keeps working as a hook). Use the `eyebrow` class (small, muted) above titles for real context only, e.g. the date. No wide letter-spacing on Hebrew text.
   - Shape: sharp 3px corners (`rounded-[3px]`), no `rounded-xl/2xl`, no heavy shadows. Lists are rows split by `border-dashed border-line`, not stacks of cards. Section header = a bar with a serif title and a muted note on the left.
   - Navy panels use the `blueprint` class (grid lines baked in) with white/lime text: sidebars, headers, hero bands, the highlighted stat. `paper-grid` is the faint grid for empty states and charts. Dimension-line SVGs (lime line with end ticks) are the decorative motif; no stock photos or emoji.
-  - Hebrew-only still applies to decoration: sheet corner marks are א/ב/ג, not A/B/C (the Hebrew scan will fail otherwise).
+  - No decorative labels that mean nothing to users: no "sheet 01" eyebrows, no א/ב/ג corner marks (the owner removed them).
 - Domain constants (trades, regions, documents, pricing, VAT, dates) live **only** in `lib/domain.ts`. Use `todayISO()`, `addDays()`, `endOfBlock()`, `bookingPhase()` and `ils()`, never `new Date()` arithmetic in pages.
 - Comments explain *why*, not *what*. Keep the existing density.
 

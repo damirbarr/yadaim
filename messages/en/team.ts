@@ -1,24 +1,24 @@
 import type { Messages } from "..";
 
 const m: Messages["team"] = {
-  titleAgency: "Team & permissions",
+  titleAgency: "Team and permissions",
   titleContractor: "Team",
-  heading: "Team & permissions",
-  sub: "Everyone signs in with their own Google account. What they can do depends on their role.",
+  heading: "Team and permissions",
+  sub: "Each person signs in with their own Google account. Their role sets what they can do.",
   you: "you",
   role: "Role",
   remove: "Remove",
-  invited: "Invited · joins on first Google sign-in",
+  invited: "Invited · joins at first sign-in with Google",
   matrix: "What each role can do",
   perm: "Permission",
   email: "Email address",
   invite: "Invite to team",
   errors: {
-    email: "That email address isn't valid",
-    role: "That role isn't valid",
-    otherOrg: "This user already belongs to another organization. Please contact support.",
+    email: "The email address is not valid",
+    role: "The role is not valid",
+    otherOrg: "This user already belongs to another organization. Contact Yadaim support.",
   },
   joined: "{email} has joined the team",
-  sent: "Invitation sent to {email}. It activates on their first Google sign-in.",
+  sent: "Invitation sent to {email}. It takes effect when they first sign in with Google.",
 };
 export default m;

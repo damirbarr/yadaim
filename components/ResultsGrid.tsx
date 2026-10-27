@@ -18,6 +18,8 @@ export type Hit = {
   agency: string; agencyScore: number; agencyTier: "good" | "ok" | "warn" | "bad"; daily: number; hourly: number; docs: { key: string; soon?: boolean }[];
   photo: string | null;
   avail?: WorkerAvailability;
+  /** The agency's sale price applies to this search's dates: daily/hourly are already discounted. */
+  sale?: { pct: number; regularDaily: number };
 };
 type Item = { id: number; name: string; trade: string; photo: string | null; country: string; daily: number };
 
@@ -156,8 +158,10 @@ export function ResultsGrid({ hits, crews = [], basket = [], trade, qs, count, d
                   <div className="text-[14px] text-muted">{fmt.trade(h.trade)} · {t("contractor.count.yearsExp", { n: h.years })} · {fmt.country(h.country)}</div>
                   <Availability a={h.avail} className="mt-1" />
                 </div>
-                <div className="text-end">
+                <div className="text-end" data-sale={h.sale ? h.sale.pct : undefined}>
+                  {h.sale && <div className="mb-1"><span className="chip-hazard whitespace-nowrap">{t("contractor.results.sale")}</span></div>}
                   <div className="font-display text-[24px] font-bold leading-none text-ink num">{money(h.daily)}</div>
+                  {h.sale && <div className="whitespace-nowrap text-[12px] text-muted">{rich("contractor.results.saleWas", { s: (c) => <s className="num">{c}</s> }, { price: money(h.sale.regularDaily) })}</div>}
                   <div className="text-[12px] text-muted">{t("contractor.results.perDay")}</div>
                 </div>
                 <div className="col-start-2 min-w-0 space-y-1">

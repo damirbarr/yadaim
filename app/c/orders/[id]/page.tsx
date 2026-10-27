@@ -10,6 +10,8 @@ import { getI18n } from "@/lib/i18n/server";
 import type { MessageKey } from "@/lib/i18n/core";
 import { cancelBooking, saveCrew } from "@/app/actions/contractor";
 import { Avatar, Notice, PageHead, Rating } from "@/components/ui";
+import { bookingDays, isNoFit } from "@/lib/attendance";
+import { AttendanceTable } from "./AttendanceTable";
 import { IBed, IClock, IPin, ITruck, IWhatsapp } from "@/components/icons";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -42,6 +44,15 @@ export default async function Order({ params, searchParams }: { params: Promise<
   // Safety briefings are signed per site; show who still needs one before work starts (not on closed bookings).
   const showBriefing = !completed && !["rejected", "cancelled"].includes(b.status);
   const briefed = showBriefing ? await siteBriefings(contractorId, b.address, crew.map((w) => w.worker_id), b.end_date) : null;
+  // The work-day entry: start the day, carry on with it, or (last day / after it) end it and approve the hours.
+  const days = bookingDays(b);
+  const workDay = days.includes(today);
+  const started = crew.some((w) => w.attendance.some((a) => a.date === today));
+  const dayLabel = phase === "awaiting_hours" ? t("contractor.order.approveHours")
+    : !workDay ? t("contractor.day.open")
+    : today === b.end_date && started ? t("contractor.day.finish")
+    : started ? t("contractor.day.continue") : t("contractor.day.start");
+  const hasAttendance = crew.some((w) => w.attendance.length > 0);
   const altLink = { link: (c: React.ReactNode) => <Link className="underline" href={alt}>{c}</Link> };
   return (
     <div className="space-y-5">
@@ -65,12 +76,11 @@ export default async function Order({ params, searchParams }: { params: Promise<
       )}
 
       {(phase === "today" || phase === "awaiting_hours") && can(user, "contractor.site") && (
-        <Link href={`/c/orders/${b.id}/site`} className="btn-hazard w-full py-3 text-base">
-          {phase === "today" && today < b.end_date ? t("contractor.order.checkin") : phase === "today" ? t("contractor.order.checkinAndHours") : t("contractor.order.approveHours")}
-        </Link>
+        <Link href={`/c/orders/${b.id}/site`} className="btn-hazard w-full py-4 text-[17px]" data-act="work-day">{dayLabel}</Link>
       )}
 
       <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+        <div className="min-w-0 space-y-5">
         <section className="card">
           <h2 className="border-b border-line px-5 py-3 text-[20px] font-bold text-ink">{phase === "requested" ? t("contractor.order.requestedCrew") : completed ? t("contractor.order.worked") : t("contractor.order.crew")}</h2>
           <ul>
@@ -85,9 +95,19 @@ export default async function Order({ params, searchParams }: { params: Promise<
                     : <div className="text-xs font-semibold text-warn">{t("safety.order.needed")}</div>)}
                 </div>
                 {completed ? (
-                  w.hours_approved ? <div className="text-end text-xs"><Rating value={w.rating} /><div className="num text-muted">{t("contractor.count.hours", { n: w.hours_approved })}</div></div> : <span className="chip-bad">{t("contractor.order.noFitNotBilled")}</span>
-                ) : w.checkin_at ? (
-                  <span className={w.identity_ok === "no" || w.trade_ok === "no" ? "chip-bad" : "chip-ok"}>{w.identity_ok === "no" || w.trade_ok === "no" ? t("contractor.order.noFit") : t("contractor.order.onSite")}</span>
+                  w.hours_approved ? <div className="text-end text-xs"><Rating value={w.rating} /><div className="num text-muted">{t("contractor.count.hours", { n: w.hours_approved })}</div></div>
+                    : isNoFit(w) ? <span className="chip-bad">{t("contractor.order.noFitNotBilled")}</span>
+                    : w.arrived === 0 ? <span className="chip-bad">{t("contractor.order.noShowNotBilled")}</span>
+                    : <span className="num text-xs text-muted">{t("contractor.count.hours", { n: 0 })}</span>
+                ) : isNoFit(w) ? (
+                  <span className="chip-bad">{t("contractor.order.noFit")}</span>
+                ) : w.attendance.some((a) => a.date === today) ? (
+                  // On a work day the chip says where the worker is today, not on the first day of the booking.
+                  w.attendance.find((a) => a.date === today)!.arrived === 0 ? <span className="chip-bad">{t("contractor.order.noShowToday")}</span> : <span className="chip-ok">{t("contractor.order.onSite")}</span>
+                ) : hasAttendance && workDay ? (
+                  <span className="chip-muted">{t("contractor.day.table.notRecorded")}</span>
+                ) : w.checkin_at && !hasAttendance ? (
+                  <span className="chip-ok">{t("contractor.order.onSite")}</span>
                 ) : (
                   <span className={phase === "requested" ? "chip-warn" : "chip-ok"}>{phase === "requested" ? t("contractor.order.waiting") : phase === "locked" || phase === "today" ? t("contractor.order.locked") : t("contractor.order.approved")}</span>
                 )}
@@ -97,6 +117,8 @@ export default async function Order({ params, searchParams }: { params: Promise<
           {briefed && crew.some((w) => !briefed.has(w.worker_id)) && <p className="border-t border-dashed border-line px-5 py-3 text-xs text-muted">{t("safety.order.note")}</p>}
           {b.agency_note && b.status !== "rejected" && <p className="border-t border-line px-5 py-3 text-sm text-muted">{t("contractor.order.agencyNote", { note: b.agency_note })}</p>}
         </section>
+        {(hasAttendance || (b.days > 1 && ["today", "awaiting_hours"].includes(phase))) && <AttendanceTable b={b} />}
+        </div>
 
         <aside className="space-y-4">
           <div className="card space-y-3 p-5 text-sm">

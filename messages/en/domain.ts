@@ -11,7 +11,7 @@ const m: Messages["domain"] = {
     tiling: { one: "Tiler", many: "Tilers" },
     masonry: { one: "Mason", many: "Masons" },
   },
-  regions: { north: "North & Haifa", sharon: "Sharon", center: "Center", jerusalem: "Jerusalem", south: "South" },
+  regions: { north: "North and Haifa", sharon: "Sharon", center: "Center", jerusalem: "Jerusalem", south: "South" },
   cities: {
     "חיפה": "Haifa", "קריות": "Haifa Bay (Krayot)", "נהריה": "Nahariya", "עכו": "Acre", "כרמיאל": "Karmiel", "עפולה": "Afula", "טבריה": "Tiberias", "נוף הגליל": "Nof HaGalil", "יקנעם": "Yokneam",
     "נתניה": "Netanya", "חדרה": "Hadera", "כפר סבא": "Kfar Saba", "רעננה": "Ra'anana", "הרצליה": "Herzliya", "הוד השרון": "Hod HaSharon", "כפר יונה": "Kfar Yona",
@@ -21,7 +21,7 @@ const m: Messages["domain"] = {
   },
   countries: { IN: "India", LK: "Sri Lanka", MD: "Moldova", UZ: "Uzbekistan", CN: "China", BY: "Belarus", GE: "Georgia", RO: "Romania", TH: "Thailand", KE: "Kenya", MW: "Malawi" },
   docs: {
-    visa: { name: "Work visa (B/1), construction", short: "Visa" },
+    visa: { name: "Work visa (B/1), construction sector", short: "Visa" },
     passport: { name: "Passport", short: "Passport" },
     insurance: { name: "Health insurance", short: "Insurance" },
     heights: { name: "Working at heights certificate", short: "Heights" },
@@ -31,12 +31,12 @@ const m: Messages["domain"] = {
     approved: "Approved",
     locked: "Crew locked",
     today: "On site today",
-    awaiting_hours: "Waiting for hours approval",
+    awaiting_hours: "Hours waiting for approval",
     completed: "Completed",
     rejected: "Declined",
     cancelled: "Cancelled",
   },
-  minDays: { "1": "One day", "5": "A work week (5 days)", "10": "Two weeks (10 days)", "22": "A month (22 days)" },
+  minDays: { "1": "1 day", "5": "5 work days", "10": "10 work days", "22": "22 work days" },
   workTags: { "עבודה נקייה": "Clean work", "דייק בזמנים": "On time", "עובד מהר": "Works fast", "מקצועי מאוד": "Highly skilled", "צריך הכוונה": "Needs guidance", "בעיית תקשורת": "Hard to communicate with" },
   reliability: { good: "Reliable agency", ok: "Good standing", warn: "Under review", bad: "Hidden from search" },
 };

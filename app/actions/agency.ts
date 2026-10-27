@@ -7,9 +7,10 @@ import { randomToken } from "@/lib/tokens";
 import { saveUpload } from "@/lib/storage";
 import { audit } from "@/lib/audit";
 import type { Perm } from "@/lib/rbac";
-import { busyWorkers, docCheck, docsFor, getAgency, getBooking, getWorker, idleForecast } from "@/lib/queries";
-import { offerTail } from "@/app/a/campaigns/offer";
-import { ALL_CITIES, COUNTRIES, DOC_TYPES, MIN_DAYS_OPTIONS, REGIONS, TRADES, bookingPhase, hourlyFor, regionOf } from "@/lib/domain";
+import { busyWorkers, docCheck, docsFor, getAgency, getBooking, getWorker } from "@/lib/queries";
+import { offerSale, offerTail } from "@/app/a/campaigns/offer";
+import { datedWindows, idleWindows, regularRange } from "@/lib/promotions";
+import { ALL_CITIES, COUNTRIES, DOC_TYPES, MIN_DAYS_OPTIONS, REGIONS, TRADES, bookingPhase, hourlyFor, regionOf, validSalePct } from "@/lib/domain";
 import { CONTACT_FIELDS, ImportError, WORKER_FIELDS, normalizeDate, normalizePhone, readImport, type ImportField, type ImportState } from "@/lib/importer";
 import { logEvent } from "@/lib/events";
 import { getI18n } from "@/lib/i18n/server";
@@ -303,10 +304,20 @@ export async function createCampaign(fd: FormData) {
   const tradeKey = String(fd.get("trade"));
   const body = String(fd.get("message") ?? "").trim().slice(0, 1000);
   const regions = fd.getAll("regions").map(String).filter((r) => REGIONS.some((x) => x.key === r));
-  const idle = (await idleForecast(agencyId)).find((i) => i.trade === tradeKey);
   const a = await getAgency(agencyId);
-  if (!body || !idle || !a || !regions.length) return;
-  const message = `${body} ${offerTail(i18n, a.min_days)}`;
+  if (!body || !a || !regions.length) return;
+  // Dates and workers are recomputed here, never taken from the form: from the calendar day the offer started on
+  // (from/to), or from the idle forecast for the trade.
+  const from = fd.get("from") ? String(fd.get("from")) : null;
+  const win = from
+    ? (await datedWindows(agencyId, tradeKey, from, a.min_days)).find((w) => w.to === String(fd.get("to")))
+    : (await idleWindows(agencyId)).find((w) => w.trade === tradeKey);
+  if (!win || !win.workers.length) return;
+  // Sale price: optional; when set, it becomes a real promotion that search, checkout and createBooking apply.
+  const pct = Number(fd.get("pct") ?? 0) || 0;
+  if (pct && !validSalePct(pct)) return;
+  const sale = pct ? offerSale(i18n, { pct, from: win.from, to: win.to, ...regularRange(a, win.workers) }) : "";
+  const message = [body, sale, offerTail(i18n, a.min_days)].filter(Boolean).join(" ");
   // Frequency cap: max one offer per contact every 3 days (≈2 a week), never to opted-out contacts.
   // Contacts without a known area are included: the agency added them, and leaving them out silently would be worse.
   const contacts = (await all(
@@ -315,12 +326,25 @@ export async function createCampaign(fd: FormData) {
   const to = contacts.filter((c) => !c.region || regions.includes(c.region));
   if (!to.length) return;
   const cid = await tx(async () => {
-    const id = Number(await insert(`INSERT INTO campaigns (agency_id, trade, date_from, date_to, idle_days, message) VALUES (?,?,?,?,?,?)`, agencyId, tradeKey, idle.from, idle.to, idle.idleDays, message));
+    const id = Number(await insert(`INSERT INTO campaigns (agency_id, trade, date_from, date_to, idle_days, message) VALUES (?,?,?,?,?,?)`, agencyId, tradeKey, win.from, win.to, win.idleDays, message));
     for (const c of to) await run(`INSERT INTO campaign_recipients (campaign_id, contact_id, ref) VALUES (?,?,?)`, id, c.id, randomToken(6));
+    if (pct) await run(`INSERT INTO promotions (agency_id, trade, date_from, date_to, pct, campaign_id) VALUES (?,?,?,?,?,?)`, agencyId, tradeKey, win.from, win.to, pct, id);
     return id;
   });
-  await audit(user, "campaign.create", `campaign:${cid}`, tradeKey);
+  await audit(user, "campaign.create", `campaign:${cid}`, pct ? `${tradeKey} sale ${pct}% ${win.from}..${win.to}` : tradeKey);
+  revalidatePath("/a/calendar");
   redirect(`/a/campaigns/${cid}`);
+}
+
+/** Stops a sale early. Bookings already sent keep the rate they were made at (it is stored per worker). */
+export async function endPromotion(fd: FormData) {
+  const { agencyId, user } = await requireAgency("agency.campaigns.send");
+  const id = Number(fd.get("id"));
+  const p = (await get(`SELECT id, campaign_id FROM promotions WHERE id = ? AND agency_id = ? AND ended_at IS NULL`, id, agencyId)) as { id: number; campaign_id: number | null } | undefined;
+  if (!p) return;
+  await run(`UPDATE promotions SET ended_at = now_txt() WHERE id = ? AND agency_id = ?`, p.id, agencyId);
+  await audit(user, "promotion.end", `promotion:${p.id}`, p.campaign_id ? `campaign:${p.campaign_id}` : null);
+  revalidatePath(p.campaign_id ? `/a/campaigns/${p.campaign_id}` : "/a/campaigns");
 }
 
 // ── Settings ───────────────────────────────────────────────────────────

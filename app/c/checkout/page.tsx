@@ -7,6 +7,7 @@ import { endOfBlock } from "@/lib/domain";
 import { getI18n } from "@/lib/i18n/server";
 import { CheckoutForm } from "@/components/CheckoutForm";
 import { parseBasket } from "@/lib/crews";
+import { promoPct } from "@/lib/promotions";
 import type { MessageKey } from "@/lib/i18n/core";
 import { TRADES } from "@/lib/domain";
 import { Notice, PageHead } from "@/components/ui";
@@ -34,6 +35,8 @@ export default async function Checkout({ searchParams }: { searchParams: Promise
     const a = (await getAgency(w!.agency_id))!;
     return {
       id: w!.id, name: displayName(w!), trade: w!.trade, years: w!.years, base: w!.hourly_rate,
+      // The same rule createBooking applies when it stores the rates: the whole booking inside the sale window.
+      salePct: await promoPct(a.id, w!.trade, q.date, end),
       agencyId: a.id, agency: a.name, lodgingDiscount: a.lodging_discount, transportRate: a.transport_rate, photo: w!.photo, country: w!.country, docsUntil: end,
     };
   })))

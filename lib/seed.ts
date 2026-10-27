@@ -341,4 +341,8 @@ export async function seed(q: Query) {
   await seedCrews(q);
   const { seedBriefings } = await import("./seed-briefings");
   await seedBriefings(q);
+  const { seedAttendance } = await import("./seed-attendance");
+  await seedAttendance(q);
+  const { seedPromotions } = await import("./seed-promotions");
+  await seedPromotions(q);
 }

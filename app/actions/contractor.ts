@@ -4,10 +4,13 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { all, get, insert, run, tx } from "@/lib/db";
 import { requireContractor } from "@/lib/auth";
-import { agencyReliability, busyWorkers, docCheck, docsFor, getAgency, getBooking, getContractor, getWorker } from "@/lib/queries";
+import { agencyReliability, attendanceFor, busyWorkers, docCheck, docsFor, getAgency, getBooking, getContractor, getWorker } from "@/lib/queries";
 import { bookingPhase, ALL_CITIES, endOfBlock, hourlyFor, regionOf, todayISO, TRADES } from "@/lib/domain";
+import { salePrice } from "@/lib/domain";
+import { promoPct } from "@/lib/promotions";
 import { audit } from "@/lib/audit";
 import { logEvent } from "@/lib/events";
+import { workerHours } from "@/lib/attendance";
 import { getI18n } from "@/lib/i18n/server";
 import type { Perm } from "@/lib/rbac";
 import type { FormState } from "./auth";
@@ -81,9 +84,12 @@ export async function createBooking(_: FormState, fd: FormData): Promise<FormSta
              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
           , contractorId, agencyId, tradeKey, date, end, days, startTime, hours, city, address, lodging, transport, notes, campaignId))
         );
+        // Sale price (lib/promotions.ts) only when every booked day is inside the agency's sale window; looked up
+        // here, never taken from the form, so the stored rate is the one the agency agreed to.
+        const pct = await promoPct(agencyId, tradeKey, date, end);
         for (const wid of wids) {
           const w = (await getWorker(wid))!;
-          (await run(`INSERT INTO booking_workers (booking_id, worker_id, hourly_rate) VALUES (?,?,?)`, bid, wid, hourlyFor(w.hourly_rate, a, { lodging, transport })));
+          (await run(`INSERT INTO booking_workers (booking_id, worker_id, hourly_rate) VALUES (?,?,?)`, bid, wid, salePrice(hourlyFor(w.hourly_rate, a, { lodging, transport }), pct)));
         }
         await logEvent("request", { agency: agencyId, contractor: contractorId, booking: bid }, days > 1 ? "requestDays" : "request", { company: c.company, n: wids.length, trade: tradeKey, date, city, days });
         out.push(bid);
@@ -114,46 +120,56 @@ export async function cancelBooking(fd: FormData) {
   revalidatePath(`/c/orders/${b.id}`);
 }
 
-/** Morning check-in at the site: is this the person in the photo, and the trade we ordered? */
+/** First arrival at the site: is this the person in the photo, and the trade we ordered? Asked once per booking on
+ *  the work-day screen, after the worker is marked as arrived (arrival itself is in app/actions/attendance.ts). */
 export async function siteCheck(fd: FormData) {
   const bwId = Number(fd.get("bw"));
   const field = String(fd.get("field"));
   const value = String(fd.get("value"));
-  if (!["identity_ok", "trade_ok", "arrived"].includes(field)) return;
-  const row = (await get(`SELECT booking_id FROM booking_workers WHERE id = ?`, bwId)) as { booking_id: number } | undefined;
-  if (!row) return;
+  if (!["identity_ok", "trade_ok"].includes(field) || !["yes", "partial", "no"].includes(value)) return;
+  const row = (await get(`SELECT booking_id, worker_id, state FROM booking_workers WHERE id = ?`, bwId)) as { booking_id: number; worker_id: number; state: string } | undefined;
+  if (!row || row.state !== "assigned") return;
   const { b, contractorId } = await ownBooking(row.booking_id, "contractor.site");
   if (!["today", "locked", "awaiting_hours"].includes(bookingPhase(b))) return;
-  if (field === "arrived") {
-    (await run(`UPDATE booking_workers SET arrived = ?, checkin_at = CASE WHEN ? = 1 THEN now_txt() ELSE NULL END WHERE id = ?`, value === "1" ? 1 : 0, value === "1" ? 1 : 0, bwId));
-    if (value === "0") await logEvent("noshow", { agency: b.agency_id, contractor: contractorId, booking: b.id }, "noshow", { id: b.id });
-  } else {
-    if (!["yes", "partial", "no"].includes(value)) return;
-    (await run(`UPDATE booking_workers SET ${field} = ?, arrived = 1, checkin_at = COALESCE(checkin_at, now_txt()) WHERE id = ?`, value, bwId));
-    if (value === "no") await logEvent("nofit", { agency: b.agency_id, contractor: contractorId, booking: b.id }, field === "identity_ok" ? "nofitIdentity" : "nofitSkill", { id: b.id });
+  (await run(`UPDATE booking_workers SET ${field} = ?, arrived = 1, checkin_at = COALESCE(checkin_at, now_txt()) WHERE id = ?`, value, bwId));
+  if (value === "no") {
+    await logEvent("nofit", { agency: b.agency_id, contractor: contractorId, booking: b.id }, field === "identity_ok" ? "nofitIdentity" : "nofitSkill", { id: b.id });
+    const { user } = await requireContractor("contractor.site");
+    await audit(user, "checkin.nofit", `booking:${b.id},worker:${row.worker_id}`, field);
   }
   revalidatePath(`/c/orders/${b.id}/site`);
+  revalidatePath(`/c/orders/${b.id}`);
 }
 
-/** End of work: approve hours per worker, rate, close the booking. */
+/** End of the booking: approve hours per worker (pre-filled from daily attendance), rate, close the booking.
+ *  No-fit workers and workers who never arrived are never billed, whatever the form says. */
 export async function approveHours(fd: FormData) {
   const { b, contractorId } = await ownBooking(Number(fd.get("id")), "contractor.site");
+  const { user } = await requireContractor("contractor.site");
   if (todayISO() < b.end_date || b.status !== "approved") return;
-  const rows = (await all(`SELECT * FROM booking_workers WHERE booking_id = ? AND state = 'assigned'`, b.id)) as { id: number; arrived: number | null; identity_ok: string | null; trade_ok: string | null }[];
+  const rows = (await all(`SELECT * FROM booking_workers WHERE booking_id = ? AND state = 'assigned'`, b.id)) as { id: number; worker_id: number; arrived: number | null; identity_ok: string | null; trade_ok: string | null }[];
+  const att = await attendanceFor(rows.map((r) => r.id));
+  let total = 0;
   await tx(async () => {
     for (const r of rows) {
-      const noFit = r.arrived === 0 || r.identity_ok === "no" || r.trade_ok === "no";
-      const hours = noFit ? 0 : Math.max(0, Math.min(b.hours * b.days + 20, Number(fd.get(`hours_${r.id}`)) || 0));
-      const rating = noFit ? null : Math.min(5, Math.max(1, Number(fd.get(`rating_${r.id}`)) || 5));
-      const tags = fd.getAll(`tags_${r.id}`).map(String).join(",") || null;
-      (await run(`UPDATE booking_workers SET hours_approved = ?, rating = ?, tags = ?, arrived = COALESCE(arrived, 1), identity_ok = COALESCE(identity_ok, 'yes'), trade_ok = COALESCE(trade_ok, 'yes') WHERE id = ?`, hours, rating, tags, r.id));
+      const sum = workerHours(b, { ...r, attendance: att.get(r.id) ?? [] });
+      const billed = sum.cap > 0;
+      const raw = fd.get(`hours_${r.id}`);
+      const asked = raw === null || String(raw).trim() === "" ? sum.hours : Number(raw);
+      const hours = billed ? Math.max(0, Math.min(sum.cap, Number.isFinite(asked) ? asked : sum.hours)) : 0;
+      total += hours;
+      const rating = billed ? Math.min(5, Math.max(1, Number(fd.get(`rating_${r.id}`)) || 5)) : null;
+      const tags = billed ? fd.getAll(`tags_${r.id}`).map(String).join(",") || null : null;
+      (await run(`UPDATE booking_workers SET hours_approved = ?, rating = ?, tags = ?, arrived = COALESCE(arrived, ?), identity_ok = COALESCE(identity_ok, 'yes'), trade_ok = COALESCE(trade_ok, 'yes') WHERE id = ?`, hours, rating, tags, billed ? 1 : 0, r.id));
     }
     const review = String(fd.get("review") ?? "").trim();
     if (review) (await run(`UPDATE booking_workers SET review = ? WHERE booking_id = ? AND rating IS NOT NULL`, review, b.id));
     (await run(`UPDATE bookings SET status = 'completed', completed_at = now_txt() WHERE id = ?`, b.id));
   });
   await logEvent("hours", { agency: b.agency_id, contractor: contractorId, booking: b.id }, "hours", { id: b.id });
+  await audit(user, "hours.approve", `booking:${b.id}`, String(total));
   revalidatePath(`/c/orders/${b.id}`);
+  revalidatePath(`/a/requests/${b.id}`);
   redirect(`/c/orders/${b.id}?done=1`);
 }
 

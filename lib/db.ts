@@ -26,7 +26,7 @@ const clean = (params: unknown[]) => params.map((p) => (p === undefined ? null :
 
 async function pgliteDriver(): Promise<Driver> {
   const { PGlite } = await import("@electric-sql/pglite");
-  const dir = config.db.pgliteDir || path.join(process.cwd(), "data", "pglite");
+  const dir = config.db.pgliteDir;
   fs.mkdirSync(path.dirname(dir), { recursive: true });
   const pg = await PGlite.create(dir, { parsers: { 20: Number, 1700: Number } });
   type Q = { query: typeof pg.query; exec: typeof pg.exec };
@@ -70,7 +70,7 @@ const store = new AsyncLocalStorage<Driver>();
 
 async function boot(): Promise<Driver> {
   const url = config.db.url;
-  if (!url && config.onVercel) throw new Error("DATABASE_URL is not set. On Vercel the app needs Supabase Postgres (see docs/SUPABASE.md).");
+  if (!url && config.onVercel && !config.demo) throw new Error("DATABASE_URL is not set. On Vercel the app needs Supabase Postgres (see docs/SUPABASE.md).");
   const d = url ? await postgresDriver(url) : await pgliteDriver();
   if (config.db.autoMigrate) await migrate(d);
   if (config.db.seedDemo) {

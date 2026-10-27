@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireAgency } from "@/lib/auth";
+import { can } from "@/lib/rbac";
 import { agencyCalendar, agencyDayDetail, isISODate, monthGrid, parseMonth } from "@/lib/calendar";
 import { displayName } from "@/lib/queries";
 import { addDays, isWorkday, todayISO, TRADES } from "@/lib/domain";
@@ -15,7 +16,7 @@ export async function generateMetadata() {
 type SP = { m?: string; d?: string; trade?: string };
 
 export default async function AgencyCalendar({ searchParams }: { searchParams: Promise<SP> }) {
-  const { agencyId } = await requireAgency("agency.view");
+  const { user, agencyId } = await requireAgency("agency.view");
   const { t, fmt } = await getI18n();
   const sp = await searchParams;
   const today = todayISO();
@@ -29,6 +30,8 @@ export default async function AgencyCalendar({ searchParams }: { searchParams: P
   const { workers, assignments, days } = await agencyCalendar(agencyId, grid.first, grid.last, trade);
   const detail = agencyDayDetail(selected, workers, assignments);
   const sel = days.get(selected);
+  // A sale offer for the selected day's free workers: today or later, and only for people allowed to send offers.
+  const canOffer = selected >= today && can(user, "agency.campaigns.send");
 
   const href = (q: { m?: string; d?: string; trade?: string | null }) => {
     const p = new URLSearchParams();
@@ -68,7 +71,7 @@ export default async function AgencyCalendar({ searchParams }: { searchParams: P
           legend={legend}
           day={(iso) => {
             const c = days.get(iso);
-            if (!c) return null; // Friday, Saturday
+            if (!c) return null; // Saturday
             const pct = c.total ? (c.assigned / c.total) * 100 : 0;
             return (
               <div aria-label={t("calendar.agency.cellAria", { date: fmt.date(iso), assigned: c.assigned, free: c.free })}>
@@ -141,14 +144,17 @@ export default async function AgencyCalendar({ searchParams }: { searchParams: P
                               </Link>
                             ))}
                           </div>
+                          {canOffer && (
+                            <Link href={`/a/campaigns?trade=${tr.key}&from=${selected}`} data-testid={`offer-sale-${tr.key}`} aria-label={t("calendar.agency.offerSaleFor", { trades: fmt.trades(tr.key) })}
+                              className="btn-ghost btn-sm mt-2.5 min-h-10 w-full">
+                              {t("calendar.agency.offerSale")} <span className="inline-block flip-ltr" aria-hidden>←</span>
+                            </Link>
+                          )}
                         </li>
                       );
                     })}
                   </ul>
                 ) : <p className="text-[14px] text-muted">{t("calendar.agency.noneFree")}</p>}
-                {detail.free.size > 0 && selected >= today && (
-                  <Link href="/a/campaigns" className="btn-hazard btn-sm mt-4 w-full">{t("calendar.agency.market")} <span className="inline-block flip-ltr" aria-hidden>←</span></Link>
-                )}
               </div>
             </>
           )}

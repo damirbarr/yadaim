@@ -1,8 +1,10 @@
 import "server-only";
 import { all, get } from "./db";
+import { promoPcts } from "./promotions";
 import {
-  addDays, diffDays, endOfBlock, hourlyFor, isWorkday, regionOf, requiredDocs, todayISO, DOC_TYPES, type PriceOpts,
+  addDays, diffDays, endOfBlock, hourlyFor, isWorkday, regionOf, requiredDocs, salePrice, todayISO, DOC_TYPES, type PriceOpts,
 } from "./domain";
+import { workerHours, type Attendance } from "./attendance";
 
 export type Agency = {
   id: number; name: string; slug: string; license_no: string; verified: number; city: string; regions: string;
@@ -146,6 +148,8 @@ export type SearchQuery = { trade: string; city: string; date: string; days: num
 export type SearchHit = {
   worker: Worker; agency: Agency; reliability: Reliability; stats: WorkerStats; docs: DocCheck;
   hourly: number; daily: number; withContractor: number; heightsOk: boolean;
+  /** Sale price (lib/promotions.ts): pct > 0 means hourly/daily are already discounted and regularDaily is the price before. */
+  salePct: number; regularDaily: number;
 };
 
 export async function searchWorkers(q: SearchQuery, contractorId?: number): Promise<SearchHit[]> {
@@ -162,10 +166,11 @@ export async function searchWorkers(q: SearchQuery, contractorId?: number): Prom
   const workers = await all<Worker>(`SELECT * FROM workers WHERE active = 1 AND trade = ? AND agency_id IN (${marks(eligible.length)})`, q.trade, ...eligible.map((a) => a.id));
   const busy = await busyWorkers(q.date, end);
   const free = workers.filter((w) => !busy.has(w.id));
-  const [docs, stats, history] = await Promise.all([
+  const [docs, stats, history, sale] = await Promise.all([
     docsFor(free.map((w) => w.id)),
     workerStats(free.map((w) => w.id)),
     contractorId ? workedWith(contractorId) : Promise.resolve(new Map<number, number>()),
+    promoPcts(eligible.map((a) => a.id), q.trade, q.date, end),
   ]);
 
   const hits: SearchHit[] = [];
@@ -173,10 +178,12 @@ export async function searchWorkers(q: SearchQuery, contractorId?: number): Prom
     const dc = docCheck(docs.get(w.id)!, w.trade, end);
     if (!dc.ok) continue;
     const agency = byId.get(w.agency_id)!;
-    const hourly = hourlyFor(w.hourly_rate, agency, q);
+    const regular = hourlyFor(w.hourly_rate, agency, q);
+    const salePct = sale.get(agency.id) ?? 0;
+    const hourly = salePrice(regular, salePct);
     hits.push({
       worker: w, agency, reliability: rel.get(w.agency_id)!, stats: stats.get(w.id)!, docs: dc,
-      hourly, daily: hourly * q.hours, withContractor: history.get(w.id) ?? 0, heightsOk: (docs.get(w.id) ?? []).some((d) => d.type === "heights"),
+      hourly, daily: hourly * q.hours, salePct, regularDaily: regular * q.hours, withContractor: history.get(w.id) ?? 0, heightsOk: (docs.get(w.id) ?? []).some((d) => d.type === "heights"),
     });
   }
   // Ranking: agency reliability is the main lever (enforcement without fines), then the worker's own record.
@@ -210,7 +217,22 @@ export function recentJobs(workerId: number, limit = 5) {
 }
 
 // ── Booking views ────────────────────────────────────────────────────────
-export type BookingWorker = BW & Worker & { bw_id: number; base_rate: number };
+// A server started before the attendance migration ran (or a database it hasn't reached yet) reads bookings as having
+// no attendance instead of failing every booking page. Remembered once the table exists.
+let attendanceTable = false;
+async function hasAttendance() {
+  if (!attendanceTable) attendanceTable = !!(await get<{ t: string | null }>(`SELECT to_regclass('attendance')::text AS t`))?.t;
+  return attendanceTable;
+}
+/** Daily attendance rows per booking_workers id (lib/attendance.ts explains how billing reads them). */
+export async function attendanceFor(bwIds: number[]): Promise<Map<number, Attendance[]>> {
+  const m = new Map<number, Attendance[]>();
+  if (!bwIds.length || !(await hasAttendance())) return m;
+  const rows = await all<Attendance>(`SELECT * FROM attendance WHERE booking_worker_id IN (${marks(bwIds.length)}) ORDER BY date`, ...bwIds);
+  for (const r of rows) m.set(r.booking_worker_id, [...(m.get(r.booking_worker_id) ?? []), r]);
+  return m;
+}
+export type BookingWorker = BW & Worker & { bw_id: number; base_rate: number; attendance: Attendance[] };
 export type BookingRow = Booking & { agency_name: string; agency_phone: string | null; company: string; contact_name: string; contractor_phone: string | null; registry_no: string; classification: string | null; workers: BookingWorker[] };
 export async function bookingsWhere(where: string, ...args: unknown[]): Promise<BookingRow[]> {
   const rows = await all<BookingRow>(
@@ -224,17 +246,17 @@ export async function bookingsWhere(where: string, ...args: unknown[]): Promise<
      FROM booking_workers bw JOIN workers w ON w.id = bw.worker_id WHERE bw.booking_id IN (${marks(rows.length)}) ORDER BY bw.id`,
     ...rows.map((r) => r.id)
   );
+  const att = await attendanceFor(ws.map((w) => w.bw_id));
+  for (const w of ws) w.attendance = att.get(w.bw_id) ?? [];
   for (const r of rows) r.workers = ws.filter((w) => w.booking_id === r.id);
   return rows;
 }
 
-export function bookingTotals(b: Pick<Booking, "hours" | "days">, workers: { hourly_rate: number; state: string; hours_approved: number | null; arrived: number | null; identity_ok: string | null; trade_ok: string | null }[], approved = false) {
+/** Before approval: an estimate from daily attendance (no-show days and no-fit workers count 0, days not yet
+ *  recorded count the planned hours). After approval: the approved hours, which is what the agency invoices. */
+export function bookingTotals(b: Pick<Booking, "hours" | "days">, workers: { hourly_rate: number; state: string; hours_approved: number | null; arrived: number | null; identity_ok: string | null; trade_ok: string | null; attendance?: Attendance[] }[], approved = false) {
   const active = workers.filter((w) => w.state === "assigned");
-  const lines = active.map((w) => {
-    const noFit = w.arrived === 0 || w.identity_ok === "no" || w.trade_ok === "no";
-    const hours = approved ? (w.hours_approved ?? 0) : noFit ? 0 : b.hours * b.days;
-    return hours * w.hourly_rate;
-  });
+  const lines = active.map((w) => (approved ? (w.hours_approved ?? 0) : workerHours(b, w).hours) * w.hourly_rate);
   const net = lines.reduce((a, b) => a + b, 0);
   return { net, vat: net * 0.18, gross: net * 1.18 };
 }

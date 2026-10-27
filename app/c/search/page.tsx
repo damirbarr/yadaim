@@ -35,6 +35,7 @@ export default async function Search({ searchParams }: { searchParams: Promise<R
     country: h.worker.country, skills: (h.worker.skills ?? "").split(",").filter(Boolean).slice(0, 3),
     rating: h.stats.rating, jobs: h.stats.jobs, arrival: h.stats.arrival, match: h.stats.match, withContractor: h.withContractor,
     agency: h.agency.name, agencyScore: h.reliability.score, agencyTier: h.reliability.tier.tone, daily: h.daily, hourly: h.hourly,
+    sale: h.salePct ? { pct: h.salePct, regularDaily: h.regularDaily } : undefined,
     photo: h.worker.photo, avail: avail.get(h.worker.id),
     docs: DOC_TYPES.filter((d) => d.key !== "passport" && (d.key !== "heights" || h.heightsOk)).map((d) => {
       const soon = h.docs.expiring.find((e) => e.type === d.key);

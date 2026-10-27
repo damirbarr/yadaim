@@ -67,7 +67,7 @@ export default async function Requests({ searchParams }: { searchParams: Promise
               const crew = b.workers.filter((w) => w.state === "assigned");
               return (
                 <div key={b.id} className="grid gap-3 p-4 lg:grid-cols-[1fr_auto]">
-                  <Link href={`/a/requests/${b.id}`} className="flex items-center gap-3">
+                  <Link href={`/a/requests/${b.id}`} className="flex min-w-0 items-center gap-3">
                     <div className="w-14 text-center"><div className="font-display text-xl font-bold num">{fmt.date(b.date)}</div><div className="text-[11px] text-muted">{fmt.relDay(b.date, today)}</div></div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2"><b>{b.company}</b><span className={phase === "today" ? "chip-hazard" : phase === "locked" ? "chip-info" : "chip-ok"}>{fmt.phase(phase)}</span>{b.days > 1 && <span className="chip-muted">{t("agency.days", { n: b.days })}</span>}</div>
