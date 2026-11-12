@@ -4,13 +4,14 @@ import { currentUser, devBypass, googleEnabled, homeFor } from "@/lib/auth";
 import { Logo, Notice } from "@/components/ui";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getI18n } from "@/lib/i18n/server";
+import { PasswordForm, type PasswordMode } from "@/components/PasswordForm";
 
 export async function generateMetadata() {
   const { t } = await getI18n();
   return { title: t("public.login.title") };
 }
 
-const ERRORS = ["oauth", "disabled", "google_not_configured"] as const;
+const ERRORS = ["oauth", "disabled", "google_not_configured", "confirm_failed", "reset_expired"] as const;
 
 function GoogleButton({ intent, children, primary }: { intent?: string; children: React.ReactNode; primary?: boolean }) {
   return (
@@ -26,8 +27,10 @@ function GoogleButton({ intent, children, primary }: { intent?: string; children
   );
 }
 
-export default async function Login({ searchParams }: { searchParams: Promise<{ error?: string; intent?: string }> }) {
+export default async function Login({ searchParams }: { searchParams: Promise<{ error?: string; intent?: string; mode?: string }> }) {
   const sp = await searchParams;
+  const intent = sp.intent === "agency" || sp.intent === "contractor" ? sp.intent : undefined;
+  const mode: PasswordMode = sp.mode === "signup" || sp.mode === "forgot" ? sp.mode : "signin";
   const u = await currentUser();
   if (u && !u.dev) redirect(homeFor(u.role));
   const google = googleEnabled();
@@ -56,7 +59,9 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
             {google ? (
               <>
                 {/* One button for everyone; contractor or agency is chosen at first sign-in. A ?intent= from the landing CTAs only preselects that choice. */}
-                <GoogleButton intent={sp.intent === "agency" || sp.intent === "contractor" ? sp.intent : undefined} primary>{t("public.login.google")}</GoogleButton>
+                <GoogleButton intent={intent} primary>{t("public.login.google")}</GoogleButton>
+                <div className="flex items-center gap-3 py-1 text-[13px] text-muted"><span className="h-px flex-1 bg-line" />{t("public.login.pw.or")}<span className="h-px flex-1 bg-line" /></div>
+                <PasswordForm key={mode} mode={mode} intent={intent} />
                 <p className="border-t border-dashed border-line pt-3 text-[13px] text-muted">{t("public.login.help")}</p>
               </>
             ) : (

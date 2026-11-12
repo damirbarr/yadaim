@@ -6,7 +6,8 @@ import { isPlatformAdmin } from "./auth";
 // Audit details are machine words (translated on /admin/audit via admin.audit.words and roles.*), never UI text.
 
 /**
- * Map a verified Google identity to an app user.
+ * Map a verified identity (Google, or a confirmed email + password) to an app user. A password sign-in has no
+ * picture, so it keeps the one Google gave.
  *   1. Existing user → refresh profile; admin follows ADMIN_EMAILS both ways (added → admin, removed → pending).
  *   2. Pending invite for this email → join that agency/contractor with the invited role.
  *   3. Email in ADMIN_EMAILS → admin.
@@ -19,7 +20,7 @@ export async function upsertFromIdentity(id: { email: string; name: string; avat
     const existing = await get<{ id: number; role: string; disabled: number }>(`SELECT id, role, disabled FROM users WHERE email = ?`, email);
     if (existing) {
       if (existing.disabled) return { id: existing.id, disabled: true };
-      await run(`UPDATE users SET name = COALESCE(NULLIF(name, ''), ?), avatar_url = ?, auth_subject = ? WHERE id = ?`, id.name, id.avatar, id.subject, existing.id);
+      await run(`UPDATE users SET name = COALESCE(NULLIF(name, ''), ?), avatar_url = COALESCE(?, avatar_url), auth_subject = ? WHERE id = ?`, id.name, id.avatar, id.subject, existing.id);
       if (isAdmin && existing.role !== "admin") await run(`UPDATE users SET role = 'admin', org_role = 'owner' WHERE id = ?`, existing.id);
       if (!isAdmin && existing.role === "admin") {
         await run(`UPDATE users SET role = 'pending' WHERE id = ?`, existing.id);

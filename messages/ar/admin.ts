@@ -75,6 +75,7 @@ const m: Messages["admin"] = {
     target: { agency: "شركة قوى عاملة #{id}", contractor: "مقاول #{id}", booking: "حجز #{id}", worker: "عامل #{id}", user: "مستخدم #{id}", campaign: "عرض #{id}", document: "مستند #{id}" },
     words: {
       google: "جوجل",
+      password: "البريد الإلكتروني وكلمة المرور",
       approve: "قُبل",
       reject: "رُفض",
       workers: "عمّال",

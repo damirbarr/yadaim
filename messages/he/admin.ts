@@ -77,6 +77,7 @@ export default {
     // Machine words that appear in stored details (account kinds and levels come from roles.*).
     words: {
       google: "גוגל",
+      password: "אימייל וסיסמה",
       approve: "אושר",
       reject: "נדחה",
       workers: "עובדים",

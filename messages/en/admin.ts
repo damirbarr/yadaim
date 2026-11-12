@@ -75,6 +75,7 @@ const m: Messages["admin"] = {
     target: { agency: "Agency #{id}", contractor: "Contractor #{id}", booking: "Booking #{id}", worker: "Worker #{id}", user: "User #{id}", campaign: "Offer #{id}", document: "Document #{id}" },
     words: {
       google: "Google",
+      password: "email and password",
       approve: "approved",
       reject: "declined",
       workers: "workers",
