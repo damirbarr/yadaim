@@ -1,0 +1,8 @@
+node_modules
+.next
+data
+docs
+tests/screenshots
+.env*
+!.env.example
+*.zip
