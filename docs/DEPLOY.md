@@ -145,3 +145,18 @@ docker run -p 3000:3000 \
 4. לא מוחקים ולא משנים עמודות קיימות בלי תוכנית מעבר. מוסיפים חדש ואז מעבירים.
 
 הפירוט המלא: [`SUPABASE.md`](SUPABASE.md).
+
+## הרשמה עם אימייל וסיסמה: שליחת מיילים
+ההרשמה עם אימייל וסיסמה שולחת מייל אישור. "שכחתי סיסמה" שולח קישור לאיפוס. ב-Supabase בלי שירות מיילים משלכם:
+- המיילים נשלחים **רק לחברי הצוות בארגון ה-Supabase שלכם**, ועד 2 בשעה. משתמשים אחרים לא יקבלו אותם.
+- אי אפשר לשנות את נוסח המייל, והוא באנגלית.
+
+כדי לפתוח את זה לכולם:
+1. פתחו חשבון ב-[Resend](https://resend.com) (חינם עד 3,000 מיילים בחודש) ואמתו דומיין.
+2. ב-Supabase: Authentication ← Emails ← **SMTP Settings** ← Enable custom SMTP, והדביקו את פרטי ה-SMTP של Resend.
+3. Authentication ← Rate Limits: הגדילו את "Emails sent per hour".
+4. Authentication ← Emails ← Templates: החליפו את הקישור בתבניות, כדי שהקישור יעבוד מכל דפדפן:
+   - **Confirm signup:** `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`
+   - **Reset password:** `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery`
+
+עד אז הקישור מהתבנית הרגילה עובד, אבל רק בדפדפן שבו נרשמו או ביקשו איפוס.
