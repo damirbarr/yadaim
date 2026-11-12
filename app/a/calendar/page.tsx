@@ -89,13 +89,13 @@ export default async function AgencyCalendar({ searchParams }: { searchParams: P
         />
 
         <section id="day" className="sheet scroll-mt-20 xl:sticky xl:top-6" aria-live="polite">
-          <div className="blueprint px-5 py-4">
-            <div className="text-[12px] font-semibold text-white/60">{selected === today ? t("calendar.today") : fmt.weekday(selected)}</div>
+          <div className="bg-cool border border-line px-5 py-4">
+            <div className="text-[12px] font-semibold text-muted">{selected === today ? t("calendar.today") : fmt.weekday(selected)}</div>
             <h2 className="num text-[26px] font-bold leading-tight">{fmt.fullDate(selected)}</h2>
             {sel && (
               <div className="mt-3 flex gap-5 text-[13px]">
-                <div><div className="num font-display text-[28px] font-bold leading-none text-hazard">{sel.assigned}</div><div className="text-white/70">{t("calendar.agency.legendAssigned")}</div></div>
-                <div><div className="num font-display text-[28px] font-bold leading-none text-white">{sel.free}</div><div className="text-white/70">{t("calendar.agency.legendFree")}</div></div>
+                <div><div className="num font-display text-[28px] font-bold leading-none text-ink">{sel.assigned}</div><div className="text-muted">{t("calendar.agency.legendAssigned")}</div></div>
+                <div><div className="num font-display text-[28px] font-bold leading-none text-ink">{sel.free}</div><div className="text-muted">{t("calendar.agency.legendFree")}</div></div>
               </div>
             )}
           </div>

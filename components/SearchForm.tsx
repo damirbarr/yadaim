@@ -11,7 +11,7 @@ export async function SearchForm({ d = {}, compact = false }: { d?: SearchDefaul
   const { t, fmt } = await getI18n();
   const min = todayISO();
   return (
-    <form action="/c/search" className={`sheet grid gap-3 border-b-[3px] border-b-hazard p-3 md:p-4 ${compact ? "md:grid-cols-[1.2fr_1.2fr_1fr_1fr_.8fr_auto]" : "sm:grid-cols-2 lg:grid-cols-[1.2fr_1.2fr_1fr_1fr_.8fr_auto]"}`}>
+    <form action="/c/search" className={`sheet grid gap-3 p-3 md:p-4 ${compact ? "md:grid-cols-[1.2fr_1.2fr_1fr_1fr_.8fr_auto]" : "sm:grid-cols-2 lg:grid-cols-[1.2fr_1.2fr_1fr_1fr_.8fr_auto]"}`}>
       <div>
         <label className="label">{t("contractor.form.trade")}</label>
         <select name="trade" className="input" defaultValue={d.trade ?? "formwork"}>

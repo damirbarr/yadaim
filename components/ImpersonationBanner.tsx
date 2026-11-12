@@ -5,10 +5,10 @@ export async function ImpersonationBanner({ user }: { user: { name: string; impe
   if (!user.impersonator_id) return null;
   const { t, rich } = await getI18n();
   return (
-    <div className="stripe sticky top-0 z-50 p-1">
-      <form action={stopImpersonation} className="flex items-center justify-center gap-3 rounded-[10px] bg-ink px-3 py-1.5 text-xs text-white">
+    <div className="sticky top-0 z-50 border-b border-hazard bg-hazard-soft px-2 py-1.5">
+      <form action={stopImpersonation} className="flex items-center justify-center gap-3 text-[13px] text-ink">
         <span>{rich("common.impersonating", { b: (c) => <b>{c}</b> }, { admin: user.impersonator_name ?? "", user: user.name })}</span>
-        <button className="rounded-[10px] bg-hazard px-2 py-0.5 font-semibold text-ink">{t("common.backToAdmin")}</button>
+        <button className="btn-primary btn-sm">{t("common.backToAdmin")}</button>
       </form>
     </div>
   );

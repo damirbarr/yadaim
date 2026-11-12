@@ -25,14 +25,14 @@ export default async function ContractorLayout({ children }: { children: React.R
   return (
     <div className="pb-24 md:pb-10">
       <ImpersonationBanner user={user} />
-      <header className="blueprint sticky top-0 z-30 border-b-2 border-hazard">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
-          <Link href="/c"><Logo dark /></Link>
+      <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
+          <Link href="/c"><Logo /></Link>
           <TopNav items={items} />
           <div className="ms-auto flex items-center gap-3 text-sm">
-            <span className="hidden text-white/70 lg:inline">{user.name} · {c.company} · {t(`roles.org.${user.org_role}`)}</span>
-            <LanguageSwitcher dark className="hidden sm:inline-flex" />
-            <form action={logout}><button className="grid h-9 w-9 place-items-center rounded-[10px] text-white/70 hover:bg-white/10 hover:text-white" title={t("common.logout")} aria-label={t("common.logout")}><ILogout className="flip-ltr" /></button></form>
+            <span className="hidden text-muted lg:inline">{user.name} · {c.company} · {t(`roles.org.${user.org_role}`)}</span>
+            <LanguageSwitcher className="hidden sm:inline-flex" />
+            <form action={logout}><button className="grid h-11 w-11 place-items-center rounded-[10px] text-muted hover:bg-cool hover:text-ink" title={t("common.logout")} aria-label={t("common.logout")}><ILogout className="flip-ltr" /></button></form>
           </div>
         </div>
       </header>

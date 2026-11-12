@@ -17,8 +17,8 @@ export async function DevToolbar() {
   );
   return (
     <details className="fixed end-2 top-16 z-[60] w-72 text-sm md:bottom-4 md:end-16 md:top-auto">
-      <summary className="ms-auto flex w-fit cursor-pointer list-none items-center gap-2 rounded-[10px] border-b-2 border-hazard bg-ink px-3 py-1.5 text-xs font-bold text-white shadow-lg">
-        <span className="h-2 w-2 bg-hazard" />{t("public.dev.badge", { who: me ? t("public.dev.me", { name: me.name, role: kind(me.role) }) : t("public.dev.byArea") })}
+      <summary className="ms-auto flex w-fit cursor-pointer list-none items-center gap-2 rounded-[10px] bg-ink px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+        <span className="h-2 w-2 rounded-full bg-hazard" />{t("public.dev.badge", { who: me ? t("public.dev.me", { name: me.name, role: kind(me.role) }) : t("public.dev.byArea") })}
       </summary>
       <div className="mt-2 max-h-[60vh] overflow-auto rounded-[10px] border border-line bg-white p-2 shadow-2xl">
         <p className="px-2 pb-2 text-xs text-muted">{t("public.dev.help")}</p>

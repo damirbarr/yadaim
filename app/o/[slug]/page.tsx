@@ -5,7 +5,7 @@ import { all, get } from "@/lib/db";
 import { agencyReliability, displayName, idleForecast, workerStats, type Agency, type Worker } from "@/lib/queries";
 import { hourlyFor, TRADES, DEFAULT_OPTS } from "@/lib/domain";
 import { Avatar, Logo, Rating, ScoreRing } from "@/components/ui";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { PublicShell } from "@/components/PublicShell";
 import { getI18n } from "@/lib/i18n/server";
 import type { I18n } from "@/lib/i18n/core";
 
@@ -42,11 +42,10 @@ export default async function Offer({ params, searchParams }: { params: Promise<
     const range = fmt.range(fmt.date(g.date_from), fmt.date(g.date_to));
     const gFrom = Math.min(...gWorkers.map((w) => hourlyFor(w.hourly_rate, a, DEFAULT_OPTS) * 9));
     return (
-      <div className="min-h-dvh">
-        <OfferHeader logged={!!u} login={t("public.offer.login")} />
+      <PublicShell wide actions={!u && <Link href="/login" className="btn-ghost btn-sm">{t("public.offer.login")}</Link>}>
         <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">
           <AgencyHead a={a} score={rel.score} t={t} fmt={fmt} />
-          <div className="rounded-[10px] bg-hazard p-5" data-testid="offer-group">
+          <div className="card border-s-4 border-s-hazard p-5" data-testid="offer-group">
             <div className="font-display text-2xl font-bold">{g.target === "crew" && g.crew_name ? t("public.offer.crewTitle", { crew: g.crew_name }) : t("public.offer.groupTitle", { n: gWorkers.length })}</div>
             <div className="text-sm">
               {g.date_from === g.date_to ? t("public.offer.togetherDay", { n: gWorkers.length, from: range.from }) : t("public.offer.together", { n: gWorkers.length, ...range })}
@@ -70,16 +69,15 @@ export default async function Offer({ params, searchParams }: { params: Promise<
           <Link href={ctaGroup} className="btn-primary w-full py-3 text-base">{u?.role === "contractor" ? t("public.offer.ctaBookGroup") : t("public.offer.ctaSignup")}</Link>
           <p className="text-center text-xs text-muted">{t("public.offer.foot")}</p>
         </main>
-      </div>
+      </PublicShell>
     );
   }
   return (
-    <div className="min-h-dvh">
-      <OfferHeader logged={!!u} login={t("public.offer.login")} />
+    <PublicShell wide actions={!u && <Link href="/login" className="btn-ghost btn-sm">{t("public.offer.login")}</Link>}>
       <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">
         <AgencyHead a={a} score={rel.score} t={t} fmt={fmt} />
         {f && (
-          <div className="rounded-[10px] bg-hazard p-5">
+          <div className="card border-s-4 border-s-hazard p-5">
             <div className="font-display text-2xl font-bold">{t("public.offer.available", { n: f.workerCount, trade: fmt.trade(focus), trades: fmt.trades(focus), from: fmt.date(f.from), to: fmt.date(f.to) })}</div>
             <div className="text-sm">
               {t("public.offer.allValid")}
@@ -106,18 +104,7 @@ export default async function Offer({ params, searchParams }: { params: Promise<
         <Link href={cta} className="btn-primary w-full py-3 text-base">{u?.role === "contractor" ? t("public.offer.ctaBook") : t("public.offer.ctaSignup")}</Link>
         <p className="text-center text-xs text-muted">{t("public.offer.foot")}</p>
       </main>
-    </div>
-  );
-}
-
-function OfferHeader({ logged, login }: { logged: boolean; login: string }) {
-  return (
-    <header className="bg-ink text-white">
-      <div className="mx-auto flex h-14 max-w-4xl items-center justify-between gap-3 px-4">
-        <Link href="/"><Logo dark /></Link>
-        <div className="flex items-center gap-3"><LanguageSwitcher dark />{!logged && <Link href="/login" className="text-sm text-white/70">{login}</Link>}</div>
-      </div>
-    </header>
+    </PublicShell>
   );
 }
 

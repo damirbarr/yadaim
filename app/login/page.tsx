@@ -4,6 +4,7 @@ import { currentUser, devBypass, googleEnabled, homeFor } from "@/lib/auth";
 import { Logo, Notice } from "@/components/ui";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getI18n } from "@/lib/i18n/server";
+import { PublicShell } from "@/components/PublicShell";
 import { PasswordForm, type PasswordMode } from "@/components/PasswordForm";
 
 export async function generateMetadata() {
@@ -34,25 +35,27 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   const u = await currentUser();
   if (u && !u.dev) redirect(homeFor(u.role));
   const google = googleEnabled();
-  const { t } = await getI18n();
+  const { t, rich } = await getI18n();
   const err = sp.error && (ERRORS as readonly string[]).includes(sp.error) ? t(`public.login.errors.${sp.error as (typeof ERRORS)[number]}`) : t("public.login.errors.other");
   return (
-    <main className="grid min-h-dvh md:grid-cols-[1fr_1.1fr]">
-      <section className="blueprint relative hidden flex-col justify-between p-10 md:flex">
-        <Link href="/"><Logo dark /></Link>
-        <div>
-          <div className="text-[13px] font-bold text-hazard">{t("public.login.sideEyebrow")}</div>
-          <h2 className="mt-3 text-[48px] font-bold leading-[1.05] text-white">{t("public.landing.h1a")}<br /><em className="not-italic text-hazard">{t("public.landing.h1b")}</em></h2>
-          <svg viewBox="0 0 400 40" className="mt-8 w-72" aria-hidden><g stroke="#d4f25a" strokeWidth="1.2"><path d="M4 20h392M4 12v16M396 12v16" /></g></svg>
-          <p className="mt-2 max-w-sm text-[15px] text-[#c9d6e3]">{t("public.login.sideText")}</p>
+    <PublicShell>
+      <main className="mx-auto grid max-w-5xl items-center gap-10 px-4 py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:px-8 md:py-14">
+      {/* The promise beside the form, in the landing's light style: navy headline with the lime underline, the worker photo. */}
+      <section className="relative hidden min-h-[520px] overflow-hidden rounded-[18px] border border-line bg-[linear-gradient(180deg,#ffffff,#f4f8fb)] p-8 md:block">
+        <div className="relative z-10">
+          <div className="eyebrow">{t("public.login.sideEyebrow")}</div>
+          <h2 className="mt-2 text-[30px] font-black leading-[1.2] text-ink">
+            {t("public.landing.top.h1a")} {rich("public.landing.top.h1b", { mark: (c) => <span className="relative whitespace-nowrap">{c}<svg viewBox="0 0 200 14" preserveAspectRatio="none" className="absolute -bottom-1.5 start-0 h-2.5 w-full" aria-hidden><path d="M3 9c38-6 80-7 120-4 26 2 48 3 74-2" fill="none" stroke="#d4f25a" strokeWidth="7" strokeLinecap="round" /></svg></span> })}
+          </h2>
+          <p className="mt-4 max-w-[34ch] text-[15px] text-muted">{t("public.login.sideText")}</p>
         </div>
-        <div className="flex items-center justify-between gap-3"><span className="text-[13px] text-white/45">{t("public.login.sideFoot")}</span><LanguageSwitcher dark /></div>
+        <img src="/brand/hero-worker.webp" alt="" className="pointer-events-none absolute bottom-0 end-0 h-[46%] w-auto ltr:-scale-x-100" />
+        <p className="absolute bottom-5 start-8 z-10 max-w-[24ch] text-[13px] text-faint">{t("public.login.sideFoot")}</p>
       </section>
 
-      <section className="grid content-center gap-6 px-4 py-10 md:px-14">
-        <div className="grid justify-items-center gap-3 md:hidden"><Link href="/"><Logo /></Link><LanguageSwitcher /></div>
+      <section className="grid content-center gap-6">
         <div className="mx-auto w-full max-w-md space-y-6">
-          <div className="sheet space-y-3 border-t-[3px] border-t-ink p-6 md:p-8">
+          <div className="sheet space-y-3 p-6 md:p-8">
             <div className="eyebrow">{t("public.login.welcome")}</div>
             <h1 className="text-[34px] font-bold leading-tight text-ink">{t("public.login.title")}</h1>
             {sp.error && <Notice tone="bad">{err}</Notice>}
@@ -69,8 +72,8 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
             )}
           </div>
           {devBypass() && (
-            <div className="sheet paper-grid space-y-2 p-5 text-[14px]">
-              <div className="flex items-center gap-2 font-bold text-ink"><span className="stripe h-3 w-6" />{t("public.login.dev.title")}</div>
+            <div className="sheet space-y-2 bg-cool p-5 text-[14px]">
+              <div className="font-bold text-ink">{t("public.login.dev.title")}</div>
               <p className="text-muted">{t("public.login.dev.text")}</p>
               <div className="grid grid-cols-3 gap-2">
                 <Link href="/c" className="btn-ghost btn-sm">{t("public.login.dev.contractor")}</Link>
@@ -81,6 +84,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
           )}
         </div>
       </section>
-    </main>
+      </main>
+    </PublicShell>
   );
 }

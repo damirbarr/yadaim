@@ -46,7 +46,7 @@ export default async function Search({ searchParams }: { searchParams: Promise<R
     <div className="space-y-5">
       {/* Phone: the query is a one-line summary so the results come first; tapping it opens the form. */}
       <details className="group md:hidden">
-        <summary className="sheet flex cursor-pointer list-none items-center gap-2 border-b-[3px] border-b-hazard px-4 py-3 text-[15px] [&::-webkit-details-marker]:hidden">
+        <summary className="sheet flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-[15px] [&::-webkit-details-marker]:hidden">
           <span className="min-w-0 flex-1 truncate font-semibold">
             {fmt.trades(q.trade)} · {fmt.city(q.city)} · {fmt.prettyDate(q.date)}{q.days > 1 ? ` · ${t("contractor.count.days", { n: q.days })}` : ""} · {t("contractor.count.workers", { n: q.count })}
           </span>

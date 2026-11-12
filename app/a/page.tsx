@@ -84,10 +84,10 @@ export default async function AgencyToday() {
         <div className="grid grid-cols-2 border border-line bg-white lg:grid-cols-1">
           {stats.map((c, i) => (
             <Link key={c.k} href={c.href} className={`block border-line transition hover:bg-paper ${i === 0 ? "border-e lg:border-e-0 lg:border-b" : ""}`}>
-              <div className={`h-full p-4 sm:p-5 ${c.dark ? "blueprint" : ""}`}>
-                <div className={`text-[13px] font-semibold ${c.dark ? "text-white/70" : "text-muted"}`}>{c.label}</div>
-                <div className={`num mt-1 text-[44px] font-bold leading-none sm:text-[52px] ${c.dark ? "text-hazard" : c.tone || "text-ink"}`}>{c.v}</div>
-                <div className={`mt-2 text-[13px] ${c.dark ? "font-bold text-white" : "text-muted"}`}>{c.hint}</div>
+              <div className={`h-full p-4 sm:p-5 ${c.dark ? "bg-hazard-soft" : ""}`}>
+                <div className={`text-[13px] font-semibold text-muted`}>{c.label}</div>
+                <div className={`num mt-1 text-[44px] font-bold leading-none sm:text-[52px] ${c.dark ? "text-ink" : c.tone || "text-ink"}`}>{c.v}</div>
+                <div className={`mt-2 text-[13px] ${c.dark ? "font-bold text-ink" : "text-muted"}`}>{c.hint}</div>
               </div>
             </Link>
           ))}

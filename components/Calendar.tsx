@@ -74,7 +74,7 @@ export async function MonthCalendar({ month, today, selected, href, day, linkDay
                   <>
                     <div className="flex w-16 shrink-0 flex-col md:mb-1 md:w-auto md:flex-row md:items-center md:justify-between">
                       <span className="text-[12px] text-muted md:hidden">{isToday ? t("calendar.today") : wd(iso)}</span>
-                      <span className={`num self-start rounded-[6px] text-[14px] font-bold md:text-[13px] ${isToday ? "bg-ink px-1.5 text-hazard" : off ? "text-muted/60" : "text-ink"}`}>
+                      <span className={`num self-start rounded-[6px] text-[14px] font-bold md:text-[13px] ${isToday ? "bg-hazard px-1.5 text-ink" : off ? "text-muted/60" : "text-ink"}`}>
                         <span className="md:hidden">{fmt.date(iso)}</span>
                         <span className="hidden md:inline">{Number(iso.slice(8, 10))}</span>
                       </span>

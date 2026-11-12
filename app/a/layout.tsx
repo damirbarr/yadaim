@@ -64,17 +64,17 @@ export default async function AgencyLayout({ children }: { children: React.React
           </div>
         </aside>
         <div className="min-w-0 pb-24 md:pb-10">
-          <header className="blueprint sticky top-0 z-30 flex h-14 items-center justify-between px-4 md:hidden">
-            <Logo dark />
+          <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur flex h-16 items-center justify-between px-4 md:hidden">
+            <Logo />
             <div className="flex items-center gap-1">
               {/* The rest of the menu folds into one button so the phone header never outgrows the screen. */}
               <details className="group relative">
-                <summary className="flex min-h-9 cursor-pointer list-none items-center rounded-[10px] px-3 text-sm font-semibold text-white/80 group-open:bg-white/10 [&::-webkit-details-marker]:hidden">{t("common.more")}</summary>
-                <nav className="absolute end-0 top-full z-40 mt-2 grid min-w-48 border border-white/20 bg-ink py-1 shadow-lg">
-                  {extra.map((i) => <Link key={i.href} href={i.href} className="px-4 py-2.5 text-[15px] text-white/85 hover:bg-white/10">{t(`common.nav.agency.${i.key}`)}</Link>)}
+                <summary className="flex min-h-9 cursor-pointer list-none items-center rounded-[10px] px-3 text-sm font-semibold text-ink group-open:bg-cool [&::-webkit-details-marker]:hidden">{t("common.more")}</summary>
+                <nav className="absolute end-0 top-full z-40 mt-2 grid min-w-48 rounded-[12px] border border-line bg-white py-1 shadow-[0_14px_36px_rgba(14,42,68,0.10)]">
+                  {extra.map((i) => <Link key={i.href} href={i.href} className="px-4 py-2.5 text-[15px] text-ink hover:bg-cool">{t(`common.nav.agency.${i.key}`)}</Link>)}
                 </nav>
               </details>
-              <form action={logout}><button className="grid h-9 w-9 place-items-center text-white/70" aria-label={t("common.logout")}><ILogout className="flip-ltr" /></button></form>
+              <form action={logout}><button className="grid h-11 w-11 place-items-center rounded-[10px] text-muted hover:bg-cool" aria-label={t("common.logout")}><ILogout className="flip-ltr" /></button></form>
             </div>
           </header>
           {!a.verified && <div className="px-4 pt-4 md:px-8"><Notice tone="warn">{t("common.agencyPending", { license: a.license_no })}</Notice></div>}

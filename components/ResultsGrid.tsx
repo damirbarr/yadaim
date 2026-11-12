@@ -187,7 +187,7 @@ export function ResultsGrid({ hits, crews = [], basket = [], trade, qs, count, d
       {chosen.length > 0 && <div className="h-36" aria-hidden />}
       {chosen.length > 0 && (
         <div className="fixed inset-x-0 bottom-[60px] z-40 px-3 md:bottom-4">
-          <div className="blueprint mx-auto max-w-3xl rounded-[10px] border-b-[3px] border-hazard p-3 ps-4 shadow-2xl" data-testid="basket">
+          <div className="mx-auto max-w-3xl rounded-[16px] bg-ink p-3 ps-4 text-white shadow-[0_14px_36px_rgba(14,42,68,0.25)]" data-testid="basket">
             <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1 text-sm">
                 <div className="font-display text-[17px] font-bold leading-tight">{t("contractor.results.chosen", { list: summary })}</div>

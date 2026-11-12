@@ -12,9 +12,9 @@ export function TopNav({ items }: { items: NavItem[] }) {
   return (
     <nav className="hidden items-center gap-1 md:flex">
       {items.map((it) => (
-        <Link key={it.href} href={it.href} className={`relative px-3 py-2 text-[15px] font-semibold ${isActive(path, it) ? "text-white after:absolute after:inset-x-3 after:-bottom-[9px] after:h-[3px] after:bg-hazard" : "text-white/65 hover:text-white"}`}>
+        <Link key={it.href} href={it.href} className={`relative px-3 py-2 text-[15px] font-semibold ${isActive(path, it) ? "text-ink after:absolute after:inset-x-3 after:-bottom-[13px] after:h-[3px] after:rounded-full after:bg-hazard" : "text-muted hover:text-ink"}`}>
           {it.label}
-          {!!it.badge && <span className="num ms-1.5 rounded-[6px] bg-hazard px-1.5 text-[11px] font-bold text-ink">{it.badge}</span>}
+          {!!it.badge && <span className="num ms-1.5 rounded-[6px] bg-ink px-1.5 text-[11px] font-bold text-white">{it.badge}</span>}
         </Link>
       ))}
     </nav>
@@ -24,12 +24,12 @@ export function TopNav({ items }: { items: NavItem[] }) {
 export function BottomNav({ items }: { items: NavItem[] }) {
   const path = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 grid border-t border-ink/15 bg-paper pb-[env(safe-area-inset-bottom)] md:hidden" style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}>
+    <nav className="fixed inset-x-0 bottom-0 z-30 grid border-t border-line bg-white pb-[env(safe-area-inset-bottom)] md:hidden" style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}>
       {items.map((it) => (
         <Link key={it.href} href={it.href} className={`relative grid place-items-center gap-0.5 py-2 text-[12px] font-semibold ${isActive(path, it) ? "text-ink" : "text-muted"}`}>
-          <span className={`grid h-7 w-12 place-items-center rounded-[10px] ${isActive(path, it) ? "bg-ink text-hazard" : ""}`}>{it.icon}</span>
+          <span className={`grid h-7 w-12 place-items-center rounded-[10px] ${isActive(path, it) ? "bg-hazard text-ink" : ""}`}>{it.icon}</span>
           {it.label}
-          {!!it.badge && <span className="absolute top-1 left-1/2 ms-3 grid h-4 min-w-4 place-items-center rounded-[6px] bg-signal px-1 text-[10px] font-bold text-white">{it.badge}</span>}
+          {!!it.badge && <span className="absolute top-1 left-1/2 ms-3 grid h-4 min-w-4 place-items-center rounded-[6px] bg-ink px-1 text-[10px] font-bold text-white">{it.badge}</span>}
         </Link>
       ))}
     </nav>

@@ -5,7 +5,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { IArrow, IBuilding, ICalendar, ICheck, IChart, IClock, IDoc, IHelmet, IInbox, IMenu, IPin, IReceipt, IShield, IUpload, IUser, IUsers, IWhatsapp } from "@/components/icons";
 import { DateField } from "@/components/DateField";
 import { REGIONS, TRADES, nextWorkday, todayISO } from "@/lib/domain";
-import { DimLine, OfferCard, SearchCard } from "@/components/landing/Visuals";
+import { OfferCard, SearchCard } from "@/components/landing/Visuals";
 import { getI18n } from "@/lib/i18n/server";
 
 const STATS = [{ k: "agencies", Icon: IBuilding }, { k: "workers", Icon: IUsers }, { k: "lock", Icon: IClock }, { k: "noFit", Icon: IShield }] as const;
@@ -31,7 +31,6 @@ const H2 = "text-[26px] font-extrabold leading-[1.2] md:text-[34px]";
 export default async function Landing() {
   const u = await currentUser();
   const { t, rich, fmt } = await getI18n();
-  const outline = "btn border border-white/70 bg-transparent text-white hover:bg-white hover:text-ink";
   return (
     <div>
       {/* Header: logo at the start, section links in the middle, sign-in and the main action at the end. */}
@@ -268,25 +267,24 @@ export default async function Landing() {
         </div>
       </section>
 
-      {/* Closing band: the same two doors as the hero, plus the demo. */}
-      <section className="blueprint">
-        <div className={`${WRAP} flex flex-col gap-8 py-14 md:py-20 lg:flex-row lg:items-end lg:justify-between`}>
+      {/* Closing card: the same two doors as the hero, plus the demo. Light, like the hero. */}
+      <section className={`${WRAP} pb-16 md:pb-24`}>
+        <div className="card flex flex-col gap-8 bg-[linear-gradient(180deg,#ffffff,#f4f8fb)] p-6 md:p-10 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-[620px]">
-            <DimLine className="w-16" />
-            <h2 className={`mt-5 text-white ${H2}`}>{t("public.landing.final.title")}</h2>
-            <p className="mt-3 text-[16px] leading-relaxed text-[#c9d6e3] md:text-[17px]">{t("public.landing.final.text")}</p>
+            <h2 className={`text-ink ${H2}`}>{t("public.landing.final.title")}</h2>
+            <p className="mt-3 text-[16px] leading-relaxed text-muted md:text-[17px]">{t("public.landing.final.text")}</p>
           </div>
           <div className="shrink-0">
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Link href="/signup?role=contractor" className="btn-hazard px-6 py-3.5 text-[16px]">{t("public.landing.ctaContractor")}</Link>
-              <Link href="/signup?role=agency" className={`${outline} px-6 py-3.5 text-[16px]`}>{t("public.landing.ctaAgency")}</Link>
+              <Link href="/signup?role=contractor" className="btn-primary px-6 py-3.5 text-[16px]">{t("public.landing.ctaContractor")}</Link>
+              <Link href="/signup?role=agency" className="btn-ghost px-6 py-3.5 text-[16px]">{t("public.landing.ctaAgency")}</Link>
             </div>
-            <p className="mt-4 text-[14px] text-white/60">{rich("public.landing.demo", { link: (c) => <Link href="/login" className="font-semibold text-white underline underline-offset-4">{c}</Link> })}</p>
+            <p className="mt-4 text-[14px] text-muted">{rich("public.landing.demo", { link: (c) => <Link href="/login" className="font-semibold text-ink underline underline-offset-4">{c}</Link> })}</p>
           </div>
         </div>
       </section>
 
-      <footer className="bg-ink text-white">
+      <footer className="bg-ink-deep text-white">
         <div className={`${WRAP} flex flex-col gap-5 border-t border-white/15 py-8 text-[13px] text-white/60 md:flex-row md:items-center md:justify-between`}>
           <Logo dark className="text-[22px]" />
           <span className="max-w-[60ch]">{t("public.landing.footer")}</span>

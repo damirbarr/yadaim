@@ -20,7 +20,7 @@ export async function AttendanceTable({ b, note }: { b: BookingRow; note?: strin
       </div>
       {note && <p className="border-b border-line px-5 py-2.5 text-xs text-muted">{note}</p>}
       {!recorded ? (
-        <p className="paper-grid px-5 py-5 text-sm text-muted">{t("contractor.day.table.empty")}</p>
+        <p className="px-5 py-5 text-sm text-muted">{t("contractor.day.table.empty")}</p>
       ) : (
         <>
           {days.map((d) => (

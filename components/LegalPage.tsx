@@ -1,15 +1,11 @@
 import Link from "next/link";
-import { Logo } from "@/components/ui";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { PublicShell } from "@/components/PublicShell";
 import { LEGAL_UPDATED, type LegalDoc } from "@/messages/legal";
 
 /** Public legal page (privacy, terms): navy header, one sheet of text. */
 export function LegalPage({ doc, links }: { doc: LegalDoc; links: { privacy: string; terms: string; home: string } }) {
   return (
-    <div className="min-h-dvh">
-      <header className="blueprint border-b-2 border-hazard">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4"><Link href="/"><Logo dark /></Link><LanguageSwitcher dark /></div>
-      </header>
+    <PublicShell>
       <main className="mx-auto max-w-3xl px-4 py-10">
         <div className="eyebrow mb-1">{doc.eyebrow}</div>
         <h1 className="text-[34px] font-bold leading-tight text-ink md:text-[42px]">{doc.title}</h1>
@@ -26,6 +22,6 @@ export function LegalPage({ doc, links }: { doc: LegalDoc; links: { privacy: str
         </article>
         <p className="mt-6 flex gap-3 text-[14px] text-muted"><Link href="/privacy" className="underline">{links.privacy}</Link><Link href="/terms" className="underline">{links.terms}</Link><Link href="/" className="underline">{links.home}</Link></p>
       </main>
-    </div>
+    </PublicShell>
   );
 }

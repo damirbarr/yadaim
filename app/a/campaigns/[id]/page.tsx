@@ -119,8 +119,8 @@ export default async function Campaign({ params }: { params: Promise<{ id: strin
       )}
 
       {/* Where the agency is in sending, and the one button that moves it forward. */}
-      <section className="blueprint rounded-[10px] p-5">
-        <p className="text-[17px] text-white/85">{rich("market.campaigns.detail.progress", { b: (x) => <b className="font-display text-[28px] text-hazard">{x}</b> }, { sent, total: sendable })}</p>
+      <section className="bg-cool border border-line rounded-[10px] p-5">
+        <p className="text-[17px] text-muted">{rich("market.campaigns.detail.progress", { b: (x) => <b className="font-display text-[28px] text-ink">{x}</b> }, { sent, total: sendable })}</p>
         <div className="mt-3 h-1.5 w-full bg-white/15" aria-hidden>
           <div className="h-full bg-hazard" style={{ width: `${sendable ? Math.round((sent / sendable) * 100) : 0}%` }} />
         </div>
@@ -129,19 +129,19 @@ export default async function Campaign({ params }: { params: Promise<{ id: strin
             <WaLink href={`/api/wa/${next.id}`} className="btn-hazard min-h-12 w-full text-[16px] sm:w-auto">
               <IWhatsapp className="h-5 w-5" />{t("market.campaigns.detail.next", { name: next.name })}
             </WaLink>
-            <p className="text-[13px] text-white/70">{t("market.campaigns.detail.nextNote")}</p>
+            <p className="text-[13px] text-muted">{t("market.campaigns.detail.nextNote")}</p>
           </div>
-        ) : <p className="mt-4 text-[13px] text-white/70">{t("market.campaigns.detail.viewOnly")}</p>
-        ) : <p className="mt-4 font-semibold text-hazard">{t("market.campaigns.detail.allSent")}</p>}
-        <div className="mt-5 grid grid-cols-3 gap-px border-t border-white/15 pt-4 text-center">
+        ) : <p className="mt-4 text-[13px] text-muted">{t("market.campaigns.detail.viewOnly")}</p>
+        ) : <p className="mt-4 font-semibold text-ink">{t("market.campaigns.detail.allSent")}</p>}
+        <div className="mt-5 grid grid-cols-3 gap-px border-t border-line pt-4 text-center">
           {[
             [t("market.campaigns.detail.stats.sent"), sent],
             [t("market.campaigns.detail.stats.viewed"), booked.length + viewed.length],
             [t("market.campaigns.detail.stats.booked"), booked.length],
           ].map(([label, v], i) => (
             <div key={i}>
-              <div className={`font-display text-[26px] font-bold leading-none num ${i === 2 ? "text-hazard" : "text-white"}`}>{v}</div>
-              <div className="mt-1 text-[12px] text-white/70">{label}</div>
+              <div className={`font-display text-[26px] font-bold leading-none num ${i === 2 ? "text-ink" : "text-ink"}`}>{v}</div>
+              <div className="mt-1 text-[12px] text-muted">{label}</div>
             </div>
           ))}
         </div>

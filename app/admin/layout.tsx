@@ -18,22 +18,22 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ];
   return (
     <div className="pb-10">
-      <header className="blueprint sticky top-0 z-30 border-b-2 border-hazard">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
-          <Link href="/admin"><Logo dark /></Link>
-          <span className="chip-hazard">{t("common.nav.admin.badge")}</span>
+      <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
+          <Link href="/admin"><Logo /></Link>
+          <span className="chip-info">{t("common.nav.admin.badge")}</span>
           <TopNav items={items} />
           <div className="ms-auto flex items-center gap-3 text-sm">
-            <span className="hidden text-white/70 lg:inline">{me.name}</span>
-            <LanguageSwitcher dark className="hidden sm:inline-flex" />
-            <form action={logout}><button className="grid h-9 w-9 place-items-center rounded-[10px] text-white/70 hover:bg-white/10" title={t("common.logout")} aria-label={t("common.logout")}><ILogout className="flip-ltr" /></button></form>
+            <span className="hidden text-muted lg:inline">{me.name}</span>
+            <LanguageSwitcher className="hidden sm:inline-flex" />
+            <form action={logout}><button className="grid h-11 w-11 place-items-center rounded-[10px] text-muted hover:bg-cool hover:text-ink" title={t("common.logout")} aria-label={t("common.logout")}><ILogout className="flip-ltr" /></button></form>
           </div>
         </div>
         <div className="flex items-center gap-2 px-4 pb-2 md:hidden">
           <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
-            {items.map((i) => <Link key={i.href} href={i.href} className="whitespace-nowrap rounded-[10px] px-3 py-1 text-xs text-white/80">{i.label}</Link>)}
+            {items.map((i) => <Link key={i.href} href={i.href} className="whitespace-nowrap rounded-[10px] px-3 py-2 text-[13px] font-semibold text-ink hover:bg-cool">{i.label}</Link>)}
           </nav>
-          <LanguageSwitcher dark className="sm:hidden" />
+          <LanguageSwitcher className="sm:hidden" />
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 pt-6">{children}</main>

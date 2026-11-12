@@ -109,7 +109,7 @@ export function TradeChip({ k }: { k: string }) {
 export function PageHead({ title, sub, children, back, eyebrow }: { title: ReactNode; sub?: ReactNode; children?: ReactNode; back?: string; eyebrow?: string }) {
   const { t } = useI18n();
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-ink/15 pb-4">
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-line pb-4">
       <div className="min-w-0">
         {back && (
           <Link href={back} className="mb-2 inline-block text-[13px] font-semibold text-muted hover:text-ink">
@@ -117,7 +117,7 @@ export function PageHead({ title, sub, children, back, eyebrow }: { title: React
           </Link>
         )}
         {eyebrow && <div className="eyebrow mb-1">{eyebrow}</div>}
-        <h1 className="text-[30px] font-bold leading-tight text-ink md:text-[38px]">{title}</h1>
+        <h1 className="text-[28px] font-extrabold leading-tight text-ink md:text-[34px]">{title}</h1>
         {sub && <p className="mt-1.5 max-w-3xl text-[15px] text-muted">{sub}</p>}
       </div>
       {children && <div className="flex flex-wrap gap-2">{children}</div>}
@@ -129,20 +129,20 @@ export function PageHead({ title, sub, children, back, eyebrow }: { title: React
 export function Stat({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: ReactNode; tone?: "hazard" | "ok" | "bad" }) {
   const dark = tone === "hazard";
   return (
-    <div className={`sheet h-full p-5 ${dark ? "blueprint border-ink" : ""}`}>
-      <div className={`text-[13px] font-semibold ${dark ? "text-white/70" : "text-muted"}`}>{label}</div>
-      <div className={`mt-1 font-display text-[40px] font-bold leading-none ${dark ? "text-hazard" : tone === "ok" ? "text-ok" : tone === "bad" ? "text-bad" : "text-ink"}`}>{value}</div>
-      {hint && <div className={`mt-2 text-[13px] ${dark ? "text-white/75" : "text-muted"}`}>{hint}</div>}
+    <div className={`sheet h-full p-5 ${dark ? "border-hazard bg-hazard-soft" : ""}`}>
+      <div className={`text-[13px] font-semibold text-muted`}>{label}</div>
+      <div className={`mt-1 font-display text-[40px] font-bold leading-none ${dark ? "text-ink" : tone === "ok" ? "text-ok" : tone === "bad" ? "text-bad" : "text-ink"}`}>{value}</div>
+      {hint && <div className={`mt-2 text-[13px] text-muted`}>{hint}</div>}
     </div>
   );
 }
 
 export function Empty({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <div className="sheet paper-grid grid place-items-center gap-3 px-6 py-14 text-center">
-      <svg viewBox="0 0 120 40" className="h-8 w-28 text-ink/40" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
-        <path d="M4 20h112M4 12v16M116 12v16M30 30V14h60v16" strokeDasharray="4 4" />
-      </svg>
+    <div className="sheet grid place-items-center gap-3 px-6 py-14 text-center">
+      <span aria-hidden className="grid h-14 w-14 place-items-center rounded-full bg-cool text-ink">
+        <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6H3v-6z" /></svg>
+      </span>
       <div className="font-display text-xl font-bold text-ink">{title}</div>
       {children && <div className="max-w-md text-[15px] text-muted">{children}</div>}
     </div>
