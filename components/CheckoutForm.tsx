@@ -63,7 +63,7 @@ export function CheckoutForm({ workers, q, defaultAddress }: { workers: W[]; q: 
                 <h3 className="font-display text-[17px] font-bold text-ink">{g.agency} · {t(`contractor.count.${g.trade}` as MessageKey, { n: g.rows.length })}</h3>
                 <span className="text-[12px] text-muted">{t("contractor.checkout.groupNote")}</span>
               </div>
-              <ul className="divide-y divide-dashed divide-line">
+              <ul className="divide-y divide-line">
                 {g.rows.map(({ w, day, regularDay }) => (
                   <li key={w.id} className="flex items-center gap-3 px-4 py-3">
                     <Avatar w={{ id: w.id, trade: w.trade, photo: w.photo, country: w.country }} size={44} />

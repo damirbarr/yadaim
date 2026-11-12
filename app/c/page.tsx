@@ -30,7 +30,7 @@ export default async function ContractorHome() {
   return (
     <div className="space-y-8">
       {onSite.length > 0 && (
-        <section className="blueprint -mx-4 -mt-6 px-4 pb-3 pt-5 md:mx-0 md:mt-0 md:rounded-[3px] md:px-8" data-today>
+        <section className="blueprint -mx-4 -mt-6 px-4 pb-3 pt-5 md:mx-0 md:mt-0 md:rounded-[10px] md:px-8" data-today>
           <div className="text-[13px] font-bold text-hazard">{t("contractor.day.home", { date: fmt.prettyDate(today) })}</div>
           <ul>
             {onSite.map((b) => {
@@ -61,7 +61,7 @@ export default async function ContractorHome() {
           </ul>
         </section>
       )}
-      <section className={`blueprint -mx-4 ${onSite.length ? "" : "-mt-6"} overflow-hidden px-4 pb-8 pt-7 md:mx-0 md:mt-0 md:rounded-[3px] md:px-10 md:pb-10 md:pt-9`}>
+      <section className={`blueprint -mx-4 ${onSite.length ? "" : "-mt-6"} overflow-hidden px-4 pb-8 pt-7 md:mx-0 md:mt-0 md:rounded-[10px] md:px-10 md:pb-10 md:pt-9`}>
         <div className="text-[13px] font-bold text-hazard">{t("contractor.home.eyebrow")}</div>
         <h1 className="mt-2 text-[38px] font-bold leading-[1.05] text-white md:text-[56px]">{rich("contractor.home.heading", { hl: (c) => <em className="not-italic text-hazard">{c}</em> })}</h1>
         <p className="mt-2 max-w-xl text-[16px] text-white/75">{t("contractor.home.lead")}</p>

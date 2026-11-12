@@ -32,7 +32,7 @@ export default async function ContractorLayout({ children }: { children: React.R
           <div className="ms-auto flex items-center gap-3 text-sm">
             <span className="hidden text-white/70 lg:inline">{user.name} · {c.company} · {t(`roles.org.${user.org_role}`)}</span>
             <LanguageSwitcher dark className="hidden sm:inline-flex" />
-            <form action={logout}><button className="grid h-9 w-9 place-items-center rounded-[3px] text-white/70 hover:bg-white/10 hover:text-white" title={t("common.logout")} aria-label={t("common.logout")}><ILogout className="flip-ltr" /></button></form>
+            <form action={logout}><button className="grid h-9 w-9 place-items-center rounded-[10px] text-white/70 hover:bg-white/10 hover:text-white" title={t("common.logout")} aria-label={t("common.logout")}><ILogout className="flip-ltr" /></button></form>
           </div>
         </div>
       </header>

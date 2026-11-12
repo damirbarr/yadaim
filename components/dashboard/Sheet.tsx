@@ -13,7 +13,7 @@ export function SheetHead({ title, note, id }: { title: ReactNode; note?: ReactN
 /** Quiet explainer: a bordered box with a lime corner, one big number and one sentence on why it matters. */
 export function WhyBox({ label, value, children }: { label: string; value: ReactNode; children: ReactNode }) {
   return (
-    <aside className="relative rounded-[3px] border border-line bg-paper/60 p-4">
+    <aside className="relative rounded-[10px] border border-line bg-paper/60 p-4">
       <span aria-hidden className="absolute -top-px -start-px h-5 w-5 bg-hazard [clip-path:polygon(0_0,100%_0,0_100%)] rtl:[clip-path:polygon(0_0,100%_0,100%_100%)]" />
       <div className="text-[12px] font-bold text-muted">{label}</div>
       <div className="mt-1.5 flex items-center gap-4">

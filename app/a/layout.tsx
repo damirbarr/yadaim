@@ -49,7 +49,7 @@ export default async function AgencyLayout({ children }: { children: React.React
     <>
       <ImpersonationBanner user={user} />
       {/* The navy sidebar sits on the start side: right in Hebrew/Arabic, left in English. */}
-      <div className="md:grid md:min-h-dvh md:grid-cols-[248px_1fr] md:rtl:bg-[linear-gradient(to_left,var(--color-ink)_248px,transparent_248px)] md:ltr:bg-[linear-gradient(to_right,var(--color-ink)_248px,transparent_248px)]">
+      <div className="md:grid md:min-h-dvh md:grid-cols-[248px_1fr] md:rtl:bg-[linear-gradient(to_left,var(--color-ink-deep)_248px,transparent_248px)] md:ltr:bg-[linear-gradient(to_right,var(--color-ink-deep)_248px,transparent_248px)]">
         <aside className="blueprint sticky top-0 hidden h-dvh md:flex md:flex-col">
           <div className="px-5 pb-5 pt-6"><Link href="/a"><Logo dark /></Link></div>
           <div className="mx-4 mb-5 border border-white/20 p-3 text-sm">
@@ -69,7 +69,7 @@ export default async function AgencyLayout({ children }: { children: React.React
             <div className="flex items-center gap-1">
               {/* The rest of the menu folds into one button so the phone header never outgrows the screen. */}
               <details className="group relative">
-                <summary className="flex min-h-9 cursor-pointer list-none items-center rounded-[3px] px-3 text-sm font-semibold text-white/80 group-open:bg-white/10 [&::-webkit-details-marker]:hidden">{t("common.more")}</summary>
+                <summary className="flex min-h-9 cursor-pointer list-none items-center rounded-[10px] px-3 text-sm font-semibold text-white/80 group-open:bg-white/10 [&::-webkit-details-marker]:hidden">{t("common.more")}</summary>
                 <nav className="absolute end-0 top-full z-40 mt-2 grid min-w-48 border border-white/20 bg-ink py-1 shadow-lg">
                   {extra.map((i) => <Link key={i.href} href={i.href} className="px-4 py-2.5 text-[15px] text-white/85 hover:bg-white/10">{t(`common.nav.agency.${i.key}`)}</Link>)}
                 </nav>

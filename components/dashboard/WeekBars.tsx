@@ -19,12 +19,12 @@ export function WeekBars({ days }: { days: WeekBar[] }) {
     <ul className="flex gap-1.5 sm:gap-3">
       {days.map((d) => (
         <li key={d.date} className="min-w-0 flex-1">
-          <Link href={d.href} aria-label={d.aria} className="group flex flex-col items-center rounded-[3px] pb-1 pt-1 transition hover:bg-paper focus-visible:bg-paper">
+          <Link href={d.href} aria-label={d.aria} className="group flex flex-col items-center rounded-[10px] pb-1 pt-1 transition hover:bg-paper focus-visible:bg-paper">
             <span aria-hidden className="flex h-10 flex-col items-center justify-end leading-none">
               {d.count != null && <span className="num text-[17px] font-bold text-ink sm:text-[19px]">{d.count}</span>}
               <span className={`mt-1 text-[11px] sm:text-[12px] ${d.free ? "text-muted" : "font-bold text-ok"}`}>{d.word}</span>
             </span>
-            <span aria-hidden className="mt-1.5 flex h-32 w-full max-w-[56px] flex-col overflow-hidden rounded-[3px] border border-ink sm:h-40">
+            <span aria-hidden className="mt-1.5 flex h-32 w-full max-w-[56px] flex-col overflow-hidden rounded-[10px] border border-ink sm:h-40">
               {d.free > 0 && <span className={`block ${d.assigned ? "border-b border-ink" : ""}`} style={{ ...HATCH, flexGrow: d.free, flexBasis: 0 }} />}
               {d.assigned > 0 && <span className="block bg-ink" style={{ flexGrow: d.assigned, flexBasis: 0 }} />}
             </span>
@@ -40,8 +40,8 @@ export function WeekBars({ days }: { days: WeekBar[] }) {
 export function WeekLegend({ booked, free }: { booked: string; free: string }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted">
-      <span className="inline-flex items-center gap-1.5"><span aria-hidden className="inline-block h-3 w-3 rounded-[2px] bg-ink" />{booked}</span>
-      <span className="inline-flex items-center gap-1.5"><span aria-hidden className="inline-block h-3 w-3 rounded-[2px] border border-ink" style={HATCH} />{free}</span>
+      <span className="inline-flex items-center gap-1.5"><span aria-hidden className="inline-block h-3 w-3 rounded-[6px] bg-ink" />{booked}</span>
+      <span className="inline-flex items-center gap-1.5"><span aria-hidden className="inline-block h-3 w-3 rounded-[6px] border border-ink" style={HATCH} />{free}</span>
     </div>
   );
 }

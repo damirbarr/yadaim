@@ -28,7 +28,7 @@ export default async function Onboarding() {
         <div className="sheet border-t-[3px] border-t-ink p-6 md:p-8">
           <div className="eyebrow mb-1">{t("public.onboarding.eyebrow")}</div>
           <h1 className="mb-1 text-[34px] font-bold leading-tight text-ink">{t("public.onboarding.hello", { name: u.name.split(" ")[0] })}</h1>
-          <p className="mb-6 border-b border-dashed border-line pb-4 text-[15px] text-muted">{rich("public.onboarding.signedInAs", { email: (c) => <span dir="ltr">{c}</span> }, { email: u.email })}</p>
+          <p className="mb-6 border-b border-line pb-4 text-[15px] text-muted">{rich("public.onboarding.signedInAs", { email: (c) => <span dir="ltr">{c}</span> }, { email: u.email })}</p>
           <OnboardingForm initialKind={intent} name={u.name} />
         </div>
         <form action={logout} className="text-center"><button className="text-sm text-muted underline">{t("common.logout")}</button></form>

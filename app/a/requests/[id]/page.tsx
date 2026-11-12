@@ -130,7 +130,7 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
             </div>
             <div className="text-muted">{b.address}</div>
             <div className="text-muted">{t(b.lodging === "agency" ? "agency.lodgingAgency" : "agency.lodgingContractor")} · {t(b.transport === "agency" ? "agency.transportAgency" : "agency.transportContractor")}</div>
-            {b.notes && <p className="rounded-[3px] bg-paper p-3">{b.notes}</p>}
+            {b.notes && <p className="rounded-[10px] bg-paper p-3">{b.notes}</p>}
             {b.campaign_id && <span className="chip-info">{t("agency.request.fromOffer")}</span>}
             <a href={waLink(b.contractor_phone, t("agency.request.waText", { name: b.contact_name, date: fmt.date(b.date) }))} target="_blank" className="btn-ghost btn-sm w-full"><IWhatsapp className="h-4 w-4" />{t("agency.request.whatsapp")}</a>
           </div>

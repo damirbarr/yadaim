@@ -99,7 +99,7 @@ export default async function AgencyToday() {
           <ul>
             {requests.slice(0, 4).map((b) => (
               <li key={b.id}>
-                <Link href={`/a/requests/${b.id}`} className="flex items-center gap-3 border-b border-dashed border-line px-4 py-3.5 transition hover:bg-paper sm:gap-4 sm:px-5">
+                <Link href={`/a/requests/${b.id}`} className="flex items-center gap-3 border-b border-line px-4 py-3.5 transition hover:bg-paper sm:gap-4 sm:px-5">
                   <span className="num w-[60px] shrink-0 text-[20px] font-bold leading-none text-ink sm:w-[78px] sm:text-[26px]">{fmt.date(b.date)}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[15px]"><b className="text-ink">{b.company}</b> · {crew(b.workers.length, b.trade)}{b.days > 1 ? ` · ${t("agency.days", { n: b.days })}` : ""}</span>
@@ -111,7 +111,7 @@ export default async function AgencyToday() {
             ))}
             {missingTransport.map((b) => (
               <li key={b.id}>
-                <Link href={`/a/requests/${b.id}`} className="flex items-center gap-3 border-b border-dashed border-line px-4 py-3.5 transition hover:bg-paper sm:gap-4 sm:px-5">
+                <Link href={`/a/requests/${b.id}`} className="flex items-center gap-3 border-b border-line px-4 py-3.5 transition hover:bg-paper sm:gap-4 sm:px-5">
                   <span className="w-[60px] shrink-0 text-[13px] font-bold text-warn sm:w-[78px]">{t("agency.today.todo.transport")}</span>
                   <span className="flex-1 text-[15px]">{rich("agency.today.todo.transportText", { b: (c) => <b className="text-ink">{c}</b> }, { company: b.company })}</span>
                 </Link>
@@ -184,7 +184,7 @@ export default async function AgencyToday() {
             </div>
             <dl className="mt-3">
               {metrics.map((m) => (
-                <div key={m.k} className="flex items-center justify-between gap-3 border-t border-dashed border-line py-2.5">
+                <div key={m.k} className="flex items-center justify-between gap-3 border-t border-line py-2.5">
                   <dt className="min-w-0">
                     <span className="block text-[14px] font-semibold text-ink">{m.label}</span>
                     <span className="block text-[12px] text-muted">{m.note}</span>
@@ -204,7 +204,7 @@ export default async function AgencyToday() {
           {onSite.length === 0 ? <p className="px-4 py-5 text-[15px] text-muted sm:px-5">{t("agency.today.noneOnSite")}</p> : (
             <ul>
               {onSite.map((b) => (
-                <li key={b.id} className="border-b border-dashed border-line px-4 py-3.5 last:border-0 sm:px-5">
+                <li key={b.id} className="border-b border-line px-4 py-3.5 last:border-0 sm:px-5">
                   <div className="flex items-center justify-between gap-3 text-[15px]"><b className="text-ink">{b.company}</b><span className="truncate text-[13px] text-muted">{b.address}</span></div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {b.workers.filter((w) => w.state === "assigned").map((w) => (
@@ -224,7 +224,7 @@ export default async function AgencyToday() {
           {events.length === 0 && <p className="px-4 py-5 text-[15px] text-muted sm:px-5">{t("agency.today.noUpdates")}</p>}
           <ul className="text-[14px]">
             {events.map((e) => (
-              <li key={e.id} className="flex gap-3 border-b border-dashed border-line px-4 py-2.5 last:border-0 sm:px-5">
+              <li key={e.id} className="flex gap-3 border-b border-line px-4 py-2.5 last:border-0 sm:px-5">
                 <span className={`mt-[7px] h-2 w-2 shrink-0 ${e.kind === "nofit" || e.kind === "noshow" || e.kind === "cancel" ? "bg-bad" : e.kind === "request" ? "bg-signal" : "bg-line"}`} />
                 <span className="min-w-0 flex-1">{e.booking_id ? <Link href={`/a/requests/${e.booking_id}`} className="hover:underline">{eventText(e, i18n)}</Link> : eventText(e, i18n)}</span>
                 <span className="num text-[12px] text-muted">{fmt.date(e.created_at.slice(0, 10))}</span>

@@ -4,19 +4,34 @@ import type { ReactNode } from "react";
 import { BY, CN, GE, IN, KE, LK, MD, MW, RO, TH, UZ, type FlagComponent } from "country-flag-icons/react/3x2";
 import { useI18n } from "@/lib/i18n/client";
 
-/** Square drafting-frame mark with a helmet, plus the name in serif. `dark` = on a navy background. */
+/**
+ * The brand mark from the owner's handoff: a framed square with corner ticks, a lime hard hat held by two hands,
+ * and the name with a lime dashed stripe under it. Drawn here as SVG (the handoff only had a screenshot crop).
+ * `dark` = on a navy background.
+ */
 export function Logo({ className = "", dark = false }: { className?: string; dark?: boolean }) {
   const { t } = useI18n();
-  const c = dark ? "#d4f25a" : "#0e2a44";
+  const c = dark ? "#ffffff" : "#0e2a44";
   return (
-    <span className={`inline-flex items-center gap-2.5 font-display text-[26px] font-bold leading-none ${dark ? "text-white" : "text-ink"} ${className}`}>
-      <svg viewBox="0 0 38 38" className="h-9 w-9" aria-hidden>
-        <rect x="1" y="1" width="36" height="36" fill="none" stroke={c} strokeWidth="2" />
-        <path d="M8 24a11 11 0 0 1 22 0v2H8z" fill={c} />
-        <path d="M5 30h28" stroke={c} strokeWidth="1.5" />
-        <path d="M5 28v4M33 28v4" stroke={c} strokeWidth="1.5" />
+    <span className={`inline-flex items-center gap-2.5 leading-none ${dark ? "text-white" : "text-ink"} ${className}`}>
+      <svg viewBox="0 0 48 48" className="h-10 w-10 shrink-0" aria-hidden>
+        <rect x="4" y="4" width="40" height="40" fill="none" stroke={c} strokeWidth="1.6" />
+        <path d="M1 4h6M4 1v6M41 4h6M44 1v6M1 44h6M4 41v6M41 44h6M44 41v6" stroke={c} strokeWidth="1.4" />
+        {/* hard hat */}
+        <path d="M14 23.5a10 10 0 0 1 20 0z" fill="#d4f25a" stroke={c} strokeWidth="1.4" strokeLinejoin="round" />
+        <path d="M24 13.5v10M20.5 15.2l1.2 8.3M27.5 15.2l-1.2 8.3" stroke={c} strokeWidth="1.1" />
+        <rect x="11.5" y="23.2" width="25" height="3" rx="1.5" fill="#d4f25a" stroke={c} strokeWidth="1.4" />
+        {/* two hands holding it */}
+        <path d="M10 22c-1.6 0-2.4 1.3-2.4 3v6.5c0 2.6 1.5 4.6 3.6 5.8l4.3 2.4v2.3h7.3v-4.1c0-2.4-1-4.3-2.8-5.6l-4.1-3v-3.3c0-1-.8-1.8-1.8-1.8s-1.8.8-1.8 1.8v1.8l-.5-.4V24c0-1.2-.7-2-1.8-2z" fill={c} />
+        <path d="M38 22c1.6 0 2.4 1.3 2.4 3v6.5c0 2.6-1.5 4.6-3.6 5.8l-4.3 2.4v2.3h-7.3v-4.1c0-2.4 1-4.3 2.8-5.6l4.1-3v-3.3c0-1 .8-1.8 1.8-1.8s1.8.8 1.8 1.8v1.8l.5-.4V24c0-1.2.7-2 1.8-2z" fill={c} />
       </svg>
-      {t("common.brand")}
+      <span className="inline-flex flex-col items-stretch gap-[5px]">
+        <span className="font-display text-[30px] font-black tracking-[-0.02em]">{t("common.brand")}</span>
+        <svg viewBox="0 0 80 5" preserveAspectRatio="none" className="h-[5px] w-full" aria-hidden>
+          <path d="M0 5L3 0h10l-3 5zM16 5l3-5h10l-3 5zM32 5l3-5h10l-3 5z" fill="#d4f25a" />
+          <rect x="48" y="0" width="32" height="5" fill={c} />
+        </svg>
+      </span>
     </span>
   );
 }
@@ -38,8 +53,8 @@ export function Flag({ code, width = 18, className = "" }: { code: string | null
   return (
     // Positioned either way (the tooltip needs it): relative by default, or whatever position the caller passes.
     <span role="img" aria-label={name} className={`group/flag inline-flex ${/\b(absolute|fixed|sticky)\b/.test(className) ? "" : "relative"} ${className}`}>
-      <F aria-hidden className="block rounded-[2px] shadow-[0_0_0_1px_rgba(14,42,68,.25)]" style={{ width, height: (width * 2) / 3 }} />
-      <span role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-[3px] bg-ink px-2 py-1 text-[12px] font-semibold leading-none text-white opacity-0 transition-opacity group-hover/flag:opacity-100">
+      <F aria-hidden className="block rounded-[6px] shadow-[0_0_0_1px_rgba(14,42,68,.25)]" style={{ width, height: (width * 2) / 3 }} />
+      <span role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-[10px] bg-ink px-2 py-1 text-[12px] font-semibold leading-none text-white opacity-0 transition-opacity group-hover/flag:opacity-100">
         {name}
       </span>
     </span>
@@ -142,12 +157,12 @@ export function ScoreRing({ score, size = 112 }: { score: number; size?: number 
       <circle cx="50" cy="50" r={r} fill="none" stroke="#e5ddcc" strokeWidth="7" />
       <circle cx="50" cy="50" r={r} fill="none" stroke={color} strokeWidth="7" strokeDasharray={`${(c * score) / 100} ${c}`} transform="rotate(-90 50 50)" />
       {[0, 90, 180, 270].map((a) => <line key={a} x1="50" y1="2" x2="50" y2="9" stroke="#0e2a44" strokeWidth="1.2" transform={`rotate(${a} 50 50)`} />)}
-      <text x="50" y="60" textAnchor="middle" fontSize="30" fontWeight="700" fontFamily="Rubik" fill="#0e2a44">{score}</text>
+      <text x="50" y="60" textAnchor="middle" fontSize="30" fontWeight="700" fontFamily="Heebo" fill="#0e2a44">{score}</text>
     </svg>
   );
 }
 
 export function Notice({ tone = "info", children }: { tone?: "info" | "warn" | "bad" | "ok"; children: ReactNode }) {
   const cls = { info: "border-info bg-info-soft text-info", warn: "border-warn bg-warn-soft text-warn", bad: "border-bad bg-bad-soft text-bad", ok: "border-ok bg-ok-soft text-ok" }[tone];
-  return <div className={`rounded-[3px] border-s-4 px-4 py-3 text-[15px] ${cls}`}>{children}</div>;
+  return <div className={`rounded-[10px] border-s-4 px-4 py-3 text-[15px] ${cls}`}>{children}</div>;
 }

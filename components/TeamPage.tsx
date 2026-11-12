@@ -52,7 +52,7 @@ export async function TeamPage({ kind, orgId, me }: { kind: "agency" | "contract
         ))}
         {invites.map((i) => (
           <div key={`i${i.id}`} className="grid grid-cols-[36px_1fr] items-center gap-x-3 gap-y-2 px-4 py-3 sm:grid-cols-[36px_1fr_160px_48px] bg-paper/50">
-            <div className="grid h-9 w-9 place-items-center rounded-full border border-dashed border-line text-muted">@</div>
+            <div className="grid h-9 w-9 place-items-center rounded-full border border-line text-muted">@</div>
             <div className="min-w-0">
               <div className="truncate text-sm"><bdi dir="ltr">{i.email}</bdi></div>
               <div className="text-xs text-warn">{t("team.invited")}</div>

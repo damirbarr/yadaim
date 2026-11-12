@@ -26,12 +26,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="ms-auto flex items-center gap-3 text-sm">
             <span className="hidden text-white/70 lg:inline">{me.name}</span>
             <LanguageSwitcher dark className="hidden sm:inline-flex" />
-            <form action={logout}><button className="grid h-9 w-9 place-items-center rounded-[3px] text-white/70 hover:bg-white/10" title={t("common.logout")} aria-label={t("common.logout")}><ILogout className="flip-ltr" /></button></form>
+            <form action={logout}><button className="grid h-9 w-9 place-items-center rounded-[10px] text-white/70 hover:bg-white/10" title={t("common.logout")} aria-label={t("common.logout")}><ILogout className="flip-ltr" /></button></form>
           </div>
         </div>
         <div className="flex items-center gap-2 px-4 pb-2 md:hidden">
           <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
-            {items.map((i) => <Link key={i.href} href={i.href} className="whitespace-nowrap rounded-[3px] px-3 py-1 text-xs text-white/80">{i.label}</Link>)}
+            {items.map((i) => <Link key={i.href} href={i.href} className="whitespace-nowrap rounded-[10px] px-3 py-1 text-xs text-white/80">{i.label}</Link>)}
           </nav>
           <LanguageSwitcher dark className="sm:hidden" />
         </div>

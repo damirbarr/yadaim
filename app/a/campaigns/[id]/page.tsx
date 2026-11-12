@@ -81,11 +81,11 @@ export default async function Campaign({ params }: { params: Promise<{ id: strin
           <h2 className={`text-[17px] font-bold ${opts.tone ?? "text-ink"}`}>{title} <span className="num font-normal text-muted">({rows.length})</span></h2>
           {opts.note && <span className="text-[13px] text-muted">{opts.note}</span>}
         </header>
-        <ul className="divide-y divide-dashed divide-line">{rows.slice(0, LIMIT).map(row)}</ul>
+        <ul className="divide-y divide-line">{rows.slice(0, LIMIT).map(row)}</ul>
         {rows.length > LIMIT && (
-          <details className="group border-t border-dashed border-line">
+          <details className="group border-t border-line">
             <summary className="flex min-h-11 cursor-pointer list-none items-center px-4 text-[14px] font-semibold text-ink underline group-open:hidden">{t("market.campaigns.detail.showAll", { n: rows.length })}</summary>
-            <ul className="divide-y divide-dashed divide-line">{rows.slice(LIMIT).map(row)}</ul>
+            <ul className="divide-y divide-line">{rows.slice(LIMIT).map(row)}</ul>
           </details>
         )}
       </section>
@@ -119,7 +119,7 @@ export default async function Campaign({ params }: { params: Promise<{ id: strin
       )}
 
       {/* Where the agency is in sending, and the one button that moves it forward. */}
-      <section className="blueprint rounded-[3px] p-5">
+      <section className="blueprint rounded-[10px] p-5">
         <p className="text-[17px] text-white/85">{rich("market.campaigns.detail.progress", { b: (x) => <b className="font-display text-[28px] text-hazard">{x}</b> }, { sent, total: sendable })}</p>
         <div className="mt-3 h-1.5 w-full bg-white/15" aria-hidden>
           <div className="h-full bg-hazard" style={{ width: `${sendable ? Math.round((sent / sendable) * 100) : 0}%` }} />

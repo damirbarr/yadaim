@@ -1,13 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import "@fontsource/rubik/hebrew-400.css";
-import "@fontsource/rubik/hebrew-500.css";
-import "@fontsource/rubik/hebrew-600.css";
-import "@fontsource/rubik/hebrew-700.css";
-import "@fontsource/rubik/latin-400.css";
-import "@fontsource/rubik/latin-500.css";
-import "@fontsource/rubik/latin-600.css";
-import "@fontsource/rubik/latin-700.css";
-// Rubik has no Arabic glyphs; the browser picks these for Arabic text only (unicode-range).
+import "@fontsource/heebo/hebrew-400.css";
+import "@fontsource/heebo/hebrew-500.css";
+import "@fontsource/heebo/hebrew-600.css";
+import "@fontsource/heebo/hebrew-700.css";
+import "@fontsource/heebo/hebrew-800.css";
+import "@fontsource/heebo/hebrew-900.css";
+import "@fontsource/heebo/latin-400.css";
+import "@fontsource/heebo/latin-500.css";
+import "@fontsource/heebo/latin-600.css";
+import "@fontsource/heebo/latin-700.css";
+import "@fontsource/heebo/latin-800.css";
+import "@fontsource/heebo/latin-900.css";
+// Heebo has no Arabic glyphs; the browser picks these for Arabic text only (unicode-range).
 import "@fontsource/noto-sans-arabic/arabic-400.css";
 import "@fontsource/noto-sans-arabic/arabic-500.css";
 import "@fontsource/noto-sans-arabic/arabic-600.css";

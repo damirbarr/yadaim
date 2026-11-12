@@ -53,13 +53,13 @@ export function CrewForm({ crew, cands }: { crew?: { id: number; name: string; l
         {cands.length === 0 ? (
           <p className="px-5 py-6 text-sm text-muted">{t("crews.form.noCands")}</p>
         ) : (
-          <div className="divide-y divide-dashed divide-line px-2 py-2">
+          <div className="divide-y divide-line px-2 py-2">
             {shown.map((c) => {
               const on = sel.includes(c.id);
               return (
                 <button type="button" key={c.id} onClick={() => toggle(c.id)} aria-pressed={on} data-worker={c.id}
                   className={`flex w-full items-center gap-3 px-3 py-2.5 text-start transition ${on ? "bg-hazard-soft" : "hover:bg-paper"}`}>
-                  <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-[3px] border-2 text-[11px] font-bold ${on ? "border-ink bg-ink text-white" : "border-line"}`}>{on ? "✓" : ""}</span>
+                  <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-[10px] border-2 text-[11px] font-bold ${on ? "border-ink bg-ink text-white" : "border-line"}`}>{on ? "✓" : ""}</span>
                   <Avatar w={c} size={36} />
                   <span className="min-w-0 flex-1">
                     <span className="block font-semibold">{c.name}{leader === c.id && <span className="chip-hazard ms-2">{t("crews.leader")}</span>}</span>

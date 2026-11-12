@@ -111,7 +111,7 @@ export default async function AgencyCalendar({ searchParams }: { searchParams: P
                 {detail.bookings.length ? (
                   <ul>
                     {detail.bookings.map(({ booking: b, workers: ws }) => (
-                      <li key={b.booking_id} className="border-b border-dashed border-line py-2.5 last:border-b-0">
+                      <li key={b.booking_id} className="border-b border-line py-2.5 last:border-b-0">
                         <Link href={`/a/requests/${b.booking_id}`} className="group block">
                           <div className="flex items-baseline justify-between gap-2">
                             <span className="truncate font-semibold text-ink group-hover:underline">{b.company}</span>
@@ -132,14 +132,14 @@ export default async function AgencyCalendar({ searchParams }: { searchParams: P
                     {TRADES.filter((tr) => detail.free.has(tr.key)).map((tr) => {
                       const ws = detail.free.get(tr.key)!;
                       return (
-                        <li key={tr.key} className="border-b border-dashed border-line py-2.5 last:border-b-0">
+                        <li key={tr.key} className="border-b border-line py-2.5 last:border-b-0">
                           <div className="mb-1.5 flex items-baseline justify-between gap-2">
                             <span className="font-semibold text-ink">{fmt.trades(tr.key)}</span>
                             <span className="num text-[13px] font-bold text-ok">{ws.length}</span>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {ws.map((w) => (
-                              <Link key={w.id} href={`/a/workers/${w.id}`} className="inline-flex items-center gap-1.5 rounded-[3px] border border-line py-0.5 pe-2 ps-0.5 text-[13px] hover:border-ink">
+                              <Link key={w.id} href={`/a/workers/${w.id}`} className="inline-flex items-center gap-1.5 rounded-[10px] border border-line py-0.5 pe-2 ps-0.5 text-[13px] hover:border-ink">
                                 <Avatar w={w} size={22} />{displayName(w)}
                               </Link>
                             ))}

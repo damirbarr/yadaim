@@ -62,14 +62,14 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
                 <GoogleButton intent={intent} primary>{t("public.login.google")}</GoogleButton>
                 <div className="flex items-center gap-3 py-1 text-[13px] text-muted"><span className="h-px flex-1 bg-line" />{t("public.login.pw.or")}<span className="h-px flex-1 bg-line" /></div>
                 <PasswordForm key={mode} mode={mode} intent={intent} />
-                <p className="border-t border-dashed border-line pt-3 text-[13px] text-muted">{t("public.login.help")}</p>
+                <p className="border-t border-line pt-3 text-[13px] text-muted">{t("public.login.help")}</p>
               </>
             ) : (
               <Notice tone="warn">{t("public.login.noGoogle")}</Notice>
             )}
           </div>
           {devBypass() && (
-            <div className="sheet paper-grid space-y-2 border-dashed p-5 text-[14px]">
+            <div className="sheet paper-grid space-y-2 p-5 text-[14px]">
               <div className="flex items-center gap-2 font-bold text-ink"><span className="stripe h-3 w-6" />{t("public.login.dev.title")}</div>
               <p className="text-muted">{t("public.login.dev.text")}</p>
               <div className="grid grid-cols-3 gap-2">

@@ -114,7 +114,7 @@ export default async function Order({ params, searchParams }: { params: Promise<
               </li>
             ))}
           </ul>
-          {briefed && crew.some((w) => !briefed.has(w.worker_id)) && <p className="border-t border-dashed border-line px-5 py-3 text-xs text-muted">{t("safety.order.note")}</p>}
+          {briefed && crew.some((w) => !briefed.has(w.worker_id)) && <p className="border-t border-line px-5 py-3 text-xs text-muted">{t("safety.order.note")}</p>}
           {b.agency_note && b.status !== "rejected" && <p className="border-t border-line px-5 py-3 text-sm text-muted">{t("contractor.order.agencyNote", { note: b.agency_note })}</p>}
         </section>
         {(hasAttendance || (b.days > 1 && ["today", "awaiting_hours"].includes(phase))) && <AttendanceTable b={b} />}
@@ -130,7 +130,7 @@ export default async function Order({ params, searchParams }: { params: Promise<
                 : ["requested", "approved"].includes(phase) ? t("contractor.order.transportPending", { time: LOCK_HOUR }) : t("contractor.order.transportAgency"))
               : t("contractor.order.transportOurs")}</span></div>
             <div className="flex gap-2"><IBed className="h-4 w-4 shrink-0 text-muted" /><span>{b.lodging === "agency" ? t("contractor.order.lodgingAgency") : t("contractor.order.lodgingOurs")}</span></div>
-            {b.notes && <p className="rounded-[3px] bg-paper p-3 text-muted">{b.notes}</p>}
+            {b.notes && <p className="rounded-[10px] bg-paper p-3 text-muted">{b.notes}</p>}
           </div>
           <div className="card p-5">
             <div className="flex items-baseline justify-between gap-3">

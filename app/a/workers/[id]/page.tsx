@@ -45,10 +45,10 @@ export default async function WorkerPage({ params, searchParams }: { params: Pro
           <div className="card space-y-3 p-5">
             <div className="flex items-center gap-3"><Avatar w={w} size={56} /><div><div className="font-bold">{displayName(w)}</div><Rating value={st.rating} count={st.jobs} /></div></div>
             <div className="grid grid-cols-2 gap-2 text-center text-sm">
-              <div className="rounded-[3px] bg-paper p-2"><div className="text-xs text-muted">{t("agency.worker.arrival")}</div><b className="num">{st.arrival != null ? Math.round(st.arrival * 100) + "%" : "-"}</b></div>
-              <div className="rounded-[3px] bg-paper p-2"><div className="text-xs text-muted">{t("agency.worker.match")}</div><b className="num">{st.match != null ? Math.round(st.match * 100) + "%" : "-"}</b></div>
+              <div className="rounded-[10px] bg-paper p-2"><div className="text-xs text-muted">{t("agency.worker.arrival")}</div><b className="num">{st.arrival != null ? Math.round(st.arrival * 100) + "%" : "-"}</b></div>
+              <div className="rounded-[10px] bg-paper p-2"><div className="text-xs text-muted">{t("agency.worker.match")}</div><b className="num">{st.match != null ? Math.round(st.match * 100) + "%" : "-"}</b></div>
             </div>
-            <Availability a={avail} variant="full" className="border-t border-dashed border-line pt-3" />
+            <Availability a={avail} variant="full" className="border-t border-line pt-3" />
           </div>
           <div className="card">
             <h3 className="border-b border-line px-5 py-3 text-[20px] font-bold text-ink">{t("agency.worker.recentJobs")}</h3>
@@ -64,7 +64,7 @@ export default async function WorkerPage({ params, searchParams }: { params: Pro
               <p className="text-xs text-muted">{t("safety.worker.hint")}</p>
             </div>
             {briefings.length ? briefings.map((sb) => (
-              <div key={sb.id} className="border-b border-dashed border-line px-5 py-2 text-xs last:border-0">
+              <div key={sb.id} className="border-b border-line px-5 py-2 text-xs last:border-0">
                 <div className="flex items-baseline gap-2"><span className="flex-1 font-semibold">{sb.company}</span>
                   <span className={sb.expires >= today ? "text-ok" : "text-bad"}>{sb.expires >= today ? t("safety.worker.validUntil", { date: fmt.fullDate(sb.expires) }) : t("safety.worker.expired", { date: fmt.fullDate(sb.expires) })}</span></div>
                 <div className="flex items-baseline gap-2 text-muted"><span className="flex-1">{sb.site}</span>

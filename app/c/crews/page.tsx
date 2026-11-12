@@ -46,7 +46,7 @@ export default async function Crews() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {ws.map((w) => (
-                    <span key={w!.id} className={`flex items-center gap-2 rounded-[3px] border border-line py-1 pe-3 ps-1 text-sm ${busy.has(w!.id) ? "opacity-50" : ""}`}>
+                    <span key={w!.id} className={`flex items-center gap-2 rounded-[10px] border border-line py-1 pe-3 ps-1 text-sm ${busy.has(w!.id) ? "opacity-50" : ""}`}>
                       <Avatar w={w!} size={28} />{displayName(w!)}
                     </span>
                   ))}

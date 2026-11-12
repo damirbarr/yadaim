@@ -42,9 +42,9 @@ export function ImportForm({ action, title, hint, templates, paste }: { action: 
           onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
           onDragLeave={() => setDrag(false)}
           onDrop={(e) => { e.preventDefault(); setDrag(false); pick(e.dataTransfer.files[0]); }}
-          className={`grid cursor-pointer grid-cols-[44px_1fr] items-center gap-3 rounded-[3px] border-2 border-dashed p-4 focus-within:border-ink sm:grid-cols-[44px_1fr_auto] ${drag ? "border-ink bg-hazard-soft" : "border-line hover:border-ink"} ${pending ? "pointer-events-none opacity-60" : ""}`}
+          className={`grid cursor-pointer grid-cols-[44px_1fr] items-center gap-3 rounded-[10px] border-2 p-4 focus-within:border-ink sm:grid-cols-[44px_1fr_auto] ${drag ? "border-ink bg-hazard-soft" : "border-line hover:border-ink"} ${pending ? "pointer-events-none opacity-60" : ""}`}
         >
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[3px] bg-hazard"><IUpload /></span>
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[10px] bg-hazard"><IUpload /></span>
           <div className="min-w-0">
             <div className="font-semibold">{pending ? t("import.reading") : title}</div>
             <div className="text-xs text-muted">{hint}</div>
@@ -87,7 +87,7 @@ function ColumnMapper({ req, fileName, pending, onCancel, onConfirm }: { req: Ma
         <div className="font-semibold">{t("import.mapTitle")}</div>
         <div className="text-xs text-muted">{rich("import.mapHint", { file: (c) => <span dir="ltr">{c}</span> }, { name: fileName })}</div>
       </div>
-      <div className="divide-y divide-dashed divide-line border-y border-line">
+      <div className="divide-y divide-line border-y border-line">
         {req.fields.map((f) => {
           const i = map[f.key] ?? -1;
           return (

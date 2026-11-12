@@ -41,8 +41,8 @@ export function SettingsForm({ a }: { a: A }) {
       </section>
       <section className="card space-y-2 p-5 text-sm">
         <h2 className="text-[20px] font-bold text-ink">{t("market.settings.connections")}</h2>
-        <div className="flex items-center justify-between gap-3 rounded-[3px] border border-line p-3"><span>{t("market.settings.waBusiness")}</span><span className="chip-muted shrink-0">{t("market.settings.soon")}</span></div>
-        <div className="flex items-center justify-between gap-3 rounded-[3px] border border-line p-3"><span>{t("market.settings.debit")}</span><span className="chip-muted shrink-0">{t("market.settings.soon")}</span></div>
+        <div className="flex items-center justify-between gap-3 rounded-[10px] border border-line p-3"><span>{t("market.settings.waBusiness")}</span><span className="chip-muted shrink-0">{t("market.settings.soon")}</span></div>
+        <div className="flex items-center justify-between gap-3 rounded-[10px] border border-line p-3"><span>{t("market.settings.debit")}</span><span className="chip-muted shrink-0">{t("market.settings.soon")}</span></div>
       </section>
       <div className="flex items-center gap-3">
         <button className="btn-primary px-6" disabled={pending}>{t("common.save")}</button>

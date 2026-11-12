@@ -37,7 +37,7 @@ export default async function Crews({ searchParams }: { searchParams: Promise<{ 
             <h2 className="text-[20px] font-bold text-ink">{t("crews.listTitle")}</h2>
             <span className="text-[13px] text-muted">{t("crews.listNote")}</span>
           </div>
-          <ul className="divide-y divide-dashed divide-line">
+          <ul className="divide-y divide-line">
             {crews.map((c) => {
               const free = c.members.filter((m) => !busy.has(m.id)).length;
               const leader = c.members.find((m) => m.id === c.leader_worker_id);

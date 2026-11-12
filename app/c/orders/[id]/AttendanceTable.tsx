@@ -18,13 +18,13 @@ export async function AttendanceTable({ b, note }: { b: BookingRow; note?: strin
         <h2 className="text-[20px] font-bold text-ink">{t("contractor.day.table.title")}</h2>
         <span className="text-xs text-muted">{t("contractor.day.table.note")}</span>
       </div>
-      {note && <p className="border-b border-dashed border-line px-5 py-2.5 text-xs text-muted">{note}</p>}
+      {note && <p className="border-b border-line px-5 py-2.5 text-xs text-muted">{note}</p>}
       {!recorded ? (
         <p className="paper-grid px-5 py-5 text-sm text-muted">{t("contractor.day.table.empty")}</p>
       ) : (
         <>
           {days.map((d) => (
-            <div key={d} className="border-b border-dashed border-line px-5 py-3">
+            <div key={d} className="border-b border-line px-5 py-3">
               <div className="mb-1.5 text-sm font-bold text-ink">{fmt.prettyDate(d)}</div>
               <ul className="space-y-1">
                 {crew.map((w) => {

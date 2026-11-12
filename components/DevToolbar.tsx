@@ -17,15 +17,15 @@ export async function DevToolbar() {
   );
   return (
     <details className="fixed end-2 top-16 z-[60] w-72 text-sm md:bottom-4 md:end-16 md:top-auto">
-      <summary className="ms-auto flex w-fit cursor-pointer list-none items-center gap-2 rounded-[3px] border-b-2 border-hazard bg-ink px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+      <summary className="ms-auto flex w-fit cursor-pointer list-none items-center gap-2 rounded-[10px] border-b-2 border-hazard bg-ink px-3 py-1.5 text-xs font-bold text-white shadow-lg">
         <span className="h-2 w-2 bg-hazard" />{t("public.dev.badge", { who: me ? t("public.dev.me", { name: me.name, role: kind(me.role) }) : t("public.dev.byArea") })}
       </summary>
-      <div className="mt-2 max-h-[60vh] overflow-auto rounded-[3px] border border-line bg-white p-2 shadow-2xl">
+      <div className="mt-2 max-h-[60vh] overflow-auto rounded-[10px] border border-line bg-white p-2 shadow-2xl">
         <p className="px-2 pb-2 text-xs text-muted">{t("public.dev.help")}</p>
         {users.map((u) => (
           <form key={u.id} action={setDevPersona}>
             <input type="hidden" name="id" value={u.id} />
-            <button className={`flex w-full items-center justify-between gap-2 rounded-[3px] px-2 py-1.5 text-start hover:bg-paper ${me?.id === u.id ? "bg-hazard-soft" : ""}`}>
+            <button className={`flex w-full items-center justify-between gap-2 rounded-[10px] px-2 py-1.5 text-start hover:bg-paper ${me?.id === u.id ? "bg-hazard-soft" : ""}`}>
               <span className="truncate">{u.name}<span className="text-muted"> · {u.org ?? kind(u.role)}</span></span>
               <span className="chip-muted shrink-0">{u.role === "pending" ? t("public.dev.newUser") : `${kind(u.role)} · ${t(`roles.org.${u.org_role}`)}`}</span>
             </button>

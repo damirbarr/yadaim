@@ -39,7 +39,7 @@ export default async function Compliance() {
           <Notice tone="warn">{t("agency.compliance.missingNotice", { trades: new Intl.ListFormat(intl, { type: "conjunction" }).format([...new Set(missing.map((w) => fmt.trades(w.trade)))]) })}</Notice>
           <div className="flex flex-wrap gap-2">
             {missing.map((w) => (
-              <a key={w.id} href={`/a/workers/${w.id}`} className="flex items-center gap-2 rounded-[3px] border border-line bg-white py-1 pe-3 ps-1 text-sm hover:border-ink"><Avatar w={w} size={28} />{displayName(w)} · {fmt.trade(w.trade)}</a>
+              <a key={w.id} href={`/a/workers/${w.id}`} className="flex items-center gap-2 rounded-[10px] border border-line bg-white py-1 pe-3 ps-1 text-sm hover:border-ink"><Avatar w={w} size={28} />{displayName(w)} · {fmt.trade(w.trade)}</a>
             ))}
           </div>
         </section>

@@ -36,7 +36,7 @@ export function Availability({ a, variant = "compact", className = "" }: { a: Wo
       <ol className="grid gap-1" style={{ gridTemplateColumns: `repeat(${a.days.length}, minmax(0, 1fr))` }} aria-label={aria}>
         {a.days.map((d) => (
           <li key={d.date} className="min-w-0 text-center" title={`${fmt.prettyDate(d.date)} · ${t(d.busy ? "calendar.availability.busy" : "calendar.availability.free")}`}>
-            <div className={`h-5 rounded-[2px] ${cell(d.busy)}`} />
+            <div className={`h-5 rounded-[6px] ${cell(d.busy)}`} />
             <div className="mt-1 text-[11px] font-bold leading-none text-ink">{narrow.format(new Date(d.date + "T12:00:00Z"))}</div>
             <div className="num mt-0.5 text-[10px] leading-none text-muted">{fmt.date(d.date)}</div>
           </li>

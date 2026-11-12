@@ -88,12 +88,13 @@ Only one `next dev` can run per directory. Seed data is generated relative to **
 - TypeScript strict, Server Components by default, `"use client"` only for interactive pieces (`components/*Form.tsx`, `ResultsGrid`, `PriceToggles`, `Nav`).
 - Next.js 16: `params`, `searchParams` and `cookies()` are **async** (await them). There is no middleware; guards live in layouts and pages via `require*()`.
 - Styling: Tailwind 4 with design tokens in `app/globals.css` and utilities `card`/`sheet`, `btn-primary|hazard|ghost|ok`, `btn-sm`, `input`, `label`, `chip-*`, `seg`, `tbl`, `num` (wrap numbers in `.num` for LTR digits inside RTL). UI primitives live in `components/ui.tsx` (`PageHead`, `Stat`, `Empty`, `Avatar`, `ScoreRing`, `Notice`, `Logo`).
-- **Design language "שרטוט" (blueprint), chosen by the owner in round 5.** Keep new screens in it; don't drift back to generic rounded cards:
-  - Colours: navy `ink` #0e2a44 (frames, primary buttons), paper `paper` #f4efe4 (page background), white sheets with 1px `line` #d9cfbc borders, lime `hazard` #d4f25a as the single accent (only on navy or as a highlight, never as body text on paper), orange `signal` #ff7a45 for "now/attention" dots. Status: `ok/warn/bad/info` (+ `-soft`).
-  - Type: **Rubik** for everything (headings, numbers, body), chosen by the owner. Headings and big numbers are bold (`font-display` keeps working as a hook). Use the `eyebrow` class (small, muted) above titles for real context only, e.g. the date. No wide letter-spacing on Hebrew text.
-  - Shape: sharp 3px corners (`rounded-[3px]`), no `rounded-xl/2xl`, no heavy shadows. Lists are rows split by `border-dashed border-line`, not stacks of cards. Section header = a bar with a serif title and a muted note on the left.
-  - Navy panels use the `blueprint` class (grid lines baked in) with white/lime text: sidebars, headers, hero bands, the highlighted stat. `paper-grid` is the faint grid for empty states and charts. Dimension-line SVGs (lime line with end ticks) are the decorative motif; no stock photos or emoji.
-  - No decorative labels that mean nothing to users: no "sheet 01" eyebrows, no א/ב/ג corner marks (the owner removed them).
+- **Design system: `docs/design/DESIGN_SYSTEM.md` is the visual source of truth** (owner's handoff, round 7; it replaces the earlier "שרטוט" blueprint style). References: `docs/design/landing-reference-desktop.png` and `-mobile.png`. In short:
+  - Light only. White cards on a warm-white page (`paper` #f7f6f2), `cool` #f4f8fb for hero and form backdrops, 1px `line` #dfe5e9 borders, a very light shadow. Navy `ink` #0e2a44 for text, structure and the primary button; `ink-deep` #092238 for the agency sidebar and app headers (`blueprint` class, now plain navy). Lime `hazard` #d4f25a is the main conversion action and active choice only: a fill with navy text, never text on white.
+  - **Heebo** for everything (Noto Sans Arabic for Arabic). Headings 800-900 weight, body 15-16px.
+  - Shape: controls 10px radius (`btn`, `input`), cards 16px (`card`/`sheet`), chips 6px. Thin solid row separators, no dashed lines, no blueprint grids or dimension-line decoration in logged-in screens.
+  - Status: icon and text, never colour alone (`chip-ok` בתוקף, `chip-warn` עומד לפוג, `chip-bad` פג תוקף, `chip-info` ממתין).
+  - Photos belong on the landing page only (`public/brand/`, placeholders from the handoff until licensed photos replace them). Never fade or mask a person's face or hard hat. Logo is the SVG in `components/ui.tsx` (`Logo`).
+  - Tap targets ≥ 44px; contractor flows designed for 390px first, agency flows for desktop.
 - Domain constants (trades, regions, documents, pricing, VAT, dates) live **only** in `lib/domain.ts`. Use `todayISO()`, `addDays()`, `endOfBlock()`, `bookingPhase()` and `ils()`, never `new Date()` arithmetic in pages.
 - Comments explain *why*, not *what*. Keep the existing density.
 

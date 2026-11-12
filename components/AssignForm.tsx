@@ -43,7 +43,7 @@ export function AssignForm({ id, cands, crews = [], trade, need, transport, defa
           const disabled = c.busy || !c.docsOk;
           return (
             <button type="button" key={c.id} disabled={disabled} onClick={() => toggle(c)} className={`flex w-full items-center gap-3 p-3 text-start transition ${on ? "bg-hazard-soft" : "hover:bg-paper"} disabled:opacity-50`}>
-              <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-[3px] border-2 text-[11px] font-bold ${on ? "border-ink bg-ink text-white" : "border-line"}`}>{on ? "✓" : ""}</span>
+              <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-[10px] border-2 text-[11px] font-bold ${on ? "border-ink bg-ink text-white" : "border-line"}`}>{on ? "✓" : ""}</span>
               <Avatar w={{ id: c.id, trade: c.trade, photo: c.photo, country: c.country }} size={40} />
               <div className="min-w-0 flex-1">
                 <div className="font-semibold">{c.name} <span className="text-sm font-normal text-muted">{trade && c.trade !== trade ? `· ${fmt.trade(c.trade)} ` : ""}· {t("agency.years", { n: c.years })}{c.rating ? ` · ${t("agency.assign.rating", { r: fmt.num(c.rating, 1) })}` : ""}</span></div>

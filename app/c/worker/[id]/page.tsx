@@ -49,13 +49,13 @@ export default async function WorkerProfile({ params, searchParams }: { params: 
             </div>
             <Rating value={st.rating} count={st.jobs} size="lg" />
             <dl className="grid grid-cols-2 gap-2 text-sm">
-              <div className="rounded-[3px] bg-paper p-2"><dt className="text-xs text-muted">{t("contractor.worker.arrival")}</dt><dd className="num font-bold">{st.arrival != null ? fmt.num(Math.round(st.arrival * 100)) + "%" : "-"}</dd></div>
-              <div className="rounded-[3px] bg-paper p-2"><dt className="text-xs text-muted">{t("contractor.worker.match")}</dt><dd className="num font-bold">{st.match != null ? fmt.num(Math.round(st.match * 100)) + "%" : "-"}</dd></div>
-              <div className="rounded-[3px] bg-paper p-2"><dt className="text-xs text-muted">{t("contractor.worker.days")}</dt><dd className="num font-bold">{st.days}</dd></div>
-              <div className="rounded-[3px] bg-paper p-2"><dt className="text-xs text-muted">{t("contractor.worker.passport")}</dt><dd className="num font-bold">{maskPassport(w.passport_no)}</dd></div>
+              <div className="rounded-[10px] bg-paper p-2"><dt className="text-xs text-muted">{t("contractor.worker.arrival")}</dt><dd className="num font-bold">{st.arrival != null ? fmt.num(Math.round(st.arrival * 100)) + "%" : "-"}</dd></div>
+              <div className="rounded-[10px] bg-paper p-2"><dt className="text-xs text-muted">{t("contractor.worker.match")}</dt><dd className="num font-bold">{st.match != null ? fmt.num(Math.round(st.match * 100)) + "%" : "-"}</dd></div>
+              <div className="rounded-[10px] bg-paper p-2"><dt className="text-xs text-muted">{t("contractor.worker.days")}</dt><dd className="num font-bold">{st.days}</dd></div>
+              <div className="rounded-[10px] bg-paper p-2"><dt className="text-xs text-muted">{t("contractor.worker.passport")}</dt><dd className="num font-bold">{maskPassport(w.passport_no)}</dd></div>
             </dl>
             {w.skills && <div className="flex flex-wrap gap-1">{w.skills.split(",").map((s) => <span key={s} className="chip-muted">{s}</span>)}</div>}
-            <div className="flex items-center gap-3 rounded-[3px] border border-line p-3">
+            <div className="flex items-center gap-3 rounded-[10px] border border-line p-3">
               <ScoreRing score={rel.score} size={52} />
               <div className="text-sm">
                 <div className="font-semibold">{a.name}</div>
@@ -68,7 +68,7 @@ export default async function WorkerProfile({ params, searchParams }: { params: 
               {free ? (
                 <Link href={`/c/checkout?${qs}&w=${w.id}`} className="btn-hazard mt-3 w-full">{q.days > 1 ? t("contractor.worker.bookForDays", { date: fmt.prettyDate(q.date), days: t("contractor.count.days", { n: q.days }) }) : t("contractor.worker.bookFor", { date: fmt.prettyDate(q.date) })}</Link>
               ) : (
-                <div className="mt-3 rounded-[3px] bg-paper p-3 text-center text-sm text-muted">{t("contractor.worker.notFree")}</div>
+                <div className="mt-3 rounded-[10px] bg-paper p-3 text-center text-sm text-muted">{t("contractor.worker.notFree")}</div>
               )}
             </div>
           </div>
@@ -116,14 +116,14 @@ export default async function WorkerProfile({ params, searchParams }: { params: 
           <div className="card w-full max-w-lg overflow-hidden">
             <div className="flex items-center justify-between border-b border-line px-5 py-3">
               <h3 className="text-[18px] font-bold text-ink">{fmt.doc(open.type)}</h3>
-              <Link href={`?${qs}`} scroll={false} className="grid h-8 w-8 place-items-center rounded-[3px] hover:bg-paper" aria-label={t("common.close")}><IX /></Link>
+              <Link href={`?${qs}`} scroll={false} className="grid h-8 w-8 place-items-center rounded-[10px] hover:bg-paper" aria-label={t("common.close")}><IX /></Link>
             </div>
             <div className="p-5">
               {open.file ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={`/api/files/${open.file}`} alt="" className="max-h-[60vh] w-full rounded-[3px] object-contain" />
+                <img src={`/api/files/${open.file}`} alt="" className="max-h-[60vh] w-full rounded-[10px] object-contain" />
               ) : (
-                <div className="relative rounded-[3px] border border-line bg-paper p-5">
+                <div className="relative rounded-[10px] border border-line bg-paper p-5">
                   <div className="flex gap-4">
                     <Avatar w={w} size={72} />
                     <div className="flex-1 space-y-2 pt-1">

@@ -100,7 +100,7 @@ export function ResultsGrid({ hits, crews = [], basket = [], trade, qs, count, d
               const trades = [...new Set(c.members.map((m) => m.trade))];
               return (
                 // Not an <article>: the individual result cards are articles, and tests count them.
-                <div key={c.id} data-crew={c.id} className={`relative space-y-3 border-b border-dashed border-line p-4 lg:odd:border-e ${on ? "bg-hazard-soft before:absolute before:inset-y-3 before:start-0 before:w-[3px] before:bg-ink" : ""}`}>
+                <div key={c.id} data-crew={c.id} className={`relative space-y-3 border-b border-line p-4 lg:odd:border-e ${on ? "bg-hazard-soft before:absolute before:inset-y-3 before:start-0 before:w-[3px] before:bg-ink" : ""}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="font-display text-[21px] font-bold leading-tight text-ink">{c.name}</div>
@@ -119,7 +119,7 @@ export function ResultsGrid({ hits, crews = [], basket = [], trade, qs, count, d
                       const mOn = sel.includes(m.id);
                       return (
                         <button type="button" key={m.id} onClick={() => toggle(m.id)} aria-pressed={mOn} title={mOn ? t("crews.search.removeOne") : t("crews.search.addOne")}
-                          className={`flex items-center gap-1.5 rounded-[3px] border py-1 pe-2.5 ps-1 text-start text-[13px] leading-tight transition ${mOn ? "border-ink bg-white" : "border-line bg-paper hover:border-ink/40"}`}>
+                          className={`flex items-center gap-1.5 rounded-[10px] border py-1 pe-2.5 ps-1 text-start text-[13px] leading-tight transition ${mOn ? "border-ink bg-white" : "border-line bg-paper hover:border-ink/40"}`}>
                           <Avatar w={m} size={28} />
                           <span>
                             <span className="block font-semibold">{m.name}</span>
@@ -148,7 +148,7 @@ export function ResultsGrid({ hits, crews = [], basket = [], trade, qs, count, d
           {hits.map((h) => {
             const on = sel.includes(h.id);
             return (
-              <article key={h.id} className={`relative grid grid-cols-[56px_1fr_auto] items-center gap-x-4 gap-y-1 border-b border-dashed border-line px-2 py-4 transition ${on ? "bg-hazard-soft before:absolute before:inset-y-3 before:start-0 before:w-[3px] before:bg-ink" : ""}`}>
+              <article key={h.id} className={`relative grid grid-cols-[56px_1fr_auto] items-center gap-x-4 gap-y-1 border-b border-line px-2 py-4 transition ${on ? "bg-hazard-soft before:absolute before:inset-y-3 before:start-0 before:w-[3px] before:bg-ink" : ""}`}>
                 <Link href={`/c/worker/${h.id}?${qs}`} className="row-span-2 self-start"><Avatar w={{ id: h.id, trade: h.trade, photo: h.photo, country: h.country }} size={56} /></Link>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-x-2">
@@ -187,7 +187,7 @@ export function ResultsGrid({ hits, crews = [], basket = [], trade, qs, count, d
       {chosen.length > 0 && <div className="h-36" aria-hidden />}
       {chosen.length > 0 && (
         <div className="fixed inset-x-0 bottom-[60px] z-40 px-3 md:bottom-4">
-          <div className="blueprint mx-auto max-w-3xl rounded-[3px] border-b-[3px] border-hazard p-3 ps-4 shadow-2xl" data-testid="basket">
+          <div className="blueprint mx-auto max-w-3xl rounded-[10px] border-b-[3px] border-hazard p-3 ps-4 shadow-2xl" data-testid="basket">
             <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1 text-sm">
                 <div className="font-display text-[17px] font-bold leading-tight">{t("contractor.results.chosen", { list: summary })}</div>
@@ -205,7 +205,7 @@ export function ResultsGrid({ hits, crews = [], basket = [], trade, qs, count, d
             </div>
             <ul className="-mx-1 mt-2 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
               {chosen.map((c) => (
-                <li key={c.id} className="flex shrink-0 items-center gap-1.5 rounded-[3px] border border-white/25 py-0.5 pe-0.5 ps-1 text-[12px]">
+                <li key={c.id} className="flex shrink-0 items-center gap-1.5 rounded-[10px] border border-white/25 py-0.5 pe-0.5 ps-1 text-[12px]">
                   <Avatar w={c} size={22} />
                   <span className="whitespace-nowrap">{c.name} · <span className="text-white/60">{fmt.trade(c.trade)}</span></span>
                   <button type="button" onClick={() => toggle(c.id)} className="grid h-6 w-6 place-items-center text-white/70 hover:text-hazard" aria-label={t("contractor.results.remove", { name: c.name })} data-remove={c.id}>✕</button>

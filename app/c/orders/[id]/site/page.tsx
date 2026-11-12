@@ -47,7 +47,7 @@ async function Ask({ bw, field, q, value }: { bw: number; field: string; q: stri
 async function Briefing({ bw, d, valid, error }: { bw: number; d: string; valid: string | null; error: boolean }) {
   const { t, fmt } = await getI18n();
   return (
-    <div className="border-t border-dashed border-line pt-3">
+    <div className="border-t border-line pt-3">
       <div className="mb-1.5 text-sm font-medium">{t("safety.site.step")}</div>
       {valid ? (
         <p className="text-sm font-semibold text-ok">✓ {t("safety.site.valid", { date: fmt.fullDate(valid) })}</p>
@@ -105,7 +105,7 @@ export default async function WorkDay({ params, searchParams }: { params: Promis
           <ol className="flex gap-1.5">
             {days.map((x) => {
               const complete = crew.every((w) => isNoFit(w) || w.attendance.some((a) => a.date === x && a.arrived != null));
-              const cls = `flex min-h-11 min-w-14 flex-col items-center justify-center rounded-[3px] border px-2 text-[13px] font-semibold ${x === d ? "border-ink bg-ink text-white" : x > today ? "border-line bg-paper text-muted" : "border-line bg-white text-ink"}`;
+              const cls = `flex min-h-11 min-w-14 flex-col items-center justify-center rounded-[10px] border px-2 text-[13px] font-semibold ${x === d ? "border-ink bg-ink text-white" : x > today ? "border-line bg-paper text-muted" : "border-line bg-white text-ink"}`;
               const inner = <><span className="num">{fmt.date(x)}</span><span className="text-[11px] leading-none">{x <= today ? (complete ? "✓" : "•") : ""}</span></>;
               return <li key={x}>{x <= today ? <Link href={`/c/orders/${b.id}/site?d=${x}`} aria-current={x === d ? "date" : undefined} className={cls}>{inner}</Link> : <span className={cls}>{inner}</span>}</li>;
             })}
@@ -154,7 +154,7 @@ export default async function WorkDay({ params, searchParams }: { params: Promis
             ) : (
               <>
                 {asking ? (
-                  <div className="space-y-3 border-t border-dashed border-line pt-3">
+                  <div className="space-y-3 border-t border-line pt-3">
                     <div className="text-xs font-semibold text-muted">{t("contractor.day.firstTime")}</div>
                     <Ask bw={w.bw_id} field="identity_ok" q={t("contractor.site.qIdentity")} value={w.identity_ok} />
                     <Ask bw={w.bw_id} field="trade_ok" q={t("contractor.site.qTrade", { trade: fmt.trade(w.trade) })} value={w.trade_ok} />
@@ -167,7 +167,7 @@ export default async function WorkDay({ params, searchParams }: { params: Promis
                 {!noFit && (asking || !briefed.has(w.worker_id)) && <Briefing bw={w.bw_id} d={d} valid={briefed.get(w.worker_id)?.expires ?? null} error={briefingError === w.bw_id} />}
                 {!noFit && (
                   // Keyed by the saved values so the pickers show what the server stored after every save.
-                  <AutoSaveForm key={`${a.start_time}|${a.end_time}`} action={setTimes} className="border-t border-dashed border-line pt-3">
+                  <AutoSaveForm key={`${a.start_time}|${a.end_time}`} action={setTimes} className="border-t border-line pt-3">
                     <Hidden v={{ bw: w.bw_id, d }} />
                     <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
                       <label className="block"><span className="label">{t("contractor.day.entry")}</span>

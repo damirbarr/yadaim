@@ -89,7 +89,7 @@ export function OfferBuilder({ trades, initialTrade, dated = false, minDays, ini
                 {sel.options.map((o) => {
                   const on = o.to === opt.to;
                   return (
-                    <label key={o.to} className={`inline-flex min-h-12 cursor-pointer flex-col justify-center rounded-[3px] border px-3 py-1 leading-tight transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink"}`}>
+                    <label key={o.to} className={`inline-flex min-h-12 cursor-pointer flex-col justify-center rounded-[10px] border px-3 py-1 leading-tight transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink"}`}>
                       <input type="radio" name="until" value={o.to} checked={on} onChange={() => { setTo(o.to); setEditing(false); }} className="sr-only" />
                       <span className="num text-[15px] font-bold">{fmt.date(o.to)}</span>
                       <span className={`text-[12px] ${on ? "text-hazard" : "text-muted"}`}>{t("market.campaigns.untilFree", { n: o.workerCount })}</span>
@@ -108,7 +108,7 @@ export function OfferBuilder({ trades, initialTrade, dated = false, minDays, ini
             {(["trade", "crew", "workers"] as const).map((v) => {
               const on = target === v;
               return (
-                <label key={v} className={`inline-flex min-h-10 cursor-pointer items-center rounded-[3px] border px-3.5 text-[15px] font-semibold transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:border-ink"}`}>
+                <label key={v} className={`inline-flex min-h-10 cursor-pointer items-center rounded-[10px] border px-3.5 text-[15px] font-semibold transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:border-ink"}`}>
                   <input type="radio" name="target_choice" value={v} checked={on} onChange={() => { setTarget(v); setEditing(false); }} className="sr-only" />
                   {t(`market.campaigns.target.${v}`)}
                 </label>
@@ -117,7 +117,7 @@ export function OfferBuilder({ trades, initialTrade, dated = false, minDays, ini
           </div>
 
           {target === "trade" && (trades.length === 0 ? <p className="p-4 text-[15px] text-muted">{t("market.campaigns.emptyBody")}</p> : (
-            <div role="radiogroup" className="divide-y divide-dashed divide-line">
+            <div role="radiogroup" className="divide-y divide-line">
               {trades.map((x) => {
                 const o = x.options[0];
                 const on = x.trade === sel?.trade;
@@ -138,7 +138,7 @@ export function OfferBuilder({ trades, initialTrade, dated = false, minDays, ini
           {target === "crew" && (crews.length === 0 ? (
             <div className="p-4"><Notice tone="info">{rich("market.campaigns.pick.noCrews", { link: (c) => <Link href="/a/crews" className="font-bold underline">{c}</Link> })}</Notice></div>
           ) : (
-            <div role="radiogroup" className="divide-y divide-dashed divide-line" data-testid="offer-crews">
+            <div role="radiogroup" className="divide-y divide-line" data-testid="offer-crews">
               {crews.map((c) => {
                 const on = c.id === crewId;
                 const r = commonRun(days, c.members.map((m) => m.free));
@@ -159,7 +159,7 @@ export function OfferBuilder({ trades, initialTrade, dated = false, minDays, ini
 
           {target === "workers" && (
             <div>
-              <div className="max-h-[420px] divide-y divide-dashed divide-line overflow-y-auto" data-testid="offer-workers">
+              <div className="max-h-[420px] divide-y divide-line overflow-y-auto" data-testid="offer-workers">
                 {people.map((p) => {
                   const on = picked.includes(p.id);
                   return (
@@ -189,7 +189,7 @@ export function OfferBuilder({ trades, initialTrade, dated = false, minDays, ini
             {[["0", t("market.campaigns.sale.none")], ...SALE_PCTS.map((p) => [String(p), `${p}%`]), ["custom", t("market.campaigns.sale.custom")]].map(([v, label]) => {
               const on = choice === v;
               return (
-                <label key={v} className={`inline-flex min-h-10 cursor-pointer items-center rounded-[3px] border px-3.5 text-[15px] font-semibold transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:border-ink"}`}>
+                <label key={v} className={`inline-flex min-h-10 cursor-pointer items-center rounded-[10px] border px-3.5 text-[15px] font-semibold transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:border-ink"}`}>
                   <input type="radio" name="sale_choice" value={v} checked={on} onChange={() => setChoice(v)} className="sr-only" />
                   <span className={v !== "0" && v !== "custom" ? "num" : undefined}>{label}</span>
                 </label>
@@ -217,7 +217,7 @@ export function OfferBuilder({ trades, initialTrade, dated = false, minDays, ini
             {regions.map((r) => {
               const on = areas.includes(r);
               return (
-                <label key={r} className={`inline-flex min-h-10 cursor-pointer items-center rounded-[3px] border px-3.5 text-[15px] font-semibold transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:border-ink"}`}>
+                <label key={r} className={`inline-flex min-h-10 cursor-pointer items-center rounded-[10px] border px-3.5 text-[15px] font-semibold transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:border-ink"}`}>
                   <input type="checkbox" name="regions" value={r} checked={on} onChange={() => setAreas(on ? areas.filter((x) => x !== r) : [...areas, r])} className="sr-only" />
                   {fmt.region(r)}
                 </label>
@@ -301,7 +301,7 @@ function SalePrice({ sale }: { sale: { pct: number; from: string; to: string; lo
   const { was, now } = saleDay(sale);
   const same = sale.low === sale.high;
   return (
-    <div className="rounded-[3px] border border-line bg-hazard-soft p-3" data-testid="sale-price">
+    <div className="rounded-[10px] border border-line bg-hazard-soft p-3" data-testid="sale-price">
       <p className="text-[22px] font-bold leading-tight text-ink">
         {rich(same ? "market.campaigns.sale.price" : "market.campaigns.sale.priceFrom", {
           was: (c) => <s className="num text-[17px] font-semibold text-muted">{c}</s>,
@@ -319,7 +319,7 @@ function Step({ n, title, note, children }: { n: number; title: string; note: st
   return (
     <section className="sheet overflow-hidden">
       <header className="flex items-center gap-3 border-b border-line px-4 py-3">
-        <span className="blueprint grid h-8 w-8 shrink-0 place-items-center rounded-[3px] font-display text-[17px] font-bold text-hazard num">{n}</span>
+        <span className="blueprint grid h-8 w-8 shrink-0 place-items-center rounded-[10px] font-display text-[17px] font-bold text-hazard num">{n}</span>
         <div className="min-w-0">
           <h2 className="text-[18px] font-bold leading-tight text-ink">{title}</h2>
           <p className="text-[13px] text-muted">{note}</p>
@@ -344,8 +344,8 @@ function Submit({ n, disabled }: { n: number; disabled: boolean }) {
 /** The message as a contractor sees it: a WhatsApp bubble with the text, the personal link and the opt-out line. */
 export function WhatsappBubble({ text, link, footer, stored = false }: { text: string; link: string; footer: string; stored?: boolean }) {
   return (
-    <div className="rounded-[3px] bg-[#e7ddd0] p-3 sm:p-4">
-      <div className="max-w-md rounded-[3px] bg-white px-3.5 py-2.5 text-[15px] leading-relaxed text-text shadow-[0_1px_0_rgba(14,42,68,.12)]">
+    <div className="rounded-[10px] bg-[#e7ddd0] p-3 sm:p-4">
+      <div className="max-w-md rounded-[10px] bg-white px-3.5 py-2.5 text-[15px] leading-relaxed text-text shadow-[0_1px_0_rgba(14,42,68,.12)]">
         <p dir="auto" translate={stored ? "no" : undefined} className="whitespace-pre-line">{text}</p>
         <p className="mt-1 break-all"><span dir="ltr" translate="no" className="text-info underline">{link}</span></p>
         <p dir="auto" className="mt-3 text-[13px] text-muted">{footer}</p>

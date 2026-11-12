@@ -45,10 +45,10 @@ export default async function Workers({ searchParams }: { searchParams: Promise<
         {TRADES.map((tr) => <Link key={tr.key} href={`/a/workers?trade=${tr.key}`} className={sp.trade === tr.key ? "chip-hazard px-3 py-1.5" : "chip-muted px-3 py-1.5"}>{t("agency.workersPage.tradeChip", { trades: fmt.trades(tr.key), n: everyone.filter((w) => w.active && w.trade === tr.key).length })}</Link>)}
         <Link href="/a/workers?show=inactive" className={sp.show === "inactive" ? "chip-hazard px-3 py-1.5" : "chip-muted px-3 py-1.5"}>{t("agency.workersPage.inactive")}</Link>
         {crewFilter > 0 && crews.has(crewFilter) && <Link href="/a/workers" className="chip-hazard px-3 py-1.5">{t("crews.workers.filtered", { name: crews.get(crewFilter)! })} ✕</Link>}
-        <Link href="/a/crews" className="chip-muted border border-dashed border-ink/30 px-3 py-1.5" data-testid="workers-crews-link">{t("crews.workers.link", { n: crews.size })}</Link>
+        <Link href="/a/crews" className="chip-muted border border-ink/30 px-3 py-1.5" data-testid="workers-crews-link">{t("crews.workers.link", { n: crews.size })}</Link>
       </div>
       {/* Phone: one row per worker with a single documents status. The full grid needs a wide screen. */}
-      <div className="card divide-y divide-dashed divide-line sm:hidden">
+      <div className="card divide-y divide-line sm:hidden">
         {list.map((w) => {
           const check = docCheck(docs.get(w.id)!, w.trade, today);
           return (

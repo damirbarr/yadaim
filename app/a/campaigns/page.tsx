@@ -106,7 +106,7 @@ export default async function Campaigns({ searchParams }: { searchParams: Promis
             <h2 className="text-[18px] font-bold text-ink">{t("market.campaigns.past")}</h2>
             <span className="text-[13px] text-muted">{t("market.campaigns.pastNote")}</span>
           </header>
-          <ul className="divide-y divide-dashed divide-line">
+          <ul className="divide-y divide-line">
             {past.map((c) => (
               <li key={c.id}>
                 <Link href={`/a/campaigns/${c.id}`} className="flex min-h-14 items-center gap-3 px-4 py-3 transition hover:bg-paper">

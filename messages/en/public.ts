@@ -3,6 +3,27 @@ import { plural } from "@/lib/i18n/core";
 
 const m: Messages["public"] = {
   landing: {
+    top: {
+      h1a: "Know who is coming to the site,",
+      h1b: "and <mark>the final price</mark> for the day.",
+      lead: "The platform that connects foreign-worker staffing agencies with construction contractors. Find verified workers, check availability and book with confidence.",
+      contractor: { t: "I'm a contractor", d: "Book workers for the site" },
+      agency: { t: "I'm an agency", d: "Offer workers and manage crews" },
+      search: { title: "Find workers", trade: "Which worker do you need?", place: "Where is the site?", date: "When do you start?", submit: "Find workers" },
+      values: {
+        v1: { t: "Verified workers", d: "Valid visas and permits" },
+        v2: { t: "Know who comes", d: "Details, trade and experience upfront" },
+        v3: { t: "Crew locked at 18:00", d: "Certainty for the work day" },
+        v4: { t: "Clear daily price", d: "Lodging and transport included" },
+      },
+      forC: { eyebrow: "For contractors and site managers", title: "Need workers on site?", text: "Quickly find available workers or ready crews, and see upfront who is coming and what the final price is.", b1: "Search by trade, place and date", b2: "Worker details and permits in one place", b3: "Fast booking, from your phone too", cta: "For contractors" },
+      forA: { eyebrow: "For foreign-worker staffing agencies", title: "Managing workers? Yadaim lends a hand.", text: "Fill free days, manage assignments and offer crews to contractors, all in one place.", b1: "A daily picture of your workforce", b2: "Track document validity and crews", b3: "Share availability directly with contractors", cta: "For agencies" },
+      startFree: "Start for free",
+      menu: "Menu",
+      how: "How it works",
+      workerAlt: "Construction worker in a hard hat and high-visibility vest",
+      siteAlt: "Building site with a crane",
+    },
     nav: { contractors: "For contractors", agencies: "For agencies", pricing: "Payment", faq: "Questions" },
     login: "Sign in",
     signup: "Sign up",

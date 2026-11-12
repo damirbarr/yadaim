@@ -24,10 +24,10 @@ export default async function Orders({ searchParams }: { searchParams: Promise<{
   const today = todayISO();
   const head = (
     <PageHead title={t("contractor.orders.title")} sub={t("contractor.orders.sub", { time: LOCK_HOUR })}>
-      <nav className="flex rounded-[3px] border border-line bg-paper p-1 text-[14px]" aria-label={t("calendar.view.label")}>
+      <nav className="flex rounded-[10px] border border-line bg-paper p-1 text-[14px]" aria-label={t("calendar.view.label")}>
         {(["calendar", "list"] as const).map((v) => {
           const on = (view === "list" ? "list" : "calendar") === v;
-          return <Link key={v} href={v === "list" ? "/c/orders?view=list" : "/c/orders"} aria-current={on ? "page" : undefined} className={`rounded-[2px] px-4 py-1.5 font-semibold ${on ? "bg-ink text-white" : "text-muted hover:text-ink"}`}>{t(`calendar.view.${v}`)}</Link>;
+          return <Link key={v} href={v === "list" ? "/c/orders?view=list" : "/c/orders"} aria-current={on ? "page" : undefined} className={`rounded-[6px] px-4 py-1.5 font-semibold ${on ? "bg-ink text-white" : "text-muted hover:text-ink"}`}>{t(`calendar.view.${v}`)}</Link>;
         })}
       </nav>
     </PageHead>
@@ -62,7 +62,7 @@ export default async function Orders({ searchParams }: { searchParams: Promise<{
               <ul className="space-y-1">
                 {here.map(({ b, p, n }) => (
                   <li key={b.id}>
-                    <Link href={`/c/orders/${b.id}`} className={`block rounded-[2px] border-s-[3px] px-2 py-1.5 text-[13px] leading-tight transition hover:brightness-95 md:px-1.5 md:py-1 md:text-[12px] ${bar(p)}`}>
+                    <Link href={`/c/orders/${b.id}`} className={`block rounded-[6px] border-s-[3px] px-2 py-1.5 text-[13px] leading-tight transition hover:brightness-95 md:px-1.5 md:py-1 md:text-[12px] ${bar(p)}`}>
                       <span className="block truncate font-bold text-ink">{t(`contractor.count.${b.trade}` as MessageKey, { n })}</span>
                       <span className="block truncate">{fmt.phase(p)}</span>
                       <span className="block truncate text-[12px] opacity-75 md:hidden">{b.address} · {b.agency_name}</span>

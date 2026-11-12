@@ -46,7 +46,7 @@ export default async function Offer({ params, searchParams }: { params: Promise<
         <OfferHeader logged={!!u} login={t("public.offer.login")} />
         <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">
           <AgencyHead a={a} score={rel.score} t={t} fmt={fmt} />
-          <div className="rounded-[3px] bg-hazard p-5" data-testid="offer-group">
+          <div className="rounded-[10px] bg-hazard p-5" data-testid="offer-group">
             <div className="font-display text-2xl font-bold">{g.target === "crew" && g.crew_name ? t("public.offer.crewTitle", { crew: g.crew_name }) : t("public.offer.groupTitle", { n: gWorkers.length })}</div>
             <div className="text-sm">
               {g.date_from === g.date_to ? t("public.offer.togetherDay", { n: gWorkers.length, from: range.from }) : t("public.offer.together", { n: gWorkers.length, ...range })}
@@ -79,7 +79,7 @@ export default async function Offer({ params, searchParams }: { params: Promise<
       <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">
         <AgencyHead a={a} score={rel.score} t={t} fmt={fmt} />
         {f && (
-          <div className="rounded-[3px] bg-hazard p-5">
+          <div className="rounded-[10px] bg-hazard p-5">
             <div className="font-display text-2xl font-bold">{t("public.offer.available", { n: f.workerCount, trade: fmt.trade(focus), trades: fmt.trades(focus), from: fmt.date(f.from), to: fmt.date(f.to) })}</div>
             <div className="text-sm">
               {t("public.offer.allValid")}
