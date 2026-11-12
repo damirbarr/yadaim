@@ -91,7 +91,7 @@ npm run dev                   # עדיין מוד dev, אבל על Postgres
    ADMIN_EMAILS=you@gmail.com
    AUTH_DEV_BYPASS=0          # כדי לחייב התחברות גם ב-dev
    ```
-4. `npm run dev` ואז `/login` ← "כניסה כתאגיד עם Google".
+4. `npm run dev` ואז `/login` ← "כניסה עם גוגל".
 
 ## תקלות נפוצות
 | בעיה | פתרון |

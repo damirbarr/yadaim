@@ -55,8 +55,8 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
             {sp.error && <Notice tone="bad">{err}</Notice>}
             {google ? (
               <>
-                <GoogleButton intent="contractor" primary={sp.intent !== "agency"}>{t("public.login.googleContractor")}</GoogleButton>
-                <GoogleButton intent="agency" primary={sp.intent === "agency"}>{t("public.login.googleAgency")}</GoogleButton>
+                {/* One button for everyone; contractor or agency is chosen at first sign-in. A ?intent= from the landing CTAs only preselects that choice. */}
+                <GoogleButton intent={sp.intent === "agency" || sp.intent === "contractor" ? sp.intent : undefined} primary>{t("public.login.google")}</GoogleButton>
                 <p className="border-t border-dashed border-line pt-3 text-[13px] text-muted">{t("public.login.help")}</p>
               </>
             ) : (

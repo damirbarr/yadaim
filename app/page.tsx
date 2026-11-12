@@ -217,6 +217,7 @@ export default async function Landing() {
         <div className={`${WRAP} flex flex-col gap-5 border-t border-white/15 py-8 text-[13px] text-white/60 md:flex-row md:items-center md:justify-between`}>
           <Logo dark className="text-[22px]" />
           <span className="max-w-[60ch]">{t("public.landing.footer")}</span>
+          <span className="flex gap-3"><Link href="/privacy" className="underline hover:text-white">{t("public.legal.privacy")}</Link><Link href="/terms" className="underline hover:text-white">{t("public.legal.terms")}</Link></span>
           <LanguageSwitcher dark />
         </div>
       </footer>

@@ -112,6 +112,8 @@ const m: Messages["public"] = {
     footer: "The agency is the legal employer and approves every placement · Workers are placed only with registered contractors",
   },
 
+  legal: { privacy: "Privacy policy", terms: "Terms of use", home: "Home" },
+
   login: {
     title: "Sign in",
     sideEyebrow: "Sign in",
@@ -124,9 +126,8 @@ const m: Messages["public"] = {
       google_not_configured: "Sign-in with Google is not set up on this server yet. See the deployment guide.",
       other: "Sign-in failed. Try again.",
     },
-    googleContractor: "Sign in with Google as a contractor",
-    googleAgency: "Sign in with Google as an agency",
-    help: "If you already have an account, you go straight to it. At your first sign-in, you will be asked for a few details about your company or agency. If you were invited to a team, sign in with the email address that received the invitation.",
+    google: "Sign in with Google",
+    help: "If you already have an account, you go straight to it. At your first sign-in, you choose whether you are a contractor or an agency and fill in a few details. If you were invited to a team, sign in with the email address that received the invitation.",
     noGoogle: "Sign-in with Google is not set up in this environment yet. See the deployment guide.",
     dev: {
       title: "Development mode · No sign-in needed",
