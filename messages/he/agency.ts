@@ -15,7 +15,7 @@ export default {
   transportContractor: "הסעה של הקבלן",
 
   today: {
-    title: "היום",
+    title: "מבט על",
     hello: { morning: "בוקר טוב, {name}.", noon: "צהריים טובים, {name}.", evening: "ערב טוב, {name}." },
     onSite: plural({ zero: "אין עובדים באתרים היום", one: "<b>עובד אחד</b> באתר היום", other: "<b>{n}</b> עובדים באתרים היום" }),
     tomorrow: "<b>{n}</b> מחר",

@@ -13,7 +13,7 @@ const m: Messages["agency"] = {
   transportContractor: "Transport by the contractor",
 
   today: {
-    title: "Today",
+    title: "Overview",
     hello: { morning: "Good morning, {name}.", noon: "Good afternoon, {name}.", evening: "Good evening, {name}." },
     onSite: plural({ zero: "No workers on site today", one: "<b>1</b> worker on site today", other: "<b>{n}</b> workers on site today" }),
     tomorrow: "<b>{n}</b> tomorrow",

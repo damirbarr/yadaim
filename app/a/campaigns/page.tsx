@@ -3,13 +3,14 @@ import type { ReactNode } from "react";
 import { requireAgency } from "@/lib/auth";
 import { can } from "@/lib/rbac";
 import { all } from "@/lib/db";
-import { getAgency, workerStats } from "@/lib/queries";
-import { IDLE_DAY_COST, REGIONS, SALE_PCTS } from "@/lib/domain";
+import { displayName, getAgency, workerStats } from "@/lib/queries";
+import { DEFAULT_OPTS, hourlyFor, IDLE_DAY_COST, REGIONS, SALE_PCTS } from "@/lib/domain";
 import { isISODate } from "@/lib/calendar";
-import { datedWindows, idleWindows, regularRange, type OfferWindow } from "@/lib/promotions";
+import { datedWindows, freeDaysByWorker, idleWindows, regularRange, type OfferWindow } from "@/lib/promotions";
+import { agencyCrews } from "@/lib/crews";
 import { appUrl } from "@/lib/wa";
 import { Empty, Notice, PageHead } from "@/components/ui";
-import { OfferBuilder, type OfferContact, type OfferOption, type OfferTrade } from "@/components/campaign/OfferBuilder";
+import { OfferBuilder, type OfferContact, type OfferCrew, type OfferOption, type OfferPerson, type OfferTrade } from "@/components/campaign/OfferBuilder";
 import { getI18n } from "@/lib/i18n/server";
 import { offerBody, offerTail } from "./offer";
 
@@ -18,7 +19,7 @@ export async function generateMetadata() {
   return { title: t("market.campaigns.title") };
 }
 
-type SP = { trade?: string; from?: string };
+type SP = { trade?: string; from?: string; crew?: string };
 
 export default async function Campaigns({ searchParams }: { searchParams: Promise<SP> }) {
   const { user, agencyId } = await requireAgency();
@@ -44,16 +45,31 @@ export default async function Campaigns({ searchParams }: { searchParams: Promis
   const trades: OfferTrade[] = dated?.length
     ? [{ trade: dated[0].trade, from: dated[0].from, options: dated.map(option) }]
     : windows.map((w) => ({ trade: w.trade, from: w.from, options: [option(w)] }));
+  // Offers about specific people (not from the calendar): each worker's free days, and the agency's crews.
+  const free = dated?.length ? null : await freeDaysByWorker(agencyId);
+  const crews = free ? await agencyCrews(agencyId) : [];
+  const pstats = free ? await workerStats(free.workers.map((w) => w.id)) : new Map();
+  const crewOf = new Map(crews.flatMap((c) => c.members.map((m) => [m.id, c.name] as const)));
+  const person = (w: (typeof free & {})["workers"][number]): OfferPerson => ({
+    id: w.id, name: displayName(w), trade: w.trade, free: free!.free.get(w.id) ?? [], rating: pstats.get(w.id)?.rating ?? null,
+    hourly: hourlyFor(w.hourly_rate, a, DEFAULT_OPTS), crew: crewOf.get(w.id) ?? null,
+  });
+  const people = free ? free.workers.filter((w) => free.free.get(w.id)?.length).map(person) : [];
+  const offerCrews: OfferCrew[] = crews.map((c) => ({ id: c.id, name: c.name, leader: c.leader_worker_id, members: c.members.map((m) => person(m)) }));
   // Sorted by name like the campaign page, so the name in the preview is the first contractor the agency will send to.
   const contacts = (await all(
     `SELECT name, region, CASE WHEN opted_out = 1 THEN 1 WHEN last_sent_at > now_txt(interval '-3 days') THEN 2 ELSE 0 END AS s
      FROM crm_contacts WHERE agency_id = ? ORDER BY name`
   , agencyId)) as { name: string; region: string | null; s: 0 | 1 | 2 }[];
   const past = (await all(
-    `SELECT c.id, c.trade, c.date_from, c.date_to, c.created_at, (SELECT MAX(p.pct) FROM promotions p WHERE p.campaign_id = c.id) AS sale, COUNT(r.id) AS total, COUNT(r.sent_at) AS sent, COUNT(r.opened_at) AS opened, COUNT(r.booked_at) AS booked
+    `SELECT c.id, c.trade, c.target, c.worker_ids, c.date_from, c.date_to, c.created_at, (SELECT name FROM agency_crews k WHERE k.id = c.crew_id) AS crew_name,
+       (SELECT MAX(p.pct) FROM promotions p WHERE p.campaign_id = c.id) AS sale, COUNT(r.id) AS total, COUNT(r.sent_at) AS sent, COUNT(r.opened_at) AS opened, COUNT(r.booked_at) AS booked
      FROM campaigns c LEFT JOIN campaign_recipients r ON r.campaign_id = c.id WHERE c.agency_id = ?
-     GROUP BY c.id, c.trade, c.date_from, c.date_to, c.created_at ORDER BY c.id DESC`
-  , agencyId)) as { id: number; trade: string; date_from: string; date_to: string; created_at: string; sale: number | null; total: number; sent: number; opened: number; booked: number }[];
+     GROUP BY c.id, c.trade, c.target, c.worker_ids, c.crew_id, c.date_from, c.date_to, c.created_at ORDER BY c.id DESC`
+  , agencyId)) as { id: number; trade: string; target: string; worker_ids: string | null; crew_name: string | null; date_from: string; date_to: string; created_at: string; sale: number | null; total: number; sent: number; opened: number; booked: number }[];
+  // What a past offer was about: the trade, or the crew / the number of workers it named.
+  const about = (c: (typeof past)[number]) => c.target === "crew" ? t("market.campaigns.pastCrew", { crew: c.crew_name ?? "" })
+    : c.target === "workers" ? t("market.campaigns.pastWorkers", { n: (c.worker_ids ?? "").split(",").filter(Boolean).length }) : fmt.trades(c.trade);
 
   return (
     <div className="space-y-8">
@@ -61,12 +77,17 @@ export default async function Campaigns({ searchParams }: { searchParams: Promis
       {fromDay && !dated?.length && (
         <Notice tone="warn">{t("market.campaigns.datedNone", { trades: fmt.trades(sp.trade!), date: fmt.date(fromDay), min: fmt.minDays(a.min_days) })}</Notice>
       )}
-      {trades.length === 0 ? (
+      {trades.length === 0 && people.length === 0 ? (
         <Empty title={t("market.campaigns.emptyTitle")}>{t("market.campaigns.emptyBody")}</Empty>
       ) : (
         <OfferBuilder
           trades={trades}
-          initialTrade={trades.find((x) => x.trade === sp.trade)?.trade ?? trades[0].trade}
+          initialTrade={trades.find((x) => x.trade === sp.trade)?.trade ?? trades[0]?.trade ?? ""}
+          days={free?.days ?? []}
+          people={people}
+          crews={offerCrews}
+          initialTarget={sp.crew ? "crew" : trades.length ? "trade" : "workers"}
+          initialCrew={Number(sp.crew) || null}
           dated={!!dated?.length}
           minDays={a.min_days}
           initialPct={dated?.length ? SALE_PCTS[0] : 0}
@@ -90,7 +111,7 @@ export default async function Campaigns({ searchParams }: { searchParams: Promis
               <li key={c.id}>
                 <Link href={`/a/campaigns/${c.id}`} className="flex min-h-14 items-center gap-3 px-4 py-3 transition hover:bg-paper">
                   <span className="min-w-0 flex-1">
-                    <span className="block font-semibold text-ink">{rich("market.campaigns.pastTitle", { num }, { trades: fmt.trades(c.trade), from: fmt.date(c.date_from), to: fmt.date(c.date_to) })}</span>
+                    <span className="block font-semibold text-ink">{rich("market.campaigns.pastTitle", { num }, { trades: about(c), from: fmt.date(c.date_from), to: fmt.date(c.date_to) })}</span>
                     <span className="block text-[13px] text-muted">{t("market.campaigns.pastSent", { date: fmt.date(c.created_at.slice(0, 10)), sent: c.sent, total: c.total })}</span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-1 text-[13px] sm:flex-row sm:items-center sm:gap-2">

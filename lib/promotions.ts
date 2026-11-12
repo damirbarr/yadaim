@@ -88,3 +88,30 @@ export async function idleWindows(agencyId: number): Promise<OfferWindow[]> {
   const byId = new Map(ws.map((w) => [w.id, w]));
   return idle.map((i) => ({ trade: i.trade, from: i.from, to: i.to, workDays: 0, idleDays: i.idleDays, workers: i.workerIds.map((id) => byId.get(id)!).filter(Boolean) }));
 }
+
+// ── Offers about specific people: a crew, or workers the agency picked ──
+export type FreeDays = { days: string[]; workers: Worker[]; free: Map<number, string[]> };
+
+/**
+ * Each active worker's free days in the next `horizon` work days (from tomorrow): no requested, approved or
+ * completed booking that day, and documents valid for the trade. Same rule as idleForecast, kept per worker
+ * so a crew or a hand-picked group can be checked for days they are all free.
+ */
+export async function freeDaysByWorker(agencyId: number, horizon = 10): Promise<FreeDays> {
+  const days: string[] = [];
+  for (let d = addDays(todayISO(), 1); days.length < horizon; d = addDays(d, 1)) if (isWorkday(d)) days.push(d);
+  const workers = await all<Worker>(`SELECT * FROM workers WHERE agency_id = ? AND active = 1 ORDER BY first_name, last_name`, agencyId);
+  const free = new Map<number, string[]>();
+  if (!workers.length) return { days, workers, free };
+  const docs = await docsFor(workers.map((w) => w.id));
+  const rows = await all<{ worker_id: number; date: string; end_date: string }>(
+    `SELECT bw.worker_id, b.date, b.end_date FROM booking_workers bw JOIN bookings b ON b.id = bw.booking_id
+     WHERE b.agency_id = ? AND bw.state = 'assigned' AND b.status IN ('requested','approved','completed') AND b.date <= ? AND b.end_date >= ?`,
+    agencyId, days[days.length - 1], days[0]
+  );
+  for (const w of workers) {
+    const mine = rows.filter((r) => r.worker_id === w.id);
+    free.set(w.id, days.filter((d) => !mine.some((r) => r.date <= d && r.end_date >= d) && docCheck(docs.get(w.id)!, w.trade, d).ok));
+  }
+  return { days, workers, free };
+}

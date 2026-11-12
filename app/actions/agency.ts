@@ -8,8 +8,9 @@ import { saveUpload } from "@/lib/storage";
 import { audit } from "@/lib/audit";
 import type { Perm } from "@/lib/rbac";
 import { busyWorkers, docCheck, docsFor, getAgency, getBooking, getWorker } from "@/lib/queries";
-import { offerSale, offerTail } from "@/app/a/campaigns/offer";
-import { datedWindows, idleWindows, regularRange } from "@/lib/promotions";
+import { commonRun, offerSale, offerTail } from "@/app/a/campaigns/offer";
+import { datedWindows, freeDaysByWorker, idleWindows, regularRange, type OfferWindow } from "@/lib/promotions";
+import { getCrew, mainTrade, parseBasket } from "@/lib/crews";
 import { ALL_CITIES, COUNTRIES, DOC_TYPES, MIN_DAYS_OPTIONS, REGIONS, TRADES, bookingPhase, hourlyFor, regionOf, validSalePct } from "@/lib/domain";
 import { CONTACT_FIELDS, ImportError, WORKER_FIELDS, normalizeDate, normalizePhone, readImport, type ImportField, type ImportState } from "@/lib/importer";
 import { logEvent } from "@/lib/events";
@@ -301,20 +302,42 @@ export async function toggleOptOut(fd: FormData) {
 export async function createCampaign(fd: FormData) {
   const { agencyId, user } = await requireAgency("agency.campaigns.send");
   const i18n = await getI18n();
-  const tradeKey = String(fd.get("trade"));
   const body = String(fd.get("message") ?? "").trim().slice(0, 1000);
   const regions = fd.getAll("regions").map(String).filter((r) => REGIONS.some((x) => x.key === r));
   const a = await getAgency(agencyId);
   if (!body || !a || !regions.length) return;
-  // Dates and workers are recomputed here, never taken from the form: from the calendar day the offer started on
-  // (from/to), or from the idle forecast for the trade.
-  const from = fd.get("from") ? String(fd.get("from")) : null;
-  const win = from
-    ? (await datedWindows(agencyId, tradeKey, from, a.min_days)).find((w) => w.to === String(fd.get("to")))
-    : (await idleWindows(agencyId)).find((w) => w.trade === tradeKey);
+  // What the offer is about: a trade (every free worker in it), one crew, or workers the agency picked.
+  const target = ["crew", "workers"].includes(String(fd.get("target"))) ? (String(fd.get("target")) as "crew" | "workers") : "trade";
+  // Dates and workers are recomputed here, never taken from the form.
+  let win: OfferWindow | undefined;
+  let crewId: number | null = null;
+  if (target === "trade") {
+    // From the calendar day the offer started on (from/to), or from the idle forecast for the trade.
+    const tradeKey = String(fd.get("trade"));
+    const from = fd.get("from") ? String(fd.get("from")) : null;
+    win = from
+      ? (await datedWindows(agencyId, tradeKey, from, a.min_days)).find((w) => w.to === String(fd.get("to")))
+      : (await idleWindows(agencyId)).find((w) => w.trade === tradeKey);
+  } else {
+    // A crew or picked workers: the first run of days they are all free, at least the agency's minimum booking.
+    const free = await freeDaysByWorker(agencyId);
+    let ids: number[];
+    if (target === "crew") {
+      const crew = await getCrew(agencyId, Number(fd.get("crew_id")));
+      if (!crew) return;
+      crewId = crew.id;
+      ids = crew.members.map((m) => m.id);
+    } else ids = parseBasket(String(fd.get("worker_ids") ?? ""));
+    const ws = free.workers.filter((w) => ids.includes(w.id));
+    if (!ws.length || ws.length !== ids.length) return; // someone left the agency or was deactivated meanwhile
+    const r = commonRun(free.days, ws.map((w) => free.free.get(w.id) ?? []));
+    if (!r || r.workDays < a.min_days) return;
+    win = { trade: mainTrade(ws)!, from: r.from, to: r.to, workDays: r.workDays, idleDays: r.workDays * ws.length, workers: ws };
+  }
   if (!win || !win.workers.length) return;
-  // Sale price: optional; when set, it becomes a real promotion that search, checkout and createBooking apply.
-  const pct = Number(fd.get("pct") ?? 0) || 0;
+  const tradeKey = win.trade;
+  // Sale price: optional, by trade only; when set, it becomes a real promotion that search, checkout and createBooking apply.
+  const pct = target === "trade" ? Number(fd.get("pct") ?? 0) || 0 : 0;
   if (pct && !validSalePct(pct)) return;
   const sale = pct ? offerSale(i18n, { pct, from: win.from, to: win.to, ...regularRange(a, win.workers) }) : "";
   const message = [body, sale, offerTail(i18n, a.min_days)].filter(Boolean).join(" ");
@@ -326,12 +349,13 @@ export async function createCampaign(fd: FormData) {
   const to = contacts.filter((c) => !c.region || regions.includes(c.region));
   if (!to.length) return;
   const cid = await tx(async () => {
-    const id = Number(await insert(`INSERT INTO campaigns (agency_id, trade, date_from, date_to, idle_days, message) VALUES (?,?,?,?,?,?)`, agencyId, tradeKey, win.from, win.to, win.idleDays, message));
+    const id = Number(await insert(`INSERT INTO campaigns (agency_id, trade, date_from, date_to, idle_days, message, target, crew_id, worker_ids) VALUES (?,?,?,?,?,?,?,?,?)`,
+      agencyId, tradeKey, win!.from, win!.to, win!.idleDays, message, target, crewId, target === "trade" ? null : win!.workers.map((w) => w.id).join(",")));
     for (const c of to) await run(`INSERT INTO campaign_recipients (campaign_id, contact_id, ref) VALUES (?,?,?)`, id, c.id, randomToken(6));
     if (pct) await run(`INSERT INTO promotions (agency_id, trade, date_from, date_to, pct, campaign_id) VALUES (?,?,?,?,?,?)`, agencyId, tradeKey, win.from, win.to, pct, id);
     return id;
   });
-  await audit(user, "campaign.create", `campaign:${cid}`, pct ? `${tradeKey} sale ${pct}% ${win.from}..${win.to}` : tradeKey);
+  await audit(user, "campaign.create", `campaign:${cid}`, pct ? `${tradeKey} sale ${pct}% ${win.from}..${win.to}` : target === "trade" ? tradeKey : `${target} ${win.workers.length} ${win.from}..${win.to}`);
   revalidatePath("/a/calendar");
   redirect(`/a/campaigns/${cid}`);
 }

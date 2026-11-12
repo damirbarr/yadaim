@@ -14,7 +14,7 @@ const m: Messages["common"] = {
   change: "تغيير",
   nav: {
     agency: {
-      today: "اليوم",
+      today: "نظرة عامة",
       calendar: "التقويم",
       requests: "الطلبات والتوزيع",
       compliance: "التصاريح والصلاحية",
@@ -26,7 +26,7 @@ const m: Messages["common"] = {
       team: "الفريق والصلاحيات",
       settings: "الإعدادات",
     },
-    agencyShort: { today: "اليوم", calendar: "التقويم", crews: "الطواقم", requests: "الطلبات", compliance: "التصاريح", workers: "العمّال", campaigns: "التسويق", contractors: "المقاولون", billing: "الحساب", team: "الفريق", settings: "الإعدادات" },
+    agencyShort: { today: "نظرة عامة", calendar: "التقويم", crews: "الطواقم", requests: "الطلبات", compliance: "التصاريح", workers: "العمّال", campaigns: "التسويق", contractors: "المقاولون", billing: "الحساب", team: "الفريق", settings: "الإعدادات" },
     contractor: { search: "حجز جديد", orders: "حجوزاتي", crews: "طواقم محفوظة", team: "الفريق" },
     admin: { orgs: "المؤسسات", users: "المستخدمون والصلاحيات", audit: "سجل النشاط", badge: "مسؤول" },
   },

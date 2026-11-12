@@ -40,7 +40,7 @@ const shot = async (p, name) => process.env.SHOTS && p.screenshot({ path: path.j
 try {
   step("Dev mode: every area opens without signing in");
   const anon = await as(null);
-  for (const [url, title] of [["/c", "הזמנה חדשה"], ["/a", "היום"], ["/admin", "ניהול"]]) {
+  for (const [url, title] of [["/c", "הזמנה חדשה"], ["/a", "מבט על"], ["/admin", "ניהול"]]) {
     await anon.goto(B + url);
     ok((await anon.title()).includes(title), `${url} opens with a default demo persona`);
   }
@@ -203,6 +203,24 @@ try {
   const ref = decodeURIComponent(wa).match(/\/r\/([\w-]+)/)[1];
   await c.goto(B + "/r/" + ref);
   ok(/\/o\//.test(c.url()), "tracking link lands on the public offer page");
+  // An offer about specific workers: the builder finds the days they are free together, and the contractor's
+  // link shows exactly them, with a booking button that preselects them in search.
+  await o.goto(B + "/a/campaigns");
+  await o.click('[data-testid=offer-target] label:has-text("עובדים מסוימים")');
+  const first = o.locator("[data-testid=offer-workers] label").first();
+  const pickedName = (await first.locator("b").first().innerText()).trim();
+  await first.locator("input[type=checkbox]").check();
+  await o.waitForSelector("text=פנויים יחד");
+  ok((await o.locator(`p:has-text("${pickedName}")`).count()) > 0, "worker offer: the WhatsApp preview names the picked worker");
+  await Promise.all([o.waitForURL(/campaigns\/\d+/), o.click('button:has-text("בוואטסאפ")')]);
+  ok((await o.locator("h1:has-text('עובד אחד')").count()) === 1, "worker offer saved, titled by the workers rather than a trade");
+  const waHref2 = await o.locator('a:has-text("שליחה")').first().getAttribute("href");
+  const ref2 = decodeURIComponent((await o.request.get(B + waHref2, { maxRedirects: 0 })).headers()["location"] || "").match(/\/r\/([\w-]+)/)[1];
+  await c.goto(B + "/r/" + ref2);
+  ok(c.url().includes("offer=") && (await c.locator(`[data-testid=offer-group]`).count()) === 1 && (await c.locator(`text=${pickedName}`).count()) > 0, "worker offer link shows exactly the offered worker");
+  await o.goto(B + "/a/campaigns");
+  await o.click('[data-testid=offer-target] label:has-text("צוות")');
+  ok((await o.locator("[data-testid=offer-crews] label").count()) > 0, "crew offer lists the agency's crews");
   const csv = await o.request.get(B + "/api/reports/placements?m=" + new Date().toISOString().slice(0, 7));
   ok(csv.status() === 200 && (await csv.text()).split("\n").length > 2, "placement report CSV exported");
 

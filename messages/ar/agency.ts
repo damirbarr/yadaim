@@ -13,7 +13,7 @@ const m: Messages["agency"] = {
   transportContractor: "النقل من طرف المقاول",
 
   today: {
-    title: "اليوم",
+    title: "نظرة عامة",
     hello: { morning: "صباح الخير، {name}.", noon: "نهاركم سعيد، {name}.", evening: "مساء الخير، {name}." },
     onSite: plural({ zero: "لا عمّال في المواقع اليوم", one: "<b>عامل واحد</b> في الموقع اليوم", two: "<b>عاملان</b> في المواقع اليوم", few: "<b>{n}</b> عمّال في المواقع اليوم", many: "<b>{n}</b> عاملًا في المواقع اليوم", other: "<b>{n}</b> عامل في المواقع اليوم" }),
     tomorrow: "<b>{n}</b> غدًا",

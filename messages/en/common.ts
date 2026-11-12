@@ -14,7 +14,7 @@ const m: Messages["common"] = {
   change: "Change",
   nav: {
     agency: {
-      today: "Today",
+      today: "Overview",
       calendar: "Calendar",
       requests: "Requests",
       compliance: "Documents",
@@ -26,7 +26,7 @@ const m: Messages["common"] = {
       team: "Team and permissions",
       settings: "Settings",
     },
-    agencyShort: { today: "Today", calendar: "Calendar", crews: "Crews", requests: "Requests", compliance: "Documents", workers: "Workers", campaigns: "Offers", contractors: "Contractors", billing: "Billing", team: "Team", settings: "Settings" },
+    agencyShort: { today: "Overview", calendar: "Calendar", crews: "Crews", requests: "Requests", compliance: "Documents", workers: "Workers", campaigns: "Offers", contractors: "Contractors", billing: "Billing", team: "Team", settings: "Settings" },
     contractor: { search: "New booking", orders: "My bookings", crews: "Saved crews", team: "Team" },
     admin: { orgs: "Organizations", users: "Users and permissions", audit: "Activity log", badge: "Admin" },
   },

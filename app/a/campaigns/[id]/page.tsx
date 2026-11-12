@@ -30,7 +30,7 @@ export default async function Campaign({ params }: { params: Promise<{ id: strin
   const { user, agencyId } = await requireAgency();
   const { t, rich, fmt } = await getI18n();
   const send = can(user, "agency.campaigns.send");
-  const c = (await get(`SELECT * FROM campaigns WHERE id = ? AND agency_id = ?`, Number((await params).id), agencyId)) as { id: number; trade: string; date_from: string; date_to: string; message: string; created_at: string } | undefined;
+  const c = (await get(`SELECT c.*, (SELECT name FROM agency_crews k WHERE k.id = c.crew_id) AS crew_name FROM campaigns c WHERE c.id = ? AND c.agency_id = ?`, Number((await params).id), agencyId)) as { id: number; trade: string; target: string; worker_ids: string | null; crew_name: string | null; date_from: string; date_to: string; message: string; created_at: string } | undefined;
   if (!c) notFound();
   const promo = await campaignPromotion(c.id, agencyId);
   const promoLive = !!promo && !promo.ended_at && promo.date_to >= todayISO();
@@ -98,7 +98,7 @@ export default async function Campaign({ params }: { params: Promise<{ id: strin
       <PageHead
         back="/a/campaigns"
         eyebrow={t("market.campaigns.detail.eyebrow", { date: fmt.date(c.created_at.slice(0, 10)) })}
-        title={rich("market.campaigns.detail.title", { num: (x) => <span className="num" dir="ltr">{x}</span> }, { trades: fmt.trades(c.trade), from: fmt.date(c.date_from), to: fmt.date(c.date_to) })}
+        title={rich("market.campaigns.detail.title", { num: (x) => <span className="num" dir="ltr">{x}</span> }, { trades: c.target === "crew" ? t("market.campaigns.pastCrew", { crew: c.crew_name ?? "" }) : c.target === "workers" ? t("market.campaigns.pastWorkers", { n: (c.worker_ids ?? "").split(",").filter(Boolean).length }) : fmt.trades(c.trade), from: fmt.date(c.date_from), to: fmt.date(c.date_to) })}
       />
 
       {promo && (
