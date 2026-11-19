@@ -29,7 +29,7 @@ export function idle(ctx, t, Q) {
   ctx.save();
   ctx.globalAlpha = clamp(p0 * 1.5);
   avatar(ctx, R - 48, sy + chh / 2, 96, 1);
-  text(ctx, "סרגיי ב. · טפסן · השבוע", R - 120, sy - 34, { size: 30, weight: 700, color: C.onDark });
+  text(ctx, "סרגיי ב. · השבוע", R - 120, sy - 34, { size: 30, weight: 700, color: C.onDark });
   DAYS.forEach((d, j) => {
     const xr = R - 120 - j * (cw + gap);
     const y = sy + (1 - ep(t, Q["idle.cal"] + j * 0.05, 0.5, ease.out5)) * 40;
@@ -65,7 +65,6 @@ export function idle(ctx, t, Q) {
     ctx.globalAlpha = clamp(sp * 2);
     money(ctx, 520 * ep(t, Q["idle.sum"], 0.9, ease.out5), 0, 0, 200, { color: C.white });
     ctx.restore();
-    chip(ctx, "ליום, על כל עובד בלי עבודה", W / 2, 900, { kind: "dark", size: 26, align: "center", alpha: ep(t, Q["idle.sum"] + 0.5, 0.4) });
   }
 }
 
@@ -81,7 +80,7 @@ export function importPlate(ctx, t, Q) {
     eyebrow: "לתאגידים",
     lines: [["מעלים", "את", "העובדים"], { w: ["פעם", "אחת."], swoosh: { word: 1, at: Q["import.done"] + 0.2 } }],
     at: Q["import.title"],
-    sub: "מקובץ אקסל. לכל עובד פרופיל ותוקף לכל מסמך.",
+    sub: "מקובץ אקסל, וכל עובד מקבל פרופיל.",
     y: 450,
   });
   const p = ep(t, Q["import.title"] - 0.1, 0.6, ease.out5);
@@ -190,7 +189,7 @@ export function expiry(ctx, t, Q) {
   ctx.restore();
   // the renewal request goes to the worker on WhatsApp
   const wp = ep(t, Q["expiry.wa"], 0.45, ease.back);
-  if (wp > 0) bubble(ctx, "נשלחה למיכאיל בקשת חידוש בוואטסאפ ✓", x + w - 30, y + h + 70, { size: 26, scale: 0.7 + 0.3 * wp, alpha: clamp(wp * 2) });
+  if (wp > 0) chip(ctx, "בקשת חידוש נשלחה למיכאיל בוואטסאפ", x + w / 2, y + h + 60, { kind: "teal", icon: "check", size: 26, align: "center", scale: 0.7 + 0.3 * wp, alpha: clamp(wp * 2) });
 }
 
 // ── offer: a ready offer for every idle day; approve and it goes out ────────
@@ -259,17 +258,17 @@ export function offer(ctx, t, Q) {
     card(ctx, 0, 0, ow, oh, { r: 26, shadow: 0.18, lift: 30 });
     const r = ow - 36;
     chip(ctx, "הצעה מוכנה לאישור", r, 52, { kind: "teal", size: 22 });
-    text(ctx, "4 טפסנים פנויים · ד׳–ו׳", r, 132, { size: 34, weight: 900 });
+    text(ctx, "4 עובדים · 9 ימים פנויים השבוע", r, 132, { size: 34, weight: 900 });
     text(ctx, "תישלח ל־12 קבלנים מהמאגר שלכם", r, 176, { size: 23, weight: 400, color: C.muted });
     button(ctx, "אישור ושליחה", r - 130, 240, 260, 64, { size: 25, scale: 1 - 0.06 * bump(t, Q["offer.send"] - 0.05, 0.2) });
     ctx.restore();
     if (fly === 0) tap(ctx, ox + ow - 36 - 130, oy + 240, t, Q["offer.send"]);
   }
-  // the WhatsApp messages land with the contractors
-  for (let i = 0; i < 3; i++) {
-    const bp = ep(t, Q["offer.fly"] + 0.15 + i * 0.12, 0.4, ease.back);
-    if (bp <= 0) continue;
-    bubble(ctx, ["4 טפסנים פנויים ד׳–ו׳ בנתניה", "להזמנה: לחצו על הקישור", "מחיר סופי ליום, כולל לינה"][i], 960 - i * 40, 800 + i * 70, { size: 23, scale: 0.7 + 0.3 * bp, alpha: clamp(bp * 2) * (1 - ep(t, Q["offer.fill"] + 0.8, 0.4)) });
+  // the WhatsApp message lands with the contractors
+  const bp = ep(t, Q["offer.fly"] + 0.2, 0.4, ease.back);
+  if (bp > 0) {
+    bubble(ctx, "4 עובדים פנויים השבוע. להזמנה לחצו על הקישור", 990, 830, { size: 26, scale: 0.7 + 0.3 * bp, alpha: clamp(bp * 2) });
+    chip(ctx, "נשלח ל־12 קבלנים", 990, 910, { kind: "teal", icon: "check", size: 22, alpha: ep(t, Q["offer.fly"] + 0.5, 0.3) });
   }
 }
 
@@ -329,7 +328,6 @@ export function end(ctx, t, Q) {
     photo,
     tags: [{ w: ["מנהלים", "עובדים?"] }, { w: ["יש", "לכם", "ידיים."], span: { from: 0, to: 2, at: Q["end.tag"] + 0.6 } }],
     cta: "הצטרפו כתאגיד",
-    foot: "בלי דמי מנוי ובלי התחייבות · משלמים רק על שעות מאושרות",
   });
 }
 

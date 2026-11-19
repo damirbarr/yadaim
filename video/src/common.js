@@ -159,8 +159,7 @@ export function endPlate(ctx, t, Q, { tags, cta, cta2, foot, photo }) {
       button(ctx, cta, cx, by, 480, 96, { size: 38, scale: 0.8 + 0.2 * cp + 0.03 * bump(t, Q["end.cta"] + 0.9, 0.4), alpha: clamp(cp * 2), arrow: true });
     }
   }
-  const fp = ep(t, Q["end.cta"] + 0.3, 0.5);
-  text(ctx, foot, cx, by + 120, { size: 28, weight: 500, color: C.muted, align: "center", alpha: fp });
+  if (foot) text(ctx, foot, cx, by + 120, { size: 28, weight: 500, color: C.muted, align: "center", alpha: ep(t, Q["end.cta"] + 0.3, 0.5) });
 }
 
 export { money };

@@ -44,7 +44,6 @@ export function hook(ctx, t, Q) {
   ctx.fillStyle = C.white;
   ctx.fillText(`06:29:${String(sec).padStart(2, "0")}`, 0, 90);
   ctx.restore();
-  chip(ctx, "יום עבודה חדש באתר", W / 2, lerp(700, 380, up) + (1 - lp) * 20, { kind: "dark", size: 30, align: "center", alpha: lp });
 
   const ws = ["hook.w1", "hook.w2", "hook.w3", "hook.w4"].map((k) => Q[k]);
   const punch = ws.reduce((a, c) => a + kick(t, c), 0);
@@ -165,8 +164,6 @@ export function search(ctx, t, Q) {
 export function docs(ctx, t, Q) {
   bg(ctx, C.mint);
   column(ctx, t, {
-    eyebrow: "מאומתים",
-    eyebrowAt: Q["docs.zoom"] + 0.15,
     lines: [["רק", "עובדים", "מאומתים,"], { w: ["מתאגידים", "מורשים."], swoosh: { word: 1, at: Q["docs.d1"] + 0.2 } }],
     at: Q["docs.zoom"] + 0.25,
     sub: "כל האישורים בתוקף עד יום העבודה האחרון.",
@@ -277,8 +274,8 @@ export function price(ctx, t, Q) {
   ctx.restore();
   text(ctx, "ליום לעובד", x + w / 2, y + 360, { size: 30, weight: 500, color: C.muted, align: "center" });
   const segs = [
-    ["לינה", ["אצל התאגיד", "אצלנו"], t1],
-    ["הסעה", ["התאגיד מסיע", "אנחנו מסיעים"], t2],
+    ["לינה", ["התאגיד", "אתם"], t1],
+    ["הסעה", ["התאגיד", "אתם"], t2],
   ];
   segs.forEach(([lab, opts, at], i) => {
     const sy = y + 430 + i * 104;
@@ -287,7 +284,7 @@ export function price(ctx, t, Q) {
     rrect(ctx, sx, sy, sw, sh, 14);
     ctx.fillStyle = C.paper2;
     ctx.fill();
-    // the teal pill slides from "us" (left) to the agency (right)
+    // the teal pill slides from the contractor (left) to the agency (right)
     const m = ep(t, at, 0.3, ease.inOut);
     const half = (sw - 12) / 2;
     rrect(ctx, lerp(sx + 6, sx + 6 + half, m), sy + 6, half, sh - 12, 10);
@@ -431,8 +428,6 @@ export function lock(ctx, t, Q) {
     ctx.restore();
   }
   column(ctx, t, {
-    eyebrow: "הערב שלפני",
-    eyebrowAt: Q["lock.sweep"] + 0.1,
     lines: [{ w: ["ב־18:00", "הצוות", "ננעל."], colors: { 0: C.tealLight } }, ["יודעים", "מי", "מגיע", "מחר."]],
     at: Q["lock.sweep"] + 0.2,
     sub: "שמות העובדים, שם הנהג ושעת האיסוף.",
@@ -545,6 +540,5 @@ export function end(ctx, t, Q) {
     photo,
     tags: [{ w: ["צריכים", "עובדים", "לאתר?"], swoosh: { word: 1, at: Q["end.tag"] + 0.4 } }],
     cta: "חפשו עובדים עכשיו",
-    foot: "השימוש חינם לקבלנים · תאגידים מורשים בלבד",
   });
 }

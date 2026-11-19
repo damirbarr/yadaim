@@ -56,13 +56,13 @@
     },
     {
       "plate": "price",
-      "say": "מחיר יומי סופי, כולל לינה וגם הסעה.",
+      "say": "מחיר יומי סופי, כולל לינה והסעה.",
       "pause": 0.5,
       "cues": {
         "price.title": "start-0.2",
         "price.count": "start",
         "price.toggle1": "לינה@end",
-        "price.toggle2": "הסעה@end",
+        "price.toggle2": "והסעה@end",
         "price.badge": "end"
       }
     },
@@ -89,11 +89,11 @@
     },
     {
       "plate": "end",
-      "say": "ידיים. חינם לקבלנים.",
+      "say": "ידיים. מזמינים עובדים בביטחון.",
       "cues": {
         "end.hit": "start-0.3",
-        "end.tag": "חינם-0.1",
-        "end.cta": "לקבלנים"
+        "end.tag": "מזמינים-0.1",
+        "end.cta": "בביטחון"
       }
     }
   ]

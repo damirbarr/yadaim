@@ -1,5 +1,5 @@
-"""Voiceover → timeline. Reads films/<film>/script.json, speaks every line with a Microsoft neural Hebrew voice
-(edge-tts, word timings included), lays the lines out one after another and writes:
+"""Voiceover → timeline. Reads films/<film>/script.json, speaks every line (ElevenLabs by default, or a Microsoft
+neural voice through edge-tts with "provider": "edge"), with word timings, lays the lines out and writes:
 
     out/<film>/vo.wav               the voiceover track (48 kHz mono)
     films/<film>/timeline.json      plates (one per line) and every animation cue, in seconds
@@ -10,7 +10,10 @@ Cues are written next to the words they belong to, so re-recording or rewording 
     "start" / "end"  the line's first / last spoken moment
     any of these + or - an offset: "ובוחרים+0.2", "end-0.3", "start+0.5"
 
-    python3 audio/voice.py contractor      (needs: pip install edge-tts; ffmpeg)
+    python3 audio/voice.py contractor      (needs ffmpeg; edge-tts only for the edge provider)
+
+ElevenLabs: the key goes in the xi-api-key header. Here it is injected by the environment's network proxy; elsewhere
+set ELEVENLABS_API_KEY.
 """
 import asyncio
 import hashlib
@@ -22,14 +25,13 @@ import sys
 import wave
 from pathlib import Path
 
-import edge_tts
-import edge_tts.communicate as ec
+import base64
+import os
+import urllib.request
+
 import numpy as np
 
-# edge-tts pins certifi's bundle; trust the environment's CA bundle instead when there is one (TLS stays verified).
 CA = Path("/root/.ccr/ca-bundle.crt")
-if CA.exists():
-    ec._SSL_CTX = ssl.create_default_context(cafile=str(CA))
 
 ROOT = Path(__file__).resolve().parent.parent
 film = sys.argv[1] if len(sys.argv) > 1 else "contractor"
@@ -40,7 +42,44 @@ CACHE.mkdir(parents=True, exist_ok=True)
 SR = 48000
 
 
+def speak_eleven(text, cfg, mp3):
+    """ElevenLabs text-to-speech with character timings → word timings."""
+    body = {"text": text, "model_id": cfg.get("model", "eleven_v3"), "language_code": "he"}
+    if cfg.get("settings"):
+        body["voice_settings"] = cfg["settings"]
+    req = urllib.request.Request(
+        f"https://api.elevenlabs.io/v1/text-to-speech/{cfg['voice_id']}/with-timestamps?output_format=mp3_44100_192",
+        data=json.dumps(body).encode(),
+        headers={"content-type": "application/json", "xi-api-key": os.environ.get("ELEVENLABS_API_KEY", "proxy-injected")},
+    )
+    ctx = ssl.create_default_context(cafile=str(CA)) if CA.exists() else None
+    with urllib.request.urlopen(req, context=ctx, timeout=120) as r:
+        d = json.load(r)
+    mp3.write_bytes(base64.b64decode(d["audio_base64"]))
+    al = d["alignment"]
+    words, cur, t0, t1 = [], "", None, None
+    for ch, a, b in zip(al["characters"], al["character_start_times_seconds"], al["character_end_times_seconds"]):
+        if ch.isspace():
+            if cur:
+                words.append({"w": cur, "t": t0, "d": t1 - t0})
+            cur, t0 = "", None
+            continue
+        if t0 is None:
+            t0 = a
+        cur += ch
+        t1 = b
+    if cur:
+        words.append({"w": cur, "t": t0, "d": t1 - t0})
+    return words
+
+
 async def speak(text, voice, rate, pitch, mp3):
+    import edge_tts
+    import edge_tts.communicate as ec
+
+    # edge-tts pins certifi's bundle; trust the environment's CA bundle instead when there is one (TLS stays verified).
+    if CA.exists():
+        ec._SSL_CTX = ssl.create_default_context(cafile=str(CA))
     c = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, boundary="WordBoundary")
     audio, words = bytearray(), []
     async for ch in c.stream():
@@ -61,15 +100,21 @@ def norm(s):
     return re.sub(r"[^֐-׿0-9A-Za-z]", "", s)
 
 
-voice = SCRIPT["voice"]
+PROVIDER = SCRIPT.get("provider", "elevenlabs")
+EL = SCRIPT.get("elevenlabs", {})
+voice = SCRIPT.get("voice", "")
 rate = SCRIPT.get("rate", "+0%")
 pitch = SCRIPT.get("pitch", "+0Hz")
+sig = json.dumps(EL, sort_keys=True) if PROVIDER == "elevenlabs" else f"{voice}|{rate}|{pitch}"
 lines = []
 for i, line in enumerate(SCRIPT["lines"]):
-    key = f"{i:02d}-" + hashlib.sha1(f"{line['say']}|{voice}|{rate}|{pitch}".encode()).hexdigest()[:10]
+    key = f"{i:02d}-" + hashlib.sha1(f"{PROVIDER}|{line['say']}|{sig}".encode()).hexdigest()[:10]
     mp3, meta = CACHE / f"{key}.mp3", CACHE / f"{key}.json"
     if not meta.exists():
-        words = asyncio.run(speak(line["say"], voice, rate, pitch, mp3))
+        if PROVIDER == "elevenlabs":
+            words = speak_eleven(line["say"], EL, mp3)
+        else:
+            words = asyncio.run(speak(line["say"], voice, rate, pitch, mp3))
         meta.write_text(json.dumps(words, ensure_ascii=False))
     words = json.loads(meta.read_text())
     pcm = load(mp3)
