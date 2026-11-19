@@ -57,7 +57,8 @@
         "offer.send": "מאשרים",
         "offer.fly": "יוצאת",
         "offer.fill": "end+0.15"
-      }
+      },
+      "pause": 0.95
     },
     {
       "plate": "request",
