@@ -1,24 +1,25 @@
 @import "tailwindcss";
 
-/* Design system from the owner's handoff (docs/design/DESIGN_SYSTEM.md): practical, light, construction-aware
-   B2B. White and warm-white surfaces, navy for structure and text, lime only for the main action and active
-   choices, one family (Heebo) everywhere. Token names stay semantic so components don't care about the palette:
-   ink = navy, hazard = lime, paper = page background, line = borders. */
+/* Teal style chosen by the owner (round 8, docs/design/brand-reference.webp): light mint surfaces, dark navy text,
+   teal for the main action and the active choice, soft pill buttons and rounded cards, one family (Heebo).
+   Token names stay semantic so components don't care about the palette:
+   ink = navy text, hazard = teal (the brand action colour), paper = page background, line = borders. */
 @theme {
   --font-sans: "Heebo", "Noto Sans Arabic", Arial, sans-serif;
   --font-display: "Heebo", "Noto Sans Arabic", Arial, sans-serif;
-  --color-paper: #f7f6f2;       /* surface.soft: page background in the app */
-  --color-paper-2: #eef1f4;     /* neutral tint for muted chips and segmented controls */
-  --color-cool: #f4f8fb;        /* surface.cool: hero and form backdrops */
-  --color-ink: #0e2a44;         /* brand.navy */
-  --color-ink-2: #163a5c;
-  --color-ink-deep: #092238;    /* brand.navyDeep: sidebar */
-  --color-text: #0e2a44;
-  --color-muted: #526574;
+  --color-paper: #f3f8f8;       /* page background in the app: the faintest mint */
+  --color-paper-2: #e9f1f1;     /* neutral tint for muted chips and segmented controls */
+  --color-cool: #e8f5f2;        /* mint: hero, icon tiles, highlights */
+  --color-ink: #0b2233;         /* navy: text, the wordmark */
+  --color-ink-2: #173a4d;
+  --color-ink-deep: #061f30;    /* footer */
+  --color-text: #0b2233;
+  --color-muted: #4f6470;
   --color-faint: #738493;
-  --color-line: #dfe5e9;
-  --color-hazard: #d4f25a;      /* brand.lime: fill only, never text on white */
-  --color-hazard-soft: #f1fbd0;
+  --color-line: #dbe7e6;
+  --color-hazard: #0f8f80;      /* teal: the main action, active choice, accents. White text on it. */
+  --color-hazard-dark: #0c605f;
+  --color-hazard-soft: #e2f4f0;
   --color-signal: #e69b21;
   --color-ok: #168848;
   --color-ok-soft: #e3f4ea;
@@ -39,36 +40,36 @@ h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0
    Never force `direction: ltr` here (it left-aligns the box and flips ms-/me-). A range like 28.10–10.11 is the
    one exception: wrap it with ltrRange() from lib/i18n/core.ts. */
 .num { font-variant-numeric: tabular-nums; unicode-bidi: isolate; }
-:focus-visible { outline: 3px solid var(--color-hazard); outline-offset: 2px; }
+:focus-visible { outline: 3px solid rgba(15,143,128,.45); outline-offset: 2px; }
 
 /* The navy surface: agency sidebar, app headers, the highlighted figure. Plain navy: logged-in screens stay calm. */
-.blueprint { background-color: var(--color-ink-deep); color: #fff; }
+.blueprint { background-color: var(--color-ink-deep); color: #fff; } /* footer only */
 /* Kept as a hook for empty states and charts; now just the soft surface. */
 .paper-grid { background-color: var(--color-paper); }
 /* A short lime underline stroke, used sparingly as a brand accent */
 .stripe { background: var(--color-hazard); border-radius: 999px; }
 .eyebrow { font-size: 13px; font-weight: 600; color: var(--color-muted); }
 
-@utility card { @apply rounded-[16px] border border-line bg-white shadow-[0_3px_16px_rgba(14,42,68,0.045)]; }
-@utility sheet { @apply relative rounded-[16px] border border-line bg-white shadow-[0_3px_16px_rgba(14,42,68,0.045)]; }
-@utility btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-[10px] px-4 py-2.5 text-[15px] font-bold transition active:translate-y-px disabled:opacity-40 disabled:pointer-events-none; }
-@utility btn-primary { @apply btn bg-ink text-white hover:bg-ink-2; }
-@utility btn-hazard { @apply btn bg-hazard text-ink hover:brightness-95; }
-@utility btn-ghost { @apply btn border border-ink bg-white text-ink hover:bg-cool; }
+@utility card { @apply rounded-[20px] border border-line bg-white shadow-[0_6px_24px_rgba(11,34,51,0.06)]; }
+@utility sheet { @apply relative rounded-[20px] border border-line bg-white shadow-[0_6px_24px_rgba(11,34,51,0.06)]; }
+@utility btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-[12px] px-5 py-2.5 text-[15px] font-bold transition active:translate-y-px disabled:opacity-40 disabled:pointer-events-none; }
+@utility btn-primary { @apply btn bg-[linear-gradient(180deg,#14998a,#0c665f)] text-white shadow-[0_8px_20px_rgba(12,96,95,0.25)] hover:brightness-110; }
+@utility btn-hazard { @apply btn-primary; }
+@utility btn-ghost { @apply btn border border-line bg-white text-ink shadow-[0_2px_8px_rgba(11,34,51,0.05)] hover:border-hazard hover:text-hazard-dark; }
 @utility btn-ok { @apply btn bg-ok text-white hover:brightness-110; }
-@utility btn-sm { @apply min-h-10 px-3 py-1.5 text-[14px]; }
-@utility input { @apply min-h-11 w-full rounded-[10px] border border-line bg-white px-3 py-2.5 text-[15px] text-text outline-none focus:border-ink focus:ring-2 focus:ring-hazard; }
+@utility btn-sm { @apply min-h-10 px-4 py-1.5 text-[14px]; }
+@utility input { @apply min-h-11 w-full rounded-[12px] border border-line bg-white px-3 py-2.5 text-[15px] text-text outline-none focus:border-hazard focus:ring-2 focus:ring-hazard/25; }
 @utility label { @apply mb-1 block text-[13px] font-semibold text-muted; }
-@utility chip { @apply inline-flex items-center gap-1 rounded-[6px] px-2 py-0.5 text-[12px] font-bold whitespace-nowrap; }
+@utility chip { @apply inline-flex items-center gap-1 rounded-[8px] px-2 py-0.5 text-[12px] font-bold whitespace-nowrap; }
 @utility chip-ok { @apply chip bg-ok-soft text-ok; }
 @utility chip-warn { @apply chip bg-warn-soft text-warn; }
 @utility chip-bad { @apply chip bg-bad-soft text-bad; }
 @utility chip-info { @apply chip bg-info-soft text-info; }
 @utility chip-muted { @apply chip bg-paper-2 text-muted; }
-@utility chip-hazard { @apply chip bg-hazard text-ink; }
+@utility chip-hazard { @apply chip bg-hazard-soft text-hazard-dark; }
 @utility seg {
-  @apply flex rounded-[10px] border border-line bg-paper-2 p-1 text-[15px];
-  & > label { @apply flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-[8px] px-3 py-2 text-center font-semibold text-muted has-[:checked]:bg-ink has-[:checked]:text-white; }
+  @apply flex rounded-[12px] border border-line bg-paper-2 p-1 text-[15px];
+  & > label { @apply flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-[9px] px-3 py-2 text-center font-semibold text-muted has-[:checked]:bg-hazard has-[:checked]:text-white; }
   & > label > input { @apply sr-only; }
 }
 @utility tbl {

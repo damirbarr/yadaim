@@ -67,7 +67,7 @@ export default async function Order({ params, searchParams }: { params: Promise<
         <ol className="card grid grid-cols-5 p-4 text-center text-xs">
           {steps.map((s, i) => (
             <li key={i} className="relative">
-              <div className={`mx-auto grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold ${i < at ? "bg-ink text-white" : i === Math.floor(at) || i === at ? "bg-hazard text-ink ring-4 ring-hazard/30" : "bg-paper text-muted"}`}>{i + 1}</div>
+              <div className={`mx-auto grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold ${i < at ? "bg-hazard text-white" : i === Math.floor(at) || i === at ? "bg-hazard text-white ring-4 ring-hazard/30" : "bg-paper text-muted"}`}>{i + 1}</div>
               <div className={`mt-1 font-semibold ${i <= at ? "" : "text-muted"}`}>{s.k}</div>
               <div className="num text-muted">{s.sub}</div>
             </li>

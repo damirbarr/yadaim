@@ -45,11 +45,11 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
         <div className="relative z-10">
           <div className="eyebrow">{t("public.login.sideEyebrow")}</div>
           <h2 className="mt-2 text-[30px] font-black leading-[1.2] text-ink">
-            {t("public.landing.top.h1a")} {rich("public.landing.top.h1b", { mark: (c) => <span className="relative whitespace-nowrap">{c}<svg viewBox="0 0 200 14" preserveAspectRatio="none" className="absolute -bottom-1.5 start-0 h-2.5 w-full" aria-hidden><path d="M3 9c38-6 80-7 120-4 26 2 48 3 74-2" fill="none" stroke="#d4f25a" strokeWidth="7" strokeLinecap="round" /></svg></span> })}
+            {t("public.landing.top.h1a")} {rich("public.landing.top.h1b", { mark: (c) => <span className="relative whitespace-nowrap">{c}<svg viewBox="0 0 200 14" preserveAspectRatio="none" className="absolute -bottom-1.5 start-0 h-2.5 w-full" aria-hidden><path d="M3 9c38-6 80-7 120-4 26 2 48 3 74-2" fill="none" stroke="#0f9a8c" strokeWidth="7" strokeLinecap="round" /></svg></span> })}
           </h2>
           <p className="mt-4 max-w-[34ch] text-[15px] text-muted">{t("public.login.sideText")}</p>
         </div>
-        <img src="/brand/hero-worker.webp" alt="" className="pointer-events-none absolute bottom-0 end-0 h-[46%] w-auto ltr:-scale-x-100" />
+        <img src="/brand/hero-worker-teal.webp" alt="" className="pointer-events-none absolute bottom-0 end-0 h-[52%] w-auto rounded-ee-[18px] [mask-image:linear-gradient(to_right,#000_70%,transparent)] ltr:-scale-x-100" />
         <p className="absolute bottom-5 start-8 z-10 max-w-[24ch] text-[13px] text-faint">{t("public.login.sideFoot")}</p>
       </section>
 

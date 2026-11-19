@@ -48,19 +48,19 @@ export default async function AgencyLayout({ children }: { children: React.React
   return (
     <>
       <ImpersonationBanner user={user} />
-      {/* The navy sidebar sits on the start side: right in Hebrew/Arabic, left in English. */}
-      <div className="md:grid md:min-h-dvh md:grid-cols-[248px_1fr] md:rtl:bg-[linear-gradient(to_left,var(--color-ink-deep)_248px,transparent_248px)] md:ltr:bg-[linear-gradient(to_right,var(--color-ink-deep)_248px,transparent_248px)]">
-        <aside className="blueprint sticky top-0 hidden h-dvh md:flex md:flex-col">
-          <div className="px-5 pb-5 pt-6"><Link href="/a"><Logo dark /></Link></div>
-          <div className="mx-4 mb-5 border border-white/20 p-3 text-sm">
-            <div className="font-display text-[17px] font-bold leading-tight">{a.name}</div>
-            <div className="mt-1 text-[13px] text-white/60">{user.name} · {t(`roles.org.${user.org_role}`)}</div>
+      {/* The sidebar sits on the start side: right in Hebrew/Arabic, left in English. */}
+      <div className="md:grid md:min-h-dvh md:grid-cols-[248px_1fr] md:rtl:bg-[linear-gradient(to_left,#ffffff_248px,transparent_248px)] md:ltr:bg-[linear-gradient(to_right,#ffffff_248px,transparent_248px)]">
+        <aside className="sticky top-0 hidden h-dvh border-e border-line bg-white md:flex md:flex-col">
+          <div className="px-5 pb-5 pt-6"><Link href="/a"><Logo /></Link></div>
+          <div className="mx-4 mb-5 rounded-[16px] bg-cool p-3 text-sm">
+            <div className="font-display text-[16px] font-bold leading-tight text-ink">{a.name}</div>
+            <div className="mt-1 text-[13px] text-muted">{user.name} · {t(`roles.org.${user.org_role}`)}</div>
           </div>
           <div className="flex-1 overflow-y-auto"><SideNav items={items} /></div>
           <div className="space-y-2 p-4">
-            <Link href={`/o/${a.slug}`} target="_blank" className="btn btn-sm w-full border border-white/30 text-white hover:bg-white/10">{t("common.publicPage")} <span className="flip-ltr">↗</span></Link>
-            <div className="flex justify-center"><LanguageSwitcher dark /></div>
-            <form action={logout}><button className="btn btn-sm w-full text-white/60 hover:text-white"><ILogout className="h-4 w-4 flip-ltr" />{t("common.logout")}</button></form>
+            <Link href={`/o/${a.slug}`} target="_blank" className="btn-ghost btn-sm w-full">{t("common.publicPage")} <span className="flip-ltr">↗</span></Link>
+            <div className="flex justify-center"><LanguageSwitcher /></div>
+            <form action={logout}><button className="btn btn-sm w-full text-muted hover:text-ink"><ILogout className="h-4 w-4 flip-ltr" />{t("common.logout")}</button></form>
           </div>
         </aside>
         <div className="min-w-0 pb-24 md:pb-10">

@@ -27,7 +27,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
     <nav className="fixed inset-x-0 bottom-0 z-30 grid border-t border-line bg-white pb-[env(safe-area-inset-bottom)] md:hidden" style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}>
       {items.map((it) => (
         <Link key={it.href} href={it.href} className={`relative grid place-items-center gap-0.5 py-2 text-[12px] font-semibold ${isActive(path, it) ? "text-ink" : "text-muted"}`}>
-          <span className={`grid h-7 w-12 place-items-center rounded-[10px] ${isActive(path, it) ? "bg-hazard text-ink" : ""}`}>{it.icon}</span>
+          <span className={`grid h-7 w-12 place-items-center rounded-[10px] ${isActive(path, it) ? "bg-hazard text-white" : ""}`}>{it.icon}</span>
           {it.label}
           {!!it.badge && <span className="absolute top-1 left-1/2 ms-3 grid h-4 min-w-4 place-items-center rounded-[6px] bg-ink px-1 text-[10px] font-bold text-white">{it.badge}</span>}
         </Link>
@@ -41,10 +41,10 @@ export function SideNav({ items }: { items: NavItem[] }) {
   return (
     <nav className="grid gap-0.5">
       {items.map((it) => (
-        <Link key={it.href} href={it.href} className={`relative flex items-center gap-3 px-4 py-2.5 text-[15px] font-semibold ${isActive(path, it) ? "bg-white/10 text-white before:absolute before:inset-y-1.5 before:start-0 before:w-[3px] before:bg-hazard" : "text-white/70 hover:bg-white/5 hover:text-white"}`}>
-          <span className={isActive(path, it) ? "text-hazard" : "opacity-70"}>{it.icon}</span>
+        <Link key={it.href} href={it.href} className={`relative mx-3 flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[15px] font-semibold ${isActive(path, it) ? "bg-hazard-soft text-hazard-dark before:absolute before:inset-y-2 before:start-0 before:w-[3px] before:rounded-full before:bg-hazard" : "text-ink hover:bg-cool"}`}>
+          <span className={isActive(path, it) ? "text-hazard" : "text-muted"}>{it.icon}</span>
           <span className="flex-1">{it.label}</span>
-          {!!it.badge && <span className={`num rounded-[6px] px-1.5 text-[12px] font-bold ${isActive(path, it) ? "bg-hazard text-ink" : "bg-white/10 text-white"}`}>{it.badge}</span>}
+          {!!it.badge && <span className={`num rounded-[6px] px-1.5 text-[12px] font-bold ${isActive(path, it) ? "bg-hazard text-white" : "bg-paper-2 text-ink"}`}>{it.badge}</span>}
         </Link>
       ))}
     </nav>

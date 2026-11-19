@@ -35,7 +35,7 @@ async function Ask({ bw, field, q, value }: { bw: number; field: string; q: stri
         {opts.map(([v, l]) => (
           <form key={v} action={siteCheck}>
             <Hidden v={{ bw, field, value: v }} />
-            <button data-act={`${field}-${v}`} className={`btn w-full border py-3 ${value === v ? (v === "no" ? "border-bad bg-bad text-white" : "border-ink bg-ink text-white") : "border-line bg-white"}`}>{l}</button>
+            <button data-act={`${field}-${v}`} className={`btn w-full border py-3 ${value === v ? (v === "no" ? "border-bad bg-bad text-white" : "border-hazard bg-hazard text-white") : "border-line bg-white"}`}>{l}</button>
           </form>
         ))}
       </div>
@@ -105,7 +105,7 @@ export default async function WorkDay({ params, searchParams }: { params: Promis
           <ol className="flex gap-1.5">
             {days.map((x) => {
               const complete = crew.every((w) => isNoFit(w) || w.attendance.some((a) => a.date === x && a.arrived != null));
-              const cls = `flex min-h-11 min-w-14 flex-col items-center justify-center rounded-[10px] border px-2 text-[13px] font-semibold ${x === d ? "border-ink bg-ink text-white" : x > today ? "border-line bg-paper text-muted" : "border-line bg-white text-ink"}`;
+              const cls = `flex min-h-11 min-w-14 flex-col items-center justify-center rounded-[10px] border px-2 text-[13px] font-semibold ${x === d ? "border-hazard bg-hazard text-white" : x > today ? "border-line bg-paper text-muted" : "border-line bg-white text-ink"}`;
               const inner = <><span className="num">{fmt.date(x)}</span><span className="text-[11px] leading-none">{x <= today ? (complete ? "✓" : "•") : ""}</span></>;
               return <li key={x}>{x <= today ? <Link href={`/c/orders/${b.id}/site?d=${x}`} aria-current={x === d ? "date" : undefined} className={cls}>{inner}</Link> : <span className={cls}>{inner}</span>}</li>;
             })}
@@ -227,7 +227,7 @@ export default async function WorkDay({ params, searchParams }: { params: Promis
                 </div>
                 <div className="flex gap-1" role="radiogroup" aria-label={t("contractor.site.rating")}>
                   {[1, 2, 3, 4, 5].map((n) => (
-                    <label key={n} className="chip-muted cursor-pointer px-3 py-1.5 text-sm has-[:checked]:bg-hazard has-[:checked]:text-ink">
+                    <label key={n} className="chip-muted cursor-pointer px-3 py-1.5 text-sm has-[:checked]:bg-hazard has-[:checked]:text-white">
                       <input type="radio" name={`rating_${w.bw_id}`} value={n} defaultChecked={n === 5} className="sr-only" />
                       <span className="num">{n}</span>★
                     </label>
