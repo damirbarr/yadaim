@@ -34,11 +34,11 @@
     },
     {
       "plate": "import",
-      "say": "מעלים את העובדים מקובץ אקסל, פעם אחת.",
+      "say": "מעלים את העובדים מאקסל, פעם אחת.",
       "cues": {
         "import.title": "start-0.2",
-        "import.drop": "מקובץ-0.2",
-        "import.rows": "אקסל",
+        "import.drop": "מאקסל-0.2",
+        "import.rows": "מאקסל@end",
         "import.done": "פעם"
       }
     },
