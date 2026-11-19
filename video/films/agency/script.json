@@ -68,7 +68,7 @@
         "offer.fly": "יוצאת",
         "offer.fill": "end+0.15"
       },
-      "pause": 0.95
+      "pause": 1.5
     },
     {
       "plate": "request",

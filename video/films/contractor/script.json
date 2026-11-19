@@ -52,7 +52,8 @@
         "search.pick1": "ובוחרים",
         "search.pick2": "עובד",
         "search.pick3": "בשמו"
-      }
+      },
+      "pause": 0.75
     },
     {
       "plate": "docs",
