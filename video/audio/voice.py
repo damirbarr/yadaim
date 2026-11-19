@@ -132,13 +132,45 @@ def one_take():
     if not meta.exists():
         meta.write_text(json.dumps(speak_eleven(full, EL, mp3), ensure_ascii=False))
     words, pcm = json.loads(meta.read_text()), load(mp3)
-    for line, (c0, c1) in zip(SCRIPT["lines"], spans):
-        ws = [dict(w) for w in words if c0 <= w["c"] < c1]
-        a = max(0.0, ws[0]["t"] - 0.04)
-        b = min(len(pcm) / SR, ws[-1]["t"] + ws[-1]["d"] + 0.18)
+    groups = [[dict(w) for w in words if c0 <= w["c"] < c1] for c0, c1 in spans]
+    # Cut between lines only where the take is actually silent. The character timings of a long take drift by a
+    # tenth of a second or more, and cutting by them chopped words and repeated the overlap (heard as a stutter).
+    hop = int(0.01 * SR)
+    env = np.sqrt(np.convolve(pcm**2, np.ones(hop * 2) / (hop * 2), mode="same"))[::hop]
+    quiet = env < 10 ** (-48 / 20)
+    runs, i = [], 0
+    while i < len(quiet):
+        if quiet[i]:
+            j = i
+            while j < len(quiet) and quiet[j]:
+                j += 1
+            if j - i >= 8:  # at least 80 ms of silence
+                runs.append((i * hop / SR, j * hop / SR))
+            i = j
+        else:
+            i += 1
+    # start just before the first sound (the take may open with silence)
+    first = runs[0][1] - 0.05 if runs and runs[0][0] == 0.0 else 0.0
+    cuts = [(max(0.0, first), 0.0)]
+    for g0, g1 in zip(groups, groups[1:]):
+        guess = (g0[-1]["t"] + g0[-1]["d"] + g1[0]["t"]) / 2
+        cand = [r for r in runs if r[0] > cuts[-1][0] + 0.3]
+        r = min(cand, key=lambda r: abs((r[0] + r[1]) / 2 - guess))
+        cuts.append(((r[0] + r[1]) / 2, r[1] - r[0]))
+    cuts.append((len(pcm) / SR, 0.0))
+    fade = int(0.012 * SR)
+    for k, line in enumerate(SCRIPT["lines"]):
+        a = cuts[k][0]
+        b = cuts[k + 1][0]
+        seg = pcm[int(a * SR) : int(b * SR)].copy()
+        seg[:fade] *= np.linspace(0, 1, fade)
+        seg[-fade:] *= np.linspace(1, 0, fade)
+        ws = groups[k]
         for w in ws:
             w["t"] = round(w["t"] - a, 3)
-        lines.append({**line, "pcm": pcm[int(a * SR) : int(b * SR)], "words": ws, "len": (int(b * SR) - int(a * SR)) / SR})
+        # the natural pause around this cut is already inside the segments; `pause` only adds to it if longer
+        gap = cuts[k + 1][1] if k + 1 < len(SCRIPT["lines"]) else 0.0
+        lines.append({**line, "pcm": seg, "words": ws, "len": len(seg) / SR, "gap": gap})
 
 
 if PROVIDER == "elevenlabs" and EL.get("one_take"):
@@ -162,11 +194,12 @@ for i, line in enumerate([] if lines else SCRIPT["lines"]):
         w["t"] = round(w["t"] - a, 3)
     lines.append({**line, "pcm": pcm, "words": words, "len": len(pcm) / SR})
 
-# lay out: first line after `intro`, then each line after the previous one plus its pause
+# lay out: first line after `intro`, then each line after the previous one plus its pause. Lines cut from one
+# take already carry their natural pause (`gap`), so only the difference is added, as silence at a silent cut.
 t = SCRIPT.get("intro", 0.6)
 for ln in lines:
     ln["at"] = t
-    t += ln["len"] + ln.get("pause", SCRIPT.get("pause", 0.4))
+    t += ln["len"] + max(0.0, ln.get("pause", SCRIPT.get("pause", 0.4)) - ln.get("gap", 0.0))
 duration = round(lines[-1]["at"] + lines[-1]["len"] + SCRIPT.get("tail", 2.0), 2)
 
 # plates: a line opens a plate (unless it says "plate": null) a little before its first word
