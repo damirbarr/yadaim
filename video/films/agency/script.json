@@ -1,0 +1,82 @@
+{
+  "voice": "he-IL-HilaNeural",
+  "rate": "+10%",
+  "intro": 0.5,
+  "pause": 0.4,
+  "lead": 0.3,
+  "tail": 2.4,
+  "lines": [
+    {
+      "plate": "idle",
+      "say": "כל יום שעובד נשאר בלי עבודה, עולה לתאגיד כחמש מאות ועשרים שקל.",
+      "pause": 0.4,
+      "cues": {
+        "idle.cal": "start-0.3",
+        "idle.empty": "בלי",
+        "idle.cost": "עולה",
+        "idle.sum": "כחמש"
+      }
+    },
+    {
+      "plate": "brand",
+      "say": "עם ידיים, ממלאים את הימים הפנויים.",
+      "pause": 0.55,
+      "cues": {
+        "brand.reveal": "ידיים-0.35",
+        "brand.hat": "ידיים+0.1",
+        "brand.l1": "ממלאים",
+        "brand.mark": "הפנויים"
+      }
+    },
+    {
+      "plate": "import",
+      "say": "מעלים את העובדים מקובץ אקסל, פעם אחת.",
+      "cues": {
+        "import.title": "start-0.2",
+        "import.drop": "מקובץ-0.2",
+        "import.rows": "אקסל",
+        "import.done": "פעם"
+      }
+    },
+    {
+      "plate": "expiry",
+      "say": "המערכת עוקבת אחרי תוקף המסמכים, ומתריעה שישים יום מראש.",
+      "cues": {
+        "expiry.title": "start-0.2",
+        "expiry.scan": "תוקף",
+        "expiry.warn": "ומתריעה",
+        "expiry.wa": "מראש"
+      }
+    },
+    {
+      "plate": "offer",
+      "say": "לכל יום פנוי מוכנה הצעה לקבלנים שלכם. אתם מאשרים, והיא יוצאת בוואטס־אפ.",
+      "cues": {
+        "offer.title": "start-0.2",
+        "offer.card": "הצעה-0.2",
+        "offer.send": "מאשרים",
+        "offer.fly": "יוצאת",
+        "offer.fill": "end+0.15"
+      }
+    },
+    {
+      "plate": "request",
+      "say": "בקשות מגיעות עם כל הפרטים, ומאשרים בלחיצה.",
+      "cues": {
+        "request.title": "start-0.2",
+        "request.card": "מגיעות-0.2",
+        "request.rows": "הפרטים",
+        "request.approve": "בלחיצה"
+      }
+    },
+    {
+      "plate": "end",
+      "say": "ידיים. משלמים רק על שעות מאושרות.",
+      "cues": {
+        "end.hit": "start-0.3",
+        "end.tag": "משלמים-0.1",
+        "end.cta": "מאושרות"
+      }
+    }
+  ]
+}

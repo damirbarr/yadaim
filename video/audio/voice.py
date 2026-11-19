@@ -1,0 +1,151 @@
+"""Voiceover → timeline. Reads films/<film>/script.json, speaks every line with a Microsoft neural Hebrew voice
+(edge-tts, word timings included), lays the lines out one after another and writes:
+
+    out/<film>/vo.wav               the voiceover track (48 kHz mono)
+    films/<film>/timeline.json      plates (one per line) and every animation cue, in seconds
+
+Cues are written next to the words they belong to, so re-recording or rewording re-times the picture by itself:
+    "word"        start of the first word in the line that contains "word"
+    "word@end"    end of that word
+    "start" / "end"  the line's first / last spoken moment
+    any of these + or - an offset: "ובוחרים+0.2", "end-0.3", "start+0.5"
+
+    python3 audio/voice.py contractor      (needs: pip install edge-tts; ffmpeg)
+"""
+import asyncio
+import hashlib
+import json
+import re
+import ssl
+import subprocess
+import sys
+import wave
+from pathlib import Path
+
+import edge_tts
+import edge_tts.communicate as ec
+import numpy as np
+
+# edge-tts pins certifi's bundle; trust the environment's CA bundle instead when there is one (TLS stays verified).
+CA = Path("/root/.ccr/ca-bundle.crt")
+if CA.exists():
+    ec._SSL_CTX = ssl.create_default_context(cafile=str(CA))
+
+ROOT = Path(__file__).resolve().parent.parent
+film = sys.argv[1] if len(sys.argv) > 1 else "contractor"
+SCRIPT = json.loads((ROOT / "films" / film / "script.json").read_text())
+OUT = ROOT / "out" / film
+CACHE = OUT / "lines"
+CACHE.mkdir(parents=True, exist_ok=True)
+SR = 48000
+
+
+async def speak(text, voice, rate, pitch, mp3):
+    c = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, boundary="WordBoundary")
+    audio, words = bytearray(), []
+    async for ch in c.stream():
+        if ch["type"] == "audio":
+            audio += ch["data"]
+        elif ch["type"] == "WordBoundary":
+            words.append({"w": ch["text"], "t": ch["offset"] / 1e7, "d": ch["duration"] / 1e7})
+    mp3.write_bytes(audio)
+    return words
+
+
+def load(mp3):
+    raw = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", str(mp3), "-ac", "1", "-ar", str(SR), "-f", "s16le", "-"], capture_output=True, check=True).stdout
+    return np.frombuffer(raw, "<i2").astype(np.float32) / 32768
+
+
+def norm(s):
+    return re.sub(r"[^֐-׿0-9A-Za-z]", "", s)
+
+
+voice = SCRIPT["voice"]
+rate = SCRIPT.get("rate", "+0%")
+pitch = SCRIPT.get("pitch", "+0Hz")
+lines = []
+for i, line in enumerate(SCRIPT["lines"]):
+    key = f"{i:02d}-" + hashlib.sha1(f"{line['say']}|{voice}|{rate}|{pitch}".encode()).hexdigest()[:10]
+    mp3, meta = CACHE / f"{key}.mp3", CACHE / f"{key}.json"
+    if not meta.exists():
+        words = asyncio.run(speak(line["say"], voice, rate, pitch, mp3))
+        meta.write_text(json.dumps(words, ensure_ascii=False))
+    words = json.loads(meta.read_text())
+    pcm = load(mp3)
+    # trim the synthesizer's lead-in and tail to the spoken part (keep a breath of room)
+    a = max(0.0, words[0]["t"] - 0.04)
+    b = min(len(pcm) / SR, words[-1]["t"] + words[-1]["d"] + 0.18)
+    pcm = pcm[int(a * SR) : int(b * SR)]
+    for w in words:
+        w["t"] = round(w["t"] - a, 3)
+    lines.append({**line, "pcm": pcm, "words": words, "len": len(pcm) / SR})
+
+# lay out: first line after `intro`, then each line after the previous one plus its pause
+t = SCRIPT.get("intro", 0.6)
+for ln in lines:
+    ln["at"] = t
+    t += ln["len"] + ln.get("pause", SCRIPT.get("pause", 0.4))
+duration = round(lines[-1]["at"] + lines[-1]["len"] + SCRIPT.get("tail", 2.0), 2)
+
+# plates: a line opens a plate (unless it says "plate": null) a little before its first word
+lead = SCRIPT.get("lead", 0.3)
+plates = []
+for ln in lines:
+    if ln.get("plate"):
+        start = 0.0 if not plates else round(ln["at"] - lead, 3)
+        if plates:
+            plates[-1]["end"] = start
+        plates.append({"id": ln["plate"], "start": start, "end": duration})
+
+
+def resolve(spec, ln):
+    m = re.match(r"^(.*?)([+-]\d+(?:\.\d+)?)?$", spec.strip())
+    base, off = m.group(1), float(m.group(2) or 0)
+    ws = ln["words"]
+    if base == "start":
+        v = ws[0]["t"]
+    elif base == "end":
+        v = ws[-1]["t"] + ws[-1]["d"]
+    else:
+        at_end = base.endswith("@end")
+        key = norm(base[:-4] if at_end else base)
+        hit = next((w for w in ws if key in norm(w["w"])), None)
+        if hit is None:
+            sys.exit(f"cue word not found: {base!r} in {ln['say']!r} (words: {[w['w'] for w in ws]})")
+        v = hit["t"] + (hit["d"] if at_end else 0)
+    return round(ln["at"] + v + off, 3)
+
+
+cues = {}
+for ln in lines:
+    for name, spec in ln.get("cues", {}).items():
+        cues[name] = resolve(spec, ln)
+
+vo = np.zeros(int(duration * SR), np.float32)
+for ln in lines:
+    i = int(ln["at"] * SR)
+    vo[i : i + len(ln["pcm"])] += ln["pcm"][: len(vo) - i]
+vo *= 0.89 / max(1e-6, np.max(np.abs(vo)))
+with wave.open(str(OUT / "vo.wav"), "wb") as w:
+    w.setnchannels(1)
+    w.setsampwidth(2)
+    w.setframerate(SR)
+    w.writeframes((vo * 32767).astype("<i2").tobytes())
+
+timeline = {
+    "film": film,
+    "fps": 60,
+    "width": 1920,
+    "height": 1080,
+    "duration": duration,
+    "plates": plates,
+    "cues": dict(sorted(cues.items(), key=lambda kv: kv[1])),
+    "lines": [{"plate": ln.get("plate"), "say": ln["say"], "at": round(ln["at"], 3), "words": [{"w": w["w"], "t": round(ln["at"] + w["t"], 3)} for w in ln["words"]]} for ln in lines],
+}
+(ROOT / "films" / film / "timeline.json").write_text(json.dumps(timeline, ensure_ascii=False, indent=1))
+print(f"{film}: {duration}s, {len(plates)} plates, {len(cues)} cues → out/{film}/vo.wav, films/{film}/timeline.json")
+for p in plates:
+    print(f"  {p['id']:<10} {p['start']:6.2f} – {p['end']:6.2f}")
+if duration > 35:
+    print(f"WARNING: {duration}s is over the 35 s limit")

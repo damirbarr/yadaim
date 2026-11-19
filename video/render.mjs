@@ -1,8 +1,8 @@
 // Offline renderer: serves this folder, drives headless Chromium frame by frame, pipes PNGs to ffmpeg.
-//   node render.mjs                         → out/yadaim.mp4 (picture only) and, if out/mix.wav exists, out/yadaim-sound.mp4
-//   node render.mjs stills --t 1.2,9.5      → out/wip/still-<t>.png
-//   node render.mjs --from 8 --to 13        → render a slice (draft a single plate)
-//   --samples 3                             → motion blur: average N sub-frames per frame (shutter 0.5)
+//   node render.mjs --film agency                 → out/agency/yadaim-agency.mp4 (+ -sound.mp4 when out/agency/mix.wav exists)
+//   node render.mjs stills --film agency --t 1.2,9.5   → out/wip/agency-<t>.png
+//   node render.mjs --film agency --from 8 --to 13     → render a slice (draft a single plate)
+//   --samples 3                                   → motion blur: average N sub-frames per frame (shutter 0.5)
 import { createServer } from "node:http";
 import { readFile, mkdir, access } from "node:fs/promises";
 import { spawn } from "node:child_process";
@@ -14,16 +14,18 @@ import { createRequire } from "node:module";
 const { chromium } = createRequire(import.meta.url)("playwright");
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
+const REPO = dirname(ROOT); // served from the repo root so the end card can use public/brand/ photos
 const args = process.argv.slice(2);
 const flag = (k, d) => { const i = args.indexOf(`--${k}`); return i >= 0 ? args[i + 1] : d; };
 const mode = args[0] === "stills" ? "stills" : "video";
-const TL = JSON.parse(await readFile(join(ROOT, "timeline.json"), "utf8"));
+const FILM = flag("film", "contractor");
+const TL = JSON.parse(await readFile(join(ROOT, "films", FILM, "timeline.json"), "utf8"));
 
-const TYPES = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".woff2": "font/woff2", ".wav": "audio/wav" };
+const TYPES = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".woff2": "font/woff2", ".wav": "audio/wav", ".webp": "image/webp" };
 const server = createServer(async (req, res) => {
   try {
-    const p = join(ROOT, decodeURIComponent(new URL(req.url, "http://x").pathname));
-    if (!p.startsWith(ROOT)) throw new Error("outside");
+    const p = join(REPO, decodeURIComponent(new URL(req.url, "http://x").pathname));
+    if (!p.startsWith(REPO)) throw new Error("outside");
     const body = await readFile(p.endsWith("/") ? join(p, "index.html") : p);
     res.writeHead(200, { "content-type": TYPES[extname(p)] ?? "application/octet-stream" });
     res.end(body);
@@ -38,7 +40,7 @@ const port = server.address().port;
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: TL.width, height: TL.height }, deviceScaleFactor: 1 });
 page.on("pageerror", (e) => console.error("page error:", e.message));
-await page.goto(`http://localhost:${port}/index.html?render=1`);
+await page.goto(`http://localhost:${port}/video/index.html?render=1&film=${FILM}`);
 await page.waitForFunction(() => window.__ready === true);
 
 const samples = Number(flag("samples", 1));
@@ -67,14 +69,14 @@ if (mode === "stills") {
   await mkdir(out, { recursive: true });
   for (const t of flag("t", "0").split(",").map(Number)) {
     await page.evaluate(([t, fps]) => window.frameAt(t, fps), [t, TL.fps]);
-    const f = join(out, `still-${t.toFixed(2)}.png`);
+    const f = join(out, `${FILM}-${t.toFixed(2)}.png`);
     await (await import("node:fs/promises")).writeFile(f, await shot());
     console.log(f);
   }
 } else {
   const fps = Number(flag("fps", TL.fps));
   const from = Number(flag("from", 0)), to = Number(flag("to", TL.duration));
-  const file = join(ROOT, flag("out", "out/yadaim.mp4"));
+  const file = join(ROOT, flag("out", `out/${FILM}/yadaim-${FILM}.mp4`));
   await mkdir(dirname(file), { recursive: true });
   const ff = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(fps), "-i", "-",
     "-c:v", "libx264", "-preset", "slow", "-crf", "16", "-pix_fmt", "yuv420p", "-movflags", "+faststart", file], { stdio: ["pipe", "inherit", "inherit"] });
@@ -90,7 +92,7 @@ if (mode === "stills") {
   await new Promise((r) => ff.on("close", r));
   console.log(`\n${file}`);
   // Add the soundtrack if it has been built (python3 audio/score.py)
-  const mix = join(ROOT, "out/mix.wav");
+  const mix = join(ROOT, "out", FILM, "mix.wav");
   if (from === 0 && (await access(mix).then(() => true, () => false))) {
     const withSound = file.replace(/\.mp4$/, "-sound.mp4");
     await new Promise((r) => spawn("ffmpeg", ["-y", "-loglevel", "error", "-i", file, "-i", mix, "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "256k", "-shortest", "-movflags", "+faststart", withSound], { stdio: "inherit" }).on("close", r));

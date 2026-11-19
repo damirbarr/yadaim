@@ -1,0 +1,100 @@
+{
+  "voice": "he-IL-AvriNeural",
+  "rate": "+12%",
+  "intro": 0.5,
+  "pause": 0.4,
+  "lead": 0.3,
+  "tail": 2.4,
+  "lines": [
+    {
+      "plate": "hook",
+      "say": "שש וחצי בבוקר, ואתם עוד לא יודעים מי יגיע לאתר.",
+      "pause": 0.35,
+      "cues": {
+        "hook.label": "start-0.3",
+        "hook.w1": "ואתם",
+        "hook.w2": "יודעים",
+        "hook.w3": "מי",
+        "hook.w4": "יגיע"
+      }
+    },
+    {
+      "plate": "brand",
+      "say": "עם ידיים, יודעים מראש.",
+      "pause": 0.6,
+      "cues": {
+        "brand.reveal": "start-0.25",
+        "brand.hat": "ידיים",
+        "brand.l1": "יודעים-0.1",
+        "brand.l2": "מראש",
+        "brand.mark": "end+0.1"
+      }
+    },
+    {
+      "plate": "search",
+      "say": "מחפשים לפי מקצוע ויום, ובוחרים עובד בשמו.",
+      "cues": {
+        "search.title": "start-0.2",
+        "search.type1": "start",
+        "search.type2": "מקצוע",
+        "search.type3": "ויום-0.05",
+        "search.press": "ויום@end+0.02",
+        "search.pick1": "ובוחרים",
+        "search.pick2": "עובד",
+        "search.pick3": "בשמו"
+      }
+    },
+    {
+      "plate": "docs",
+      "say": "רק מתאגידים מורשים, עם אישורים בתוקף.",
+      "cues": {
+        "docs.zoom": "start-0.3",
+        "docs.d1": "מורשים",
+        "docs.range": "אישורים",
+        "docs.ok": "בתוקף"
+      }
+    },
+    {
+      "plate": "price",
+      "say": "מחיר יומי סופי, כולל לינה וגם הסעה.",
+      "pause": 0.5,
+      "cues": {
+        "price.title": "start-0.2",
+        "price.count": "start",
+        "price.toggle1": "לינה@end",
+        "price.toggle2": "הסעה@end",
+        "price.badge": "end"
+      }
+    },
+    {
+      "plate": "lock",
+      "say": "בְּשֵׁשׁ בָּעֶרֶב הצוות ננעל, עם שם הנהג ושעת האיסוף.",
+      "cues": {
+        "lock.sweep": "start-0.3",
+        "lock.clunk": "ננעל",
+        "lock.crew": "ננעל@end",
+        "lock.title": "הנהג"
+      }
+    },
+    {
+      "plate": "checkin",
+      "say": "ובבוקר, על עובד שלא מתאים, לא משלמים.",
+      "cues": {
+        "checkin.title": "start-0.2",
+        "checkin.c1": "start+0.1",
+        "checkin.c2": "עובד",
+        "checkin.c3": "מתאים-0.2",
+        "checkin.zero": "משלמים-0.25"
+      }
+    },
+    {
+      "plate": "end",
+      "say": "ידיים. חינם לקבלנים.",
+      "cues": {
+        "end.hit": "start-0.3",
+        "end.tag": "חינם-0.1",
+        "end.cta": "לקבלנים"
+      }
+    }
+  ]
+}
