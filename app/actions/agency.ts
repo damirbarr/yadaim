@@ -287,6 +287,8 @@ export async function importContacts(_: ImportState, fd: FormData): Promise<Impo
     }
   });
   revalidatePath("/a", "layout");
+  // Nothing new is a warning, with the reason, so an upload of numbers already on the list doesn't look like it did nothing.
+  if (!added) return { warn: dup ? t("agency.actions.contactsNoneNew", { n: dup }) : [t("agency.actions.contactsAdded", { n: 0 }), bad ? t("agency.actions.badPhones", { n: bad }) : ""].filter(Boolean).join(" · ") };
   return { ok: [t("agency.actions.contactsAdded", { n: added }), dup ? t("agency.actions.duplicates", { n: dup }) : "", bad ? t("agency.actions.badPhones", { n: bad }) : ""].filter(Boolean).join(" · ") };
 }
 

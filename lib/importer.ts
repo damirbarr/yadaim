@@ -14,7 +14,8 @@ export type MappingRequest = {
   /** field key → column index (-1 = not imported) */
   suggested: Record<string, number>;
 };
-export type ImportState = { ok?: string; error?: string; mapping?: MappingRequest } | undefined;
+/** ok = something was imported; warn = the file was read but nothing new came of it (all duplicates, say). */
+export type ImportState = { ok?: string; warn?: string; error?: string; mapping?: MappingRequest } | undefined;
 
 /** A problem with the uploaded file. The caller turns `code` into a message in the user's language;
  *  for "missing", `groups` lists the required field groups (field keys) that have no column. */

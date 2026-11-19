@@ -59,9 +59,13 @@ export function ImportForm({ action, title, hint, templates, paste }: { action: 
           <button type="button" className="btn-primary shrink-0" disabled={pending || !text.trim()} onClick={() => send({ pasted: text })}>{t("import.addList")}</button>
         </div>
       )}
+      {/* The result of the last upload, in a box that can't be missed (the old one-liner beside the template link was). */}
+      {!pending && (state?.ok || state?.warn || state?.error) && (
+        <div role="status" className={`rounded-[12px] border px-4 py-3 text-[15px] font-semibold ${state.ok ? "border-ok/30 bg-ok-soft text-ok" : state.warn ? "border-warn/30 bg-warn-soft text-warn" : "border-bad/30 bg-bad-soft text-bad"}`} data-testid="import-result">
+          {state.ok ? `✓ ${state.ok}` : state.warn ?? state.error}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-        {state?.ok && <span className="font-semibold text-ok">✓ {state.ok}</span>}
-        {state?.error && <span className="text-bad">{state.error}</span>}
         {!state?.mapping && templates.map((t) => <a key={t.href} href={t.href} className="text-xs text-muted underline">{t.label}</a>)}
       </div>
     </div>

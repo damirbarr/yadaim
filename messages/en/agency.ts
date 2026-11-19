@@ -278,6 +278,7 @@ const m: Messages["agency"] = {
     fileOrPaste: "Choose a file or paste a list.",
     noName: "No name",
     contactsAdded: plural({ zero: "No contractors added", one: "1 contractor added", other: "{n} contractors added" }),
+    contactsNoneNew: plural({ one: "No contractor added: that phone number is already on your list.", other: "No contractors added: all {n} rows are already on your list (same phone numbers). Each number is kept once." }),
     duplicates: plural({ one: "1 duplicate merged", other: "{n} duplicates merged" }),
     badPhones: plural({ one: "1 row without a valid phone number", other: "{n} rows without a valid phone number" }),
     pickRegion: "Choose at least one region.",

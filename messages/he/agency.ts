@@ -282,6 +282,7 @@ export default {
     fileOrPaste: "בחרו קובץ או הדביקו רשימה.",
     noName: "ללא שם",
     contactsAdded: plural({ zero: "לא נוספו קבלנים", one: "נוסף קבלן אחד", other: "נוספו {n} קבלנים" }),
+    contactsNoneNew: plural({ one: "לא נוסף קבלן: מספר הטלפון כבר במאגר.", other: "לא נוסף אף קבלן: כל {n} השורות כבר במאגר (אותם מספרי טלפון). כל מספר נשמר פעם אחת." }),
     duplicates: plural({ one: "כפילות אחת מוזגה", other: "{n} כפילויות מוזגו" }),
     badPhones: plural({ one: "שורה אחת בלי טלפון תקין", other: "{n} שורות בלי טלפון תקין" }),
     pickRegion: "בחרו לפחות אזור אחד.",
