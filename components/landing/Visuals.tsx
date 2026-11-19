@@ -105,7 +105,7 @@ export async function SearchCard() {
             </div>
             <div className="shrink-0 text-end">
               <div className="num text-[19px] font-bold leading-none">{fmt.money(w.p)}</div>
-              <span className={`mt-1.5 inline-flex items-center gap-1 rounded-[10px] px-2 py-0.5 text-[12px] font-bold ${w.on ? "bg-ink text-white" : "border border-ink text-ink"}`}>
+              <span className={`mt-1.5 inline-flex items-center gap-1 rounded-[10px] px-2 py-0.5 text-[12px] font-bold ${w.on ? "bg-hazard text-white" : "border border-ink text-ink"}`}>
                 {w.on && <ICheck className="h-3 w-3" />}{w.on ? t("public.landing.search.picked") : t("public.landing.search.add")}
               </span>
             </div>

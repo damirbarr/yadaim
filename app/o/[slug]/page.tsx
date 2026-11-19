@@ -78,7 +78,7 @@ export default async function Offer({ params, searchParams }: { params: Promise<
         <AgencyHead a={a} score={rel.score} t={t} fmt={fmt} />
         {f && (
           <div className="card border-s-4 border-s-hazard p-5">
-            <div className="font-display text-2xl font-bold">{t("public.offer.available", { n: f.workerCount, trade: fmt.trade(focus), trades: fmt.trades(focus), from: fmt.date(f.from), to: fmt.date(f.to) })}</div>
+            <div className="font-display text-2xl font-bold">{t("public.offer.available", { n: f.workerCount, trade: fmt.trade(focus), trades: fmt.trades(focus), ...fmt.range(fmt.date(f.from), fmt.date(f.to)) })}</div>
             <div className="text-sm">
               {t("public.offer.allValid")}
               {isFinite(from) && <> · {rich("public.offer.priceFrom", { b: (c) => <b className="num">{c}</b> }, { price: fmt.money(from) })}</>}

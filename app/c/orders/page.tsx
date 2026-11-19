@@ -27,7 +27,7 @@ export default async function Orders({ searchParams }: { searchParams: Promise<{
       <nav className="flex rounded-[10px] border border-line bg-paper p-1 text-[14px]" aria-label={t("calendar.view.label")}>
         {(["calendar", "list"] as const).map((v) => {
           const on = (view === "list" ? "list" : "calendar") === v;
-          return <Link key={v} href={v === "list" ? "/c/orders?view=list" : "/c/orders"} aria-current={on ? "page" : undefined} className={`rounded-[6px] px-4 py-1.5 font-semibold ${on ? "bg-ink text-white" : "text-muted hover:text-ink"}`}>{t(`calendar.view.${v}`)}</Link>;
+          return <Link key={v} href={v === "list" ? "/c/orders?view=list" : "/c/orders"} aria-current={on ? "page" : undefined} className={`rounded-[6px] px-4 py-1.5 font-semibold ${on ? "bg-hazard text-white" : "text-muted hover:text-ink"}`}>{t(`calendar.view.${v}`)}</Link>;
         })}
       </nav>
     </PageHead>

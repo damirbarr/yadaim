@@ -89,7 +89,7 @@ export function OfferBuilder({ trades, initialTrade, dated = false, minDays, ini
                 {sel.options.map((o) => {
                   const on = o.to === opt.to;
                   return (
-                    <label key={o.to} className={`inline-flex min-h-12 cursor-pointer flex-col justify-center rounded-[10px] border px-3 py-1 leading-tight transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink"}`}>
+                    <label key={o.to} className={`inline-flex min-h-12 cursor-pointer flex-col justify-center rounded-[10px] border px-3 py-1 leading-tight transition ${on ? "border-hazard bg-hazard text-white" : "border-line bg-white hover:border-ink"}`}>
                       <input type="radio" name="until" value={o.to} checked={on} onChange={() => { setTo(o.to); setEditing(false); }} className="sr-only" />
                       <span className="num text-[15px] font-bold">{fmt.date(o.to)}</span>
                       <span className={`text-[12px] ${on ? "text-hazard" : "text-muted"}`}>{t("market.campaigns.untilFree", { n: o.workerCount })}</span>
@@ -108,7 +108,7 @@ export function OfferBuilder({ trades, initialTrade, dated = false, minDays, ini
             {(["trade", "crew", "workers"] as const).map((v) => {
               const on = target === v;
               return (
-                <label key={v} className={`inline-flex min-h-10 cursor-pointer items-center rounded-[10px] border px-3.5 text-[15px] font-semibold transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:border-ink"}`}>
+                <label key={v} className={`inline-flex min-h-10 cursor-pointer items-center rounded-[10px] border px-3.5 text-[15px] font-semibold transition ${on ? "border-hazard bg-hazard text-white" : "border-line bg-white text-muted hover:border-ink"}`}>
                   <input type="radio" name="target_choice" value={v} checked={on} onChange={() => { setTarget(v); setEditing(false); }} className="sr-only" />
                   {t(`market.campaigns.target.${v}`)}
                 </label>
@@ -189,7 +189,7 @@ export function OfferBuilder({ trades, initialTrade, dated = false, minDays, ini
             {[["0", t("market.campaigns.sale.none")], ...SALE_PCTS.map((p) => [String(p), `${p}%`]), ["custom", t("market.campaigns.sale.custom")]].map(([v, label]) => {
               const on = choice === v;
               return (
-                <label key={v} className={`inline-flex min-h-10 cursor-pointer items-center rounded-[10px] border px-3.5 text-[15px] font-semibold transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:border-ink"}`}>
+                <label key={v} className={`inline-flex min-h-10 cursor-pointer items-center rounded-[10px] border px-3.5 text-[15px] font-semibold transition ${on ? "border-hazard bg-hazard text-white" : "border-line bg-white text-muted hover:border-ink"}`}>
                   <input type="radio" name="sale_choice" value={v} checked={on} onChange={() => setChoice(v)} className="sr-only" />
                   <span className={v !== "0" && v !== "custom" ? "num" : undefined}>{label}</span>
                 </label>
@@ -217,7 +217,7 @@ export function OfferBuilder({ trades, initialTrade, dated = false, minDays, ini
             {regions.map((r) => {
               const on = areas.includes(r);
               return (
-                <label key={r} className={`inline-flex min-h-10 cursor-pointer items-center rounded-[10px] border px-3.5 text-[15px] font-semibold transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:border-ink"}`}>
+                <label key={r} className={`inline-flex min-h-10 cursor-pointer items-center rounded-[10px] border px-3.5 text-[15px] font-semibold transition ${on ? "border-hazard bg-hazard text-white" : "border-line bg-white text-muted hover:border-ink"}`}>
                   <input type="checkbox" name="regions" value={r} checked={on} onChange={() => setAreas(on ? areas.filter((x) => x !== r) : [...areas, r])} className="sr-only" />
                   {fmt.region(r)}
                 </label>

@@ -3,36 +3,18 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { BY, CN, GE, IN, KE, LK, MD, MW, RO, TH, UZ, type FlagComponent } from "country-flag-icons/react/3x2";
 import { useI18n } from "@/lib/i18n/client";
+import { LOGO_NAVY, LOGO_TEAL, LOGO_TRANSFORM, LOGO_VIEWBOX } from "./logo-paths";
 
-/**
- * The brand mark from the owner's handoff: a framed square with corner ticks, a lime hard hat held by two hands,
- * and the name with a lime dashed stripe under it. Drawn here as SVG (the handoff only had a screenshot crop).
- * `dark` = on a navy background.
- */
+/** The owner's logo: emblem (teal hard hat over a handshake), the name, and the "YADAIM" line. `dark` = on navy. */
 export function Logo({ className = "", dark = false }: { className?: string; dark?: boolean }) {
   const { t } = useI18n();
-  const c = dark ? "#ffffff" : "#0e2a44";
   return (
-    <span className={`inline-flex items-center gap-2.5 leading-none ${dark ? "text-white" : "text-ink"} ${className}`}>
-      <svg viewBox="0 0 48 48" className="h-10 w-10 shrink-0" aria-hidden>
-        <rect x="4" y="4" width="40" height="40" fill="none" stroke={c} strokeWidth="1.6" />
-        <path d="M1 4h6M4 1v6M41 4h6M44 1v6M1 44h6M4 41v6M41 44h6M44 41v6" stroke={c} strokeWidth="1.4" />
-        {/* hard hat */}
-        <path d="M14 23.5a10 10 0 0 1 20 0z" fill="#d4f25a" stroke={c} strokeWidth="1.4" strokeLinejoin="round" />
-        <path d="M24 13.5v10M20.5 15.2l1.2 8.3M27.5 15.2l-1.2 8.3" stroke={c} strokeWidth="1.1" />
-        <rect x="11.5" y="23.2" width="25" height="3" rx="1.5" fill="#d4f25a" stroke={c} strokeWidth="1.4" />
-        {/* two hands holding it */}
-        <path d="M10 22c-1.6 0-2.4 1.3-2.4 3v6.5c0 2.6 1.5 4.6 3.6 5.8l4.3 2.4v2.3h7.3v-4.1c0-2.4-1-4.3-2.8-5.6l-4.1-3v-3.3c0-1-.8-1.8-1.8-1.8s-1.8.8-1.8 1.8v1.8l-.5-.4V24c0-1.2-.7-2-1.8-2z" fill={c} />
-        <path d="M38 22c1.6 0 2.4 1.3 2.4 3v6.5c0 2.6-1.5 4.6-3.6 5.8l-4.3 2.4v2.3h-7.3v-4.1c0-2.4 1-4.3 2.8-5.6l4.1-3v-3.3c0-1 .8-1.8 1.8-1.8s1.8.8 1.8 1.8v1.8l.5-.4V24c0-1.2.7-2 1.8-2z" fill={c} />
-      </svg>
-      <span className="inline-flex flex-col items-stretch gap-[5px]">
-        <span className="font-display text-[30px] font-black tracking-[-0.02em]">{t("common.brand")}</span>
-        <svg viewBox="0 0 80 5" preserveAspectRatio="none" className="h-[5px] w-full" aria-hidden>
-          <path d="M0 5L3 0h10l-3 5zM16 5l3-5h10l-3 5zM32 5l3-5h10l-3 5z" fill="#d4f25a" />
-          <rect x="48" y="0" width="32" height="5" fill={c} />
-        </svg>
-      </span>
-    </span>
+    <svg viewBox={LOGO_VIEWBOX} role="img" aria-label={t("common.brand")} className={`h-11 w-auto shrink-0 md:h-12 ${className}`}>
+      <g transform={LOGO_TRANSFORM}>
+        <path fill={dark ? "#ffffff" : "#0b2233"} d={LOGO_NAVY} />
+        <path fill="#0e9e90" d={LOGO_TEAL} />
+      </g>
+    </svg>
   );
 }
 

@@ -59,7 +59,7 @@ export function CrewForm({ crew, cands }: { crew?: { id: number; name: string; l
               return (
                 <button type="button" key={c.id} onClick={() => toggle(c.id)} aria-pressed={on} data-worker={c.id}
                   className={`flex w-full items-center gap-3 px-3 py-2.5 text-start transition ${on ? "bg-hazard-soft" : "hover:bg-paper"}`}>
-                  <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-[10px] border-2 text-[11px] font-bold ${on ? "border-ink bg-ink text-white" : "border-line"}`}>{on ? "✓" : ""}</span>
+                  <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-[10px] border-2 text-[11px] font-bold ${on ? "border-hazard bg-hazard text-white" : "border-line"}`}>{on ? "✓" : ""}</span>
                   <Avatar w={c} size={36} />
                   <span className="min-w-0 flex-1">
                     <span className="block font-semibold">{c.name}{leader === c.id && <span className="chip-hazard ms-2">{t("crews.leader")}</span>}</span>

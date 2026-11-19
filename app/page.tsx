@@ -70,29 +70,29 @@ export default async function Landing() {
 
       {/* Hero: light sky, the worker at the end side, the building site at the start side, the promise in the middle.
           The worker photo is never faded or masked over the face (design system §2); only the site photo blends in. */}
-      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f4f8fb_55%,#f7f6f2_100%)]">
-        <img src="/brand/hero-site.webp" alt={t("public.landing.top.siteAlt")} className="pointer-events-none absolute bottom-0 start-0 hidden h-[94%] w-auto max-w-[30%] object-cover object-left opacity-95 [mask-image:linear-gradient(to_right,#000_55%,transparent)] rtl:[mask-image:linear-gradient(to_left,#000_55%,transparent)] lg:block" />
-        <img src="/brand/hero-worker.webp" alt={t("public.landing.top.workerAlt")} className="pointer-events-none absolute bottom-0 end-0 hidden h-[96%] w-auto max-w-[32%] object-contain object-bottom lg:block ltr:-scale-x-100" />
-        {/* Phone: both pictures as one band above the text */}
+      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#e9f3f7_0%,#eef7f5_55%,#f3f8f8_100%)]">
+        {/* The worker on the end side; only the inner edge (his tablet, never his face) fades into the page. */}
+        <img src="/brand/hero-worker-teal.webp" alt={t("public.landing.top.workerAlt")} className="pointer-events-none absolute bottom-0 end-0 hidden h-full w-auto max-w-[36%] object-cover object-left [mask-image:linear-gradient(to_right,#000_72%,transparent)] lg:block ltr:-scale-x-100" />
+        {/* Phone: the photo as a band above the text */}
         <div className="relative h-44 lg:hidden">
-          <img src="/brand/hero-site.webp" alt="" className="absolute inset-y-0 start-0 h-full w-1/2 object-cover [mask-image:linear-gradient(to_right,#000_50%,transparent)] rtl:[mask-image:linear-gradient(to_left,#000_50%,transparent)]" />
-          <img src="/brand/hero-worker.webp" alt={t("public.landing.top.workerAlt")} className="absolute bottom-0 end-0 h-full w-auto ltr:-scale-x-100" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,#e8f5f2,#f3f8f8)]" />
+          <img src="/brand/hero-worker-teal.webp" alt={t("public.landing.top.workerAlt")} className="absolute bottom-0 end-0 h-full w-auto [mask-image:linear-gradient(to_right,#000_70%,transparent)] ltr:-scale-x-100" />
         </div>
         <div className={`${WRAP} relative pb-28 pt-6 text-center lg:pb-36 lg:pt-16`}>
           <div className="mx-auto max-w-[760px]">
             <div className="eyebrow">{t("public.landing.eyebrow")}</div>
             <h1 className="mt-3 text-[32px] font-black leading-[1.2] text-ink sm:text-[40px] lg:text-[clamp(42px,4.1vw,60px)] lg:leading-[1.15]">
               <span className="block text-balance">{t("public.landing.top.h1a")}</span>
-              <span className="block text-balance">{rich("public.landing.top.h1b", { mark: (c) => <span className="relative whitespace-nowrap">{c}<svg viewBox="0 0 200 14" preserveAspectRatio="none" className="absolute -bottom-2 start-0 h-3 w-full" aria-hidden><path d="M3 9c38-6 80-7 120-4 26 2 48 3 74-2" fill="none" stroke="#d4f25a" strokeWidth="7" strokeLinecap="round" /></svg></span> })}</span>
+              <span className="block text-balance">{rich("public.landing.top.h1b", { mark: (c) => <span className="relative whitespace-nowrap">{c}<svg viewBox="0 0 200 14" preserveAspectRatio="none" className="absolute -bottom-2 start-0 h-3 w-full" aria-hidden><path d="M3 9c38-6 80-7 120-4 26 2 48 3 74-2" fill="none" stroke="#0f9a8c" strokeWidth="7" strokeLinecap="round" /></svg></span> })}</span>
             </h1>
             <p className="mx-auto mt-5 max-w-[62ch] text-[16px] leading-relaxed text-muted md:text-[18px]">{t("public.landing.top.lead")}</p>
             <div className="mx-auto mt-8 grid max-w-[640px] gap-3 sm:grid-cols-2">
-              <Link href="/signup?role=contractor" className="group flex min-h-16 items-center gap-4 rounded-[12px] bg-ink px-5 py-3 text-start text-white shadow-[0_14px_36px_rgba(14,42,68,0.18)] hover:bg-ink-2">
-                <IHelmet className="h-8 w-8 shrink-0 text-hazard" />
+              <Link href="/signup?role=contractor" className="group flex min-h-16 items-center gap-4 rounded-[14px] bg-[linear-gradient(180deg,#14998a,#0c665f)] px-6 py-3 text-start text-white shadow-[0_12px_28px_rgba(12,96,95,0.28)] hover:brightness-110">
+                <IHelmet className="h-8 w-8 shrink-0 text-white" />
                 <span className="flex-1"><span className="block text-[20px] font-extrabold leading-tight">{t("public.landing.top.contractor.t")}</span><span className="block text-[14px] text-white/80">{t("public.landing.top.contractor.d")}</span></span>
-                <IArrow className="flip-ltr h-5 w-5 shrink-0 text-hazard transition group-hover:-translate-x-1" />
+                <IArrow className="flip-ltr h-5 w-5 shrink-0 text-white transition group-hover:-translate-x-1" />
               </Link>
-              <Link href="/signup?role=agency" className="group flex min-h-16 items-center gap-4 rounded-[12px] border border-ink bg-white px-5 py-3 text-start text-ink hover:bg-cool">
+              <Link href="/signup?role=agency" className="group flex min-h-16 items-center gap-4 rounded-[14px] border border-line bg-white px-6 py-3 text-start text-ink shadow-[0_6px_18px_rgba(11,34,51,0.06)] hover:border-hazard">
                 <IUsers className="h-8 w-8 shrink-0" />
                 <span className="flex-1"><span className="block text-[20px] font-extrabold leading-tight">{t("public.landing.top.agency.t")}</span><span className="block text-[14px] text-muted">{t("public.landing.top.agency.d")}</span></span>
                 <IArrow className="flip-ltr h-5 w-5 shrink-0 transition group-hover:-translate-x-1" />
@@ -102,10 +102,9 @@ export default async function Landing() {
         </div>
       </section>
 
-      {/* Facts strip, floating over the hero's lower edge between two hazard stripes. Market figures come from the brief
+      {/* Facts strip, floating over the hero's lower edge. Market figures come from the brief
           and must be verified before launch (design system §4). */}
       <div className="relative -mt-16 lg:-mt-20">
-        <div aria-hidden className="absolute inset-x-0 top-1/2 hidden h-7 -translate-y-1/2 bg-[repeating-linear-gradient(-45deg,#d4f25a_0_14px,transparent_14px_28px)] md:block" />
         <div className={`${WRAP} relative`}>
           <ul className="card grid grid-cols-2 p-2 shadow-[0_14px_36px_rgba(14,42,68,0.10)] lg:grid-cols-4">
             {STATS.map(({ k, Icon }) => (
@@ -144,7 +143,7 @@ export default async function Landing() {
         <ul className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4">
           {VALUES.map(({ k, Icon }) => (
             <li key={k} className="flex flex-col items-center gap-2 text-center md:flex-row md:items-start md:text-start">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[12px] bg-cool text-ink"><Icon className="h-6 w-6" /></span>
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-cool text-hazard"><Icon className="h-6 w-6" /></span>
               <span><span className="block text-[16px] font-bold text-ink">{t(`public.landing.top.values.${k}.t`)}</span><span className="block text-[14px] text-muted">{t(`public.landing.top.values.${k}.d`)}</span></span>
             </li>
           ))}
@@ -161,7 +160,7 @@ export default async function Landing() {
               <h2 className="mt-1.5 text-[24px] font-extrabold leading-tight text-ink md:text-[28px]">{t(`public.landing.top.${k}.title`)}</h2>
               <p className="mt-2 max-w-[46ch] text-[15px] text-muted">{t(`public.landing.top.${k}.text`)}</p>
               <ul className="mt-4 space-y-2 text-[15px] text-ink">
-                {(["b1", "b2", "b3"] as const).map((b) => <li key={b} className="flex items-center gap-2.5"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-hazard text-ink"><ICheck className="h-3.5 w-3.5" /></span>{t(`public.landing.top.${k}.${b}`)}</li>)}
+                {(["b1", "b2", "b3"] as const).map((b) => <li key={b} className="flex items-center gap-2.5"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-hazard text-white"><ICheck className="h-3.5 w-3.5" /></span>{t(`public.landing.top.${k}.${b}`)}</li>)}
               </ul>
               <a href={href} className="mt-5 inline-flex items-center gap-2 text-[16px] font-bold text-ink hover:underline underline-offset-4">{t(`public.landing.top.${k}.cta`)}<IArrow className="flip-ltr h-4 w-4" /></a>
             </div>
@@ -213,7 +212,7 @@ export default async function Landing() {
           <div className="mt-14 grid gap-x-10 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
             {FOR_AGENCY.map(({ k, Icon }) => (
               <div key={k} className="border-t border-ink/15 pt-5">
-                <span className="grid h-10 w-10 place-items-center rounded-[10px] bg-ink text-hazard"><Icon className="h-5 w-5" /></span>
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-cool text-hazard"><Icon className="h-5 w-5" /></span>
                 <h3 className="mt-4 text-[18px] font-bold leading-snug text-ink">{t(`public.landing.agencies.items.${k}.t`)}</h3>
                 <p className="mt-1.5 max-w-[46ch] text-[15px] leading-relaxed text-muted">{t(`public.landing.agencies.items.${k}.d`)}</p>
               </div>
@@ -286,7 +285,7 @@ export default async function Landing() {
 
       <footer className="bg-ink-deep text-white">
         <div className={`${WRAP} flex flex-col gap-5 border-t border-white/15 py-8 text-[13px] text-white/60 md:flex-row md:items-center md:justify-between`}>
-          <Logo dark className="text-[22px]" />
+          <Logo dark className="!h-10" />
           <span className="max-w-[60ch]">{t("public.landing.footer")}</span>
           <span className="flex gap-3"><Link href="/privacy" className="underline hover:text-white">{t("public.legal.privacy")}</Link><Link href="/terms" className="underline hover:text-white">{t("public.legal.terms")}</Link></span>
           <LanguageSwitcher dark />
