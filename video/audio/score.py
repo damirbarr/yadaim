@@ -356,7 +356,7 @@ if FILM == "contractor":
         place(sfx, whoosh(0.2, 1500, 6000, 2.5), Q["search.press"] + 0.22 + k * 0.1, 0.1, pan=-0.3)
     for k in range(3):
         place(sfx, blip(mtof(76 + k * 3), None, 0.12), Q[f"search.pick{k + 1}"], 0.28)
-    ding_row(Q["docs.d1"], 4, 0.14)
+    ding_row(Q["docs.d1"] + 0.4, 4, 0.14)  # after "מורשים", not on it
     place(sfx, bell(mtof(84), 1.2) + bell(mtof(91), 1.2) * 0.7, Q["docs.ok"] + 0.45, 0.09)  # after the word, not on it
     for k in range(14):
         place(sfx, click(5000, 0.012), Q["price.count"] + k * 0.05 * (1 + k / 14), 0.18)
@@ -393,10 +393,10 @@ if FILM == "agency":
     for k in range(3):
         place(sfx, bell(mtof(88), 0.4), Q["expiry.warn"] + k * 0.13, 0.08)
     place(sfx, blip(900, 1400, 0.1), Q["expiry.wa"], 0.26)
-    place(sfx, blip(500, 900, 0.1), Q["offer.card"], 0.26)
+    place(sfx, blip(500, 900, 0.1), Q["offer.card"] + 0.55, 0.2)
     place(sfx, click(1200, 0.03), Q["offer.send"], 0.35)
     # kept low: "בוואטסאפ" is spoken right here and the effects masked it
-    place(sfx, whoosh(0.5, 600, 8000, 1.8), Q["offer.fly"] - 0.1, 0.14, pan=-0.4)
+    place(sfx, whoosh(0.5, 600, 8000, 1.8), Q["offer.fly"] + 0.35, 0.12, pan=-0.4)
     for k in range(3):
         place(sfx, blip(1100, 1500, 0.08), Q["offer.fly"] + 0.15 + k * 0.12, 0.08)
     for k in range(13):
@@ -429,7 +429,9 @@ envv = np.sqrt(np.convolve(vo**2, np.ones(win) / win, mode="same"))
 envv = np.convolve(envv, np.hanning(int(0.3 * SR)) / (0.15 * SR), mode="same")
 duck = 1 - 0.68 * np.clip(envv / (np.percentile(envv[envv > 1e-4], 70) + 1e-9), 0, 1)
 
-bed = music * pump * duck * 0.55 + sfx * 0.75 + wet * 0.7 * duck
+# effects dip too while the voice speaks (less than the music): a click on a word still costs that word
+sduck = 1 - 0.5 * (1 - duck) / 0.68
+bed = music * pump * duck * 0.55 + sfx * 0.75 * sduck + wet * 0.7 * duck
 bed = np.vstack([fft_filter(bed[0], lo=28, hi=15000), fft_filter(bed[1], lo=28, hi=15000)])
 voice = fft_filter(vo, lo=90)
 mix = bed + np.vstack([voice, voice]) * 1.0

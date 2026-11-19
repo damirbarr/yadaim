@@ -1,9 +1,15 @@
 {
   "provider": "elevenlabs",
   "elevenlabs": {
-    "voice_id": "EXAVITQu4vr4xnSDxMaL",
-    "voice": "Sarah",
-    "model": "eleven_v3"
+    "voice_id": "Xb7hH8MSUJpSbSDYk0k2",
+    "voice": "Alice",
+    "model": "eleven_v3",
+    "one_take": true,
+    "direction": "[confident] [warm]",
+    "settings": {
+      "stability": 0.5
+    },
+    "seed": 11
   },
   "intro": 0.5,
   "pause": 0.4,
@@ -12,13 +18,13 @@
   "lines": [
     {
       "plate": "idle",
-      "say": "כל יום שעובד נשאר בלי עבודה, עולה לתאגיד כחמש מאות ועשרים שקל.",
+      "say": "כל יום שעובד נשאר בלי עבודה, עולה לכם כסף.",
       "pause": 0.4,
       "cues": {
         "idle.cal": "start-0.3",
         "idle.empty": "בלי",
         "idle.cost": "עולה",
-        "idle.sum": "כחמש"
+        "idle.sum": "כסף"
       }
     },
     {
@@ -44,12 +50,12 @@
     },
     {
       "plate": "expiry",
-      "say": "המערכת עוקבת אחרי תוקף המסמכים, ומתריעה שישים יום מראש.",
+      "say": "המערכת עוקבת אחרי תוקף המסמכים, ומתריעה הרבה לפני שמסמך פג.",
       "cues": {
         "expiry.title": "start-0.2",
         "expiry.scan": "תוקף",
         "expiry.warn": "ומתריעה",
-        "expiry.wa": "מראש"
+        "expiry.wa": "פג"
       }
     },
     {

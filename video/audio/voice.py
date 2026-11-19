@@ -48,10 +48,12 @@ KEY = {} if CA.exists() and not os.environ.get("ELEVENLABS_SEND_KEY") else {"xi-
 
 
 def speak_eleven(text, cfg, mp3):
-    """ElevenLabs text-to-speech with character timings → word timings."""
+    """ElevenLabs text-to-speech with character timings → word timings (each word keeps its offset `c` in text)."""
     body = {"text": text, "model_id": cfg.get("model", "eleven_v3"), "language_code": "he"}
     if cfg.get("settings"):
         body["voice_settings"] = cfg["settings"]
+    if cfg.get("seed") is not None:
+        body["seed"] = cfg["seed"]  # the same seed gives the same take, so a chosen take can be kept
     req = urllib.request.Request(
         f"https://api.elevenlabs.io/v1/text-to-speech/{cfg['voice_id']}/with-timestamps?output_format=mp3_44100_128",
         data=json.dumps(body).encode(),
@@ -62,19 +64,19 @@ def speak_eleven(text, cfg, mp3):
         d = json.load(r)
     mp3.write_bytes(base64.b64decode(d["audio_base64"]))
     al = d["alignment"]
-    words, cur, t0, t1 = [], "", None, None
-    for ch, a, b in zip(al["characters"], al["character_start_times_seconds"], al["character_end_times_seconds"]):
+    words, cur, t0, t1, c0 = [], "", None, None, 0
+    for i, (ch, a, b) in enumerate(zip(al["characters"], al["character_start_times_seconds"], al["character_end_times_seconds"])):
         if ch.isspace():
             if cur:
-                words.append({"w": cur, "t": t0, "d": t1 - t0})
+                words.append({"w": cur, "t": t0, "d": t1 - t0, "c": c0})
             cur, t0 = "", None
             continue
         if t0 is None:
-            t0 = a
+            t0, c0 = a, i
         cur += ch
         t1 = b
     if cur:
-        words.append({"w": cur, "t": t0, "d": t1 - t0})
+        words.append({"w": cur, "t": t0, "d": t1 - t0, "c": c0})
     return words
 
 
@@ -112,7 +114,36 @@ rate = SCRIPT.get("rate", "+0%")
 pitch = SCRIPT.get("pitch", "+0Hz")
 sig = json.dumps(EL, sort_keys=True) if PROVIDER == "elevenlabs" else f"{voice}|{rate}|{pitch}"
 lines = []
-for i, line in enumerate(SCRIPT["lines"]):
+
+
+def one_take():
+    """The whole script in one ElevenLabs request, so the read flows like a real take (one tone, natural
+    breaths), then cut back into lines by the character timings. `direction` (v3 audio tags such as
+    "[confident]") is prepended and is not spoken."""
+    prefix = (EL.get("direction", "") + " ") if EL.get("direction") else ""
+    full, spans = prefix, []
+    for line in SCRIPT["lines"]:
+        spans.append((len(full), len(full) + len(line["say"])))
+        full += line["say"] + "\n"
+    key = "take-" + hashlib.sha1(f"{full}|{sig}".encode()).hexdigest()[:10]
+    # takes live next to the script and are committed: ElevenLabs takes vary even with a seed, and a take that was
+    # checked and approved must not change on the next run. Delete the file to record a new take.
+    mp3, meta = ROOT / "films" / film / f"{key}.mp3", ROOT / "films" / film / f"{key}.json"
+    if not meta.exists():
+        meta.write_text(json.dumps(speak_eleven(full, EL, mp3), ensure_ascii=False))
+    words, pcm = json.loads(meta.read_text()), load(mp3)
+    for line, (c0, c1) in zip(SCRIPT["lines"], spans):
+        ws = [dict(w) for w in words if c0 <= w["c"] < c1]
+        a = max(0.0, ws[0]["t"] - 0.04)
+        b = min(len(pcm) / SR, ws[-1]["t"] + ws[-1]["d"] + 0.18)
+        for w in ws:
+            w["t"] = round(w["t"] - a, 3)
+        lines.append({**line, "pcm": pcm[int(a * SR) : int(b * SR)], "words": ws, "len": (int(b * SR) - int(a * SR)) / SR})
+
+
+if PROVIDER == "elevenlabs" and EL.get("one_take"):
+    one_take()
+for i, line in enumerate([] if lines else SCRIPT["lines"]):
     key = f"{i:02d}-" + hashlib.sha1(f"{PROVIDER}|{line['say']}|{sig}".encode()).hexdigest()[:10]
     mp3, meta = CACHE / f"{key}.mp3", CACHE / f"{key}.json"
     if not meta.exists():

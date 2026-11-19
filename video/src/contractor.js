@@ -428,7 +428,7 @@ export function lock(ctx, t, Q) {
     ctx.restore();
   }
   column(ctx, t, {
-    lines: [{ w: ["ב־18:00", "הצוות", "ננעל."], colors: { 0: C.tealLight } }, ["יודעים", "מי", "מגיע", "מחר."]],
+    lines: [{ w: ["בערב", "שלפני,", "הצוות", "ננעל."], colors: { 0: C.tealLight, 1: C.tealLight } }, ["יודעים", "מי", "מגיע", "מחר."]],
     at: Q["lock.sweep"] + 0.2,
     sub: "שמות העובדים, שם הנהג ושעת האיסוף.",
     subAt: Q["lock.title"],

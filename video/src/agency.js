@@ -49,23 +49,15 @@ export function idle(ctx, t, Q) {
     }
     text(ctx, d, xr - cw / 2, y + 50, { size: 30, weight: 800, color: C.white, align: "center" });
     text(ctx, isIdle ? "פנוי" : "משובץ", xr - cw / 2, y + 92, { size: 24, weight: 500, color: isIdle ? "#ffb4ad" : "#d9f3ec", align: "center" });
-    // the cost floats up out of each idle day
+    // a loss marker floats up out of each idle day (no figures: the copy talks about money, not amounts)
     const fp = isIdle ? prog(t, Q["idle.cost"] + (j - 3) * 0.15, 1.3) : 0;
     if (fp > 0 && fp < 1) {
-      text(ctx, "−₪520", xr - cw / 2, y - 24 - fp * 60, { size: 40, weight: 900, color: "#ff8a80", align: "center", dir: "ltr", alpha: Math.sin(Math.PI * fp) });
+      text(ctx, "הפסד", xr - cw / 2, y - 24 - fp * 60, { size: 34, weight: 800, color: "#ff8a80", align: "center", alpha: Math.sin(Math.PI * fp) });
     }
   });
   ctx.restore();
-  kinetic(ctx, ["כל", "יום", "בלי", "עבודה", "עולה", "לכם"], t, Q["idle.empty"] - 0.1, W / 2, 620, { size: 84, color: C.white, align: "center", stagger: 0.07 });
-  const sp = ep(t, Q["idle.sum"], 0.5, ease.back);
-  if (sp > 0) {
-    ctx.save();
-    ctx.translate(W / 2, 830);
-    ctx.scale(0.6 + 0.4 * sp + 0.04 * kick(t, Q["idle.sum"] + 0.9, 6), 0.6 + 0.4 * sp);
-    ctx.globalAlpha = clamp(sp * 2);
-    money(ctx, 520 * ep(t, Q["idle.sum"], 0.9, ease.out5), 0, 0, 200, { color: C.white });
-    ctx.restore();
-  }
+  kinetic(ctx, ["כל", "יום", "בלי", "עבודה"], t, Q["idle.empty"] - 0.1, W / 2, 640, { size: 110, color: C.white, align: "center", stagger: 0.07 });
+  kinetic(ctx, ["עולה", "לכם", "כסף."], t, Q["idle.cost"], W / 2, 800, { size: 110, color: C.white, align: "center", stagger: 0.08, span: { from: 2, to: 2, at: Q["idle.sum"] + 0.1 }, dark: true });
 }
 
 // ── brand ────────────────────────────────────────────────────────────────────
@@ -142,7 +134,7 @@ export function expiry(ctx, t, Q) {
   column(ctx, t, {
     lines: [["מעקב", "אוטומטי"], ["אחרי", "תוקף", "המסמכים."]],
     at: Q["expiry.title"],
-    sub: "60 יום לפני שמסמך פג, מקבלים התראה.",
+    sub: "מקבלים התראה הרבה לפני שמסמך פג.",
     subAt: Q["expiry.warn"],
     y: 470,
   });

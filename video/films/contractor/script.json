@@ -1,9 +1,15 @@
 {
   "provider": "elevenlabs",
   "elevenlabs": {
-    "voice_id": "pNInz6obpgDQGcFmaJgB",
-    "voice": "Adam",
-    "model": "eleven_v3"
+    "voice_id": "Xb7hH8MSUJpSbSDYk0k2",
+    "voice": "Alice",
+    "model": "eleven_v3",
+    "one_take": true,
+    "direction": "[confident] [warm]",
+    "settings": {
+      "stability": 0.5
+    },
+    "seed": 37
   },
   "intro": 0.5,
   "pause": 0.4,
@@ -12,7 +18,7 @@
   "lines": [
     {
       "plate": "hook",
-      "say": "שש וחצי בבוקר, ואתם עוד לא יודעים מי יגיע לאתר.",
+      "say": "הבוקר מתחיל, ואתם עוד לא יודעים מי יגיע לאתר.",
       "pause": 0.35,
       "cues": {
         "hook.label": "start-0.3",
@@ -50,7 +56,7 @@
     },
     {
       "plate": "docs",
-      "say": "רק מתאגידים מורשים, עם אישורים בתוקף.",
+      "say": "רק תאגידים מורשים, ורק אישורים בתוקף.",
       "cues": {
         "docs.zoom": "start-0.3",
         "docs.d1": "מורשים",
@@ -72,7 +78,7 @@
     },
     {
       "plate": "lock",
-      "say": "בשש בערב הצוות ננעל, עם שם הנהג ושעת האיסוף.",
+      "say": "בערב שלפני, הצוות ננעל, עם שם הנהג ושעת האיסוף.",
       "cues": {
         "lock.sweep": "start-0.3",
         "lock.clunk": "ננעל",
