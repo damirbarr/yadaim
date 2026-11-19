@@ -1,7 +1,15 @@
 // Pieces shared by both films: the text column, the phone, worker rows, the logo plate and the end card.
 import { C, clamp, lerp, prog, ease, ep, bump, rrect, card, text, measure, kinetic, chip, button, logo, avatar, softBg, money } from "./kit.js";
 
-export const W = 1920, H = 1080;
+// The frame the plates draw into. Live bindings: the composer switches them per plate (vertical films draw most
+// plates in the 1920×1080 layout and re-arrange the regions, see main.js; the centred plates draw natively).
+export let W = 1920, H = 1080, PORTRAIT = false, REMAP = false;
+export function setFrame(w, h, remap = false) {
+  W = w;
+  H = h;
+  PORTRAIT = h > w;
+  REMAP = remap;
+}
 export const COL = 1740; // right edge of the text column (RTL)
 const MAXW = 680; // its width: the left half belongs to the phone or card
 
@@ -21,6 +29,7 @@ export function bg(ctx, color) {
 /** The app's page background: the faintest mint, with a soft corner shape so it doesn't look flat. */
 export function pageBg(ctx, t) {
   bg(ctx, C.paper);
+  if (REMAP) return; // re-arranged into a vertical frame: the composer draws the backdrop shape itself
   ctx.save();
   ctx.translate(W - 120, 120 + Math.sin(t * 0.5) * 8);
   ctx.rotate(0.7 + t * 0.02);
@@ -113,15 +122,19 @@ export function workerRow(ctx, x, y, w, wk, { sub, h = 116, stroke } = {}) {
 export function brandPlate(ctx, t, Q, lines) {
   softBg(ctx, W, H, t);
   const up = ep(t, Q["brand.l1"] - 0.2, 0.6, ease.inOut);
-  const h = lerp(300, 230, up);
-  logo(ctx, W / 2, lerp(500, 330, up), h, { reveal: prog(t, Q["brand.reveal"], 0.7), hat: prog(t, Q["brand.hat"] - 0.15, 0.9) });
+  const v = PORTRAIT;
+  const h = v ? lerp(340, 270, up) : lerp(300, 230, up);
+  logo(ctx, W / 2, v ? lerp(860, 640, up) : lerp(500, 330, up), h, { reveal: prog(t, Q["brand.reveal"], 0.7), hat: prog(t, Q["brand.hat"] - 0.15, 0.9) });
+  const size = fitSize(ctx, lines.map((l) => l.w), v ? 104 : 86, W - (v ? 110 : 200));
   lines.forEach((l, i) => {
-    kinetic(ctx, l.w, t, Q[l.at], W / 2, 700 + i * 112, { size: 86, align: "center", stagger: 0.06, span: l.span, swoosh: l.swoosh });
+    kinetic(ctx, l.w, t, Q[l.at], W / 2, (v ? 1000 : 700) + i * size * 1.3, { size, align: "center", stagger: 0.06, span: l.span, swoosh: l.swoosh });
   });
 }
 
 /** End card in the reference ads' layout: the photo on the left in a rounded frame, logo, line, the action. */
-export function endPlate(ctx, t, Q, { tags, cta, cta2, foot, photo }) {
+export function endPlate(ctx, t, Q, opts) {
+  if (PORTRAIT) return endPlateV(ctx, t, Q, opts);
+  const { tags, cta, cta2, foot, photo } = opts;
   softBg(ctx, W, H, t);
   const hit = Q["end.hit"];
   // photo: slides in, never faded or masked over the face
@@ -160,6 +173,45 @@ export function endPlate(ctx, t, Q, { tags, cta, cta2, foot, photo }) {
     }
   }
   if (foot) text(ctx, foot, cx, by + 120, { size: 28, weight: 500, color: C.muted, align: "center", alpha: ep(t, Q["end.cta"] + 0.3, 0.5) });
+}
+
+/** Largest size ≤ max at which every line (array of words) fits in `width`. */
+export function fitSize(ctx, lines, max, width) {
+  const widest = Math.max(...lines.map((ws) => measure(ctx, ws.join(" "), max, 900)));
+  return Math.min(max, (max * width) / widest);
+}
+
+/** Vertical end card: the photo on top in a rounded frame, then the logo, the line and the action under it. */
+function endPlateV(ctx, t, Q, { tags, cta, foot, photo }) {
+  softBg(ctx, W, H, t);
+  const hit = Q["end.hit"];
+  if (photo && photo.complete) {
+    const p = ep(t, hit, 0.8, ease.out5);
+    const ph = 720, pw = (photo.naturalWidth / photo.naturalHeight) * ph;
+    const x = (W - pw) / 2, y = 120 - (1 - p) * 60;
+    ctx.save();
+    ctx.globalAlpha = clamp(p * 1.5);
+    ctx.shadowColor = "rgba(11,34,51,0.18)";
+    ctx.shadowBlur = 50;
+    ctx.shadowOffsetY = 20;
+    rrect(ctx, x, y, pw, ph, 32);
+    ctx.fillStyle = C.white;
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.globalAlpha = clamp(p * 1.5);
+    rrect(ctx, x, y, pw, ph, 32);
+    ctx.clip();
+    ctx.drawImage(photo, x, y, pw, ph);
+    ctx.restore();
+  }
+  logo(ctx, W / 2, 1010, 210, { reveal: prog(t, hit, 0.7), hat: prog(t, hit + 0.1, 0.9) });
+  const size = fitSize(ctx, tags.map((g) => g.w), 104, W - 120);
+  tags.forEach((tag, i) => kinetic(ctx, tag.w, t, Q["end.tag"] + i * 0.3, W / 2, 1260 + i * size * 1.3, { size, align: "center", stagger: 0.06, span: tag.span, swoosh: tag.swoosh }));
+  const by = 1260 + tags.length * size * 1.3 + 70;
+  const cp = ep(t, Q["end.cta"], 0.5, ease.back);
+  if (cp > 0) button(ctx, cta, W / 2, by, 640, 120, { size: 46, scale: 0.8 + 0.2 * cp + 0.03 * bump(t, Q["end.cta"] + 0.9, 0.4), alpha: clamp(cp * 2), arrow: true });
+  if (foot) text(ctx, foot, W / 2, by + 140, { size: 32, weight: 500, color: C.muted, align: "center", alpha: ep(t, Q["end.cta"] + 0.3, 0.5) });
 }
 
 export { money };

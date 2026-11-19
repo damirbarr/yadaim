@@ -38,9 +38,12 @@ await new Promise((r) => server.listen(0, r));
 const port = server.address().port;
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: TL.width, height: TL.height }, deviceScaleFactor: 1 });
+// --portrait: the vertical film (1080×1920, for phones)
+const PORTRAIT = args.includes("--portrait");
+const VW = PORTRAIT ? 1080 : TL.width, VH = PORTRAIT ? 1920 : TL.height, TAG = PORTRAIT ? "-vertical" : "";
+const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: 1 });
 page.on("pageerror", (e) => console.error("page error:", e.message));
-await page.goto(`http://localhost:${port}/video/index.html?render=1&film=${FILM}`);
+await page.goto(`http://localhost:${port}/video/index.html?render=1&film=${FILM}${PORTRAIT ? "&portrait=1" : ""}`);
 await page.waitForFunction(() => window.__ready === true);
 
 const samples = Number(flag("samples", 1));
@@ -69,14 +72,14 @@ if (mode === "stills") {
   await mkdir(out, { recursive: true });
   for (const t of flag("t", "0").split(",").map(Number)) {
     await page.evaluate(([t, fps]) => window.frameAt(t, fps), [t, TL.fps]);
-    const f = join(out, `${FILM}-${t.toFixed(2)}.png`);
+    const f = join(out, `${FILM}${TAG}-${t.toFixed(2)}.png`);
     await (await import("node:fs/promises")).writeFile(f, await shot());
     console.log(f);
   }
 } else {
   const fps = Number(flag("fps", TL.fps));
   const from = Number(flag("from", 0)), to = Number(flag("to", TL.duration));
-  const file = join(ROOT, flag("out", `out/${FILM}/yadaim-${FILM}.mp4`));
+  const file = join(ROOT, flag("out", `out/${FILM}/yadaim-${FILM}${TAG}.mp4`));
   await mkdir(dirname(file), { recursive: true });
   const ff = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(fps), "-i", "-",
     "-c:v", "libx264", "-preset", "slow", "-crf", "16", "-pix_fmt", "yuv420p", "-movflags", "+faststart", file], { stdio: ["pipe", "inherit", "inherit"] });

@@ -1,6 +1,12 @@
 // The agency film: "fill your workers' idle days". Plates are draw(ctx, t, Q).
 import { C, clamp, lerp, prog, ease, ep, bump, kick, rrect, card, text, kinetic, chip, button, check, avatar, bubble, money } from "./kit.js";
-import { W, bg, pageBg, column, tap, brandPlate, endPlate } from "./common.js";
+import { W, PORTRAIT, bg, pageBg, column, tap, brandPlate, endPlate, fitSize } from "./common.js";
+
+// Vertical film: these plates have their own vertical layout; the others are re-arranged by main.js.
+export const NATIVE = ["idle", "brand", "end"];
+export const BG = { import: "page", expiry: "mint", offer: "page", request: "mint" };
+// the visual's bounding box in the wide layout [x, y, w, h]: it is enlarged to the vertical frame's width
+export const VISUAL = { import: [150, 120, 880, 860], expiry: [150, 150, 880, 900], offer: [130, 130, 900, 860], request: [170, 130, 840, 820] };
 
 export const CUTS = {
   brand: { kind: "sweep", d: 0.6 },
@@ -23,41 +29,55 @@ const DAYS = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳"];
 // ── idle: every day without work costs the agency ~₪520 ─────────────────────
 export function idle(ctx, t, Q) {
   bg(ctx, C.deep);
-  // one worker's week: booked days in teal, then two idle days that start costing money
-  const cw = 180, chh = 120, gap = 16, R = W / 2 + 660, sy = 250;
+  // one worker's week: booked days in teal, then two idle days that start costing money.
+  // Wide frame: one row of six days. Vertical frame: two rows of three, under the worker's name.
+  const v = PORTRAIT;
+  const cw = v ? 290 : 180, chh = v ? 170 : 120, gap = v ? 22 : 16;
+  const R = v ? W / 2 + (3 * cw + 2 * gap) / 2 : W / 2 + 660;
+  const sy = v ? 400 : 250;
+  const cell = (j) => (v ? { xr: R - (j % 3) * (cw + gap), y: sy + Math.floor(j / 3) * (chh + 150) } : { xr: R - 120 - j * (cw + gap), y: sy });
   const p0 = ep(t, Q["idle.cal"], 0.6, ease.out5);
   ctx.save();
   ctx.globalAlpha = clamp(p0 * 1.5);
-  avatar(ctx, R - 48, sy + chh / 2, 96, 1);
-  text(ctx, "סרגיי ב. · השבוע", R - 120, sy - 34, { size: 30, weight: 700, color: C.onDark });
+  if (v) {
+    avatar(ctx, R - 44, sy - 110, 88, 1);
+    text(ctx, "סרגיי ב. · השבוע", R - 108, sy - 96, { size: 38, weight: 700, color: C.onDark });
+  } else {
+    avatar(ctx, R - 48, sy + chh / 2, 96, 1);
+    text(ctx, "סרגיי ב. · השבוע", R - 120, sy - 34, { size: 30, weight: 700, color: C.onDark });
+  }
+  const fs = v ? 1.35 : 1;
   DAYS.forEach((d, j) => {
-    const xr = R - 120 - j * (cw + gap);
-    const y = sy + (1 - ep(t, Q["idle.cal"] + j * 0.05, 0.5, ease.out5)) * 40;
+    const { xr, y: y0 } = cell(j);
+    const y = y0 + (1 - ep(t, Q["idle.cal"] + j * 0.05, 0.5, ease.out5)) * 40;
     const isIdle = j >= 3 && j <= 4;
     const on = isIdle && t >= Q["idle.empty"] + (j - 3) * 0.12;
-    rrect(ctx, xr - cw, y, cw, chh, 18);
+    rrect(ctx, xr - cw, y, cw, chh, 20);
     ctx.fillStyle = isIdle ? (on ? "rgba(217,72,72,0.18)" : "rgba(255,255,255,0.08)") : C.teal;
     ctx.fill();
     if (on) {
       ctx.save();
       ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 8);
-      rrect(ctx, xr - cw, y, cw, chh, 18);
+      rrect(ctx, xr - cw, y, cw, chh, 20);
       ctx.strokeStyle = "#ff8a80";
       ctx.lineWidth = 3;
       ctx.stroke();
       ctx.restore();
     }
-    text(ctx, d, xr - cw / 2, y + 50, { size: 30, weight: 800, color: C.white, align: "center" });
-    text(ctx, isIdle ? "פנוי" : "משובץ", xr - cw / 2, y + 92, { size: 24, weight: 500, color: isIdle ? "#ffb4ad" : "#d9f3ec", align: "center" });
+    text(ctx, d, xr - cw / 2, y + chh * 0.42, { size: 30 * fs, weight: 800, color: C.white, align: "center" });
+    text(ctx, isIdle ? "פנוי" : "משובץ", xr - cw / 2, y + chh * 0.77, { size: 24 * fs, weight: 500, color: isIdle ? "#ffb4ad" : "#d9f3ec", align: "center" });
     // a loss marker floats up out of each idle day (no figures: the copy talks about money, not amounts)
     const fp = isIdle ? prog(t, Q["idle.cost"] + (j - 3) * 0.15, 1.3) : 0;
     if (fp > 0 && fp < 1) {
-      text(ctx, "הפסד", xr - cw / 2, y - 24 - fp * 60, { size: 34, weight: 800, color: "#ff8a80", align: "center", alpha: Math.sin(Math.PI * fp) });
+      text(ctx, "הפסד", xr - cw / 2, y - 24 - fp * 60, { size: 34 * fs, weight: 800, color: "#ff8a80", align: "center", alpha: Math.sin(Math.PI * fp) });
     }
   });
   ctx.restore();
-  kinetic(ctx, ["כל", "יום", "בלי", "עבודה"], t, Q["idle.empty"] - 0.1, W / 2, 640, { size: 110, color: C.white, align: "center", stagger: 0.07 });
-  kinetic(ctx, ["עולה", "לכם", "כסף."], t, Q["idle.cost"], W / 2, 800, { size: 110, color: C.white, align: "center", stagger: 0.08, span: { from: 2, to: 2, at: Q["idle.sum"] + 0.1 }, dark: true });
+  const l1 = ["כל", "יום", "בלי", "עבודה"], l2 = ["עולה", "לכם", "כסף."];
+  const size = v ? fitSize(ctx, [l1, l2], 130, W - 100) : 110;
+  const y1 = v ? 1180 : 640;
+  kinetic(ctx, l1, t, Q["idle.empty"] - 0.1, W / 2, y1, { size, color: C.white, align: "center", stagger: 0.07 });
+  kinetic(ctx, l2, t, Q["idle.cost"], W / 2, y1 + size * 1.45, { size, color: C.white, align: "center", stagger: 0.08, span: { from: 2, to: 2, at: Q["idle.sum"] + 0.1 }, dark: true });
 }
 
 // ── brand ────────────────────────────────────────────────────────────────────

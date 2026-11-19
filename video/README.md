@@ -24,6 +24,14 @@ timing** (each animation is anchored to a spoken word), and every change is a co
 | Composer | `src/main.js` | Picks the plate for `t`, camera drift, transitions (push, zoom, iris, teal sweep). |
 | Render | `render.mjs` | Headless Chromium → PNG frames → ffmpeg (x264, CRF 16) → `out/<film>/yadaim-<film>-sound.mp4`. |
 
+## Vertical films (9:16, for phones)
+
+`node render.mjs --portrait --film <film>` renders the same film at 1080×1920 → `out/<film>/yadaim-<film>-vertical-sound.mp4`
+(same voice, music and timing). The centred plates (the opening, the logo, the end card) have their own vertical layout
+(`NATIVE` in the film module, `PORTRAIT` in `common.js`). The others keep their wide layout and `main.js` re-arranges it:
+the headline column goes on top, enlarged, and the visual under it, cropped to its box (`VISUAL` in the film module)
+and enlarged to the frame's width, on the plate's backdrop (`BG`). Preview: add `&portrait=1` to the preview URL.
+
 ## Commands (from this folder)
 
 ```bash

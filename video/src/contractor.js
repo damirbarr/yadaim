@@ -1,7 +1,14 @@
 // The contractor film: "know in advance who comes to the site, and the final price per day".
 // Plates are draw(ctx, t, Q): t is the video time, Q the cue table resolved from the voiceover's words.
 import { C, clamp, lerp, prog, ease, ep, bump, kick, rrect, card, text, kinetic, chip, button, check, avatar, star, padlock, rnd, ils, money } from "./kit.js";
-import { W, H, COL, CREW, DAY, bg, pageBg, column, tap, phone, clipScreen, appBar, workerRow, brandPlate, endPlate } from "./common.js";
+import { W, H, PORTRAIT, COL, CREW, DAY, bg, pageBg, column, tap, phone, clipScreen, appBar, workerRow, brandPlate, endPlate, fitSize } from "./common.js";
+
+// Vertical film: these plates have their own vertical layout; the others are re-arranged (headline on top, visual
+// under it) by main.js, which paints this backdrop behind them.
+export const NATIVE = ["hook", "brand", "end"];
+export const BG = { search: "page", docs: "mint", price: "page", lock: "deep", checkin: "mint" };
+// the visual's bounding box in the wide layout [x, y, w, h]: it is enlarged to the vertical frame's width
+export const VISUAL = { search: [355, 70, 490, 945], docs: [150, 120, 860, 840], price: [170, 150, 820, 780], lock: [150, 120, 870, 810], checkin: [355, 70, 700, 945] };
 
 // How each cut into a plate is made (see main.js).
 export const CUTS = {
@@ -34,10 +41,11 @@ export function hook(ctx, t, Q) {
   const w1 = Q["hook.w1"];
   const up = ep(t, w1 - 0.1, 0.5, ease.inOut);
   const sec = Math.floor(clamp(t * 9, 0, 59));
+  const v = PORTRAIT, k = v ? 0.78 : 1;
   ctx.save();
   ctx.globalAlpha = lp;
-  ctx.translate(W / 2, lerp(560, 300, up));
-  ctx.scale(lerp(1, 0.32, up), lerp(1, 0.32, up));
+  ctx.translate(W / 2, v ? lerp(900, 480, up) : lerp(560, 300, up));
+  ctx.scale(lerp(k, 0.32 * (v ? 1.3 : 1), up), lerp(k, 0.32 * (v ? 1.3 : 1), up));
   ctx.direction = "ltr";
   ctx.textAlign = "center";
   ctx.font = "900 260px Heebo";
@@ -49,10 +57,18 @@ export function hook(ctx, t, Q) {
   const punch = ws.reduce((a, c) => a + kick(t, c), 0);
   ctx.save();
   const zoom = 1 + 0.012 * punch + 0.03 * ep(t, ws[3], 1.4, ease.inOut);
-  ctx.translate(W / 2, 600);
+  const cy = v ? 1000 : 600;
+  ctx.translate(W / 2, cy);
   ctx.scale(zoom, zoom);
-  ctx.translate(-W / 2, -600);
-  kinetic(ctx, ["מי", "מגיע", "היום", "לאתר?"], t, ws, W / 2, 640, { size: 170, color: C.white, align: "center", dur: 0.4, swoosh: { word: 3, at: ws[3] + 0.35 }, dark: true });
+  ctx.translate(-W / 2, -cy);
+  if (v) {
+    // two lines, larger: the question fills the phone screen
+    const size = fitSize(ctx, [["מי", "מגיע"], ["היום", "לאתר?"]], 210, W - 120);
+    kinetic(ctx, ["מי", "מגיע"], t, [ws[0], ws[1]], W / 2, 1000, { size, color: C.white, align: "center", dur: 0.4, dark: true });
+    kinetic(ctx, ["היום", "לאתר?"], t, [ws[2], ws[3]], W / 2, 1000 + size * 1.25, { size, color: C.white, align: "center", dur: 0.4, swoosh: { word: 1, at: ws[3] + 0.35 }, dark: true });
+  } else {
+    kinetic(ctx, ["מי", "מגיע", "היום", "לאתר?"], t, ws, W / 2, 640, { size: 170, color: C.white, align: "center", dur: 0.4, swoosh: { word: 3, at: ws[3] + 0.35 }, dark: true });
+  }
   ctx.restore();
 }
 

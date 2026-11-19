@@ -1,6 +1,7 @@
 // Composer: loads one film (?film=contractor|agency), picks the plate for time t, applies the transition
 // between neighbours and a slow camera drift. window.renderAt(t) is what the offline renderer calls per frame.
-import { C, clamp, lerp, ease, ep } from "./kit.js";
+import { C, clamp, lerp, ease, ep, rrect } from "./kit.js";
+import { setFrame } from "./common.js";
 
 // fonts must be ready before the first frame (Hebrew and Latin subsets, every weight the plates use)
 await Promise.all([400, 500, 600, 700, 800, 900].flatMap((w) => [document.fonts.load(`${w} 40px Heebo`, "אבגד"), document.fonts.load(`${w} 40px Heebo`, "0123₪Ab")]));
@@ -11,8 +12,25 @@ const TL = await (await fetch(`films/${FILM}/timeline.json`)).json();
 const plates = await import(`./${FILM}.js`);
 await plates.ready;
 const Q = TL.cues;
-const W = TL.width, H = TL.height;
+// ?portrait=1: the vertical film (9:16, for phones). Same timeline and sound, other layout.
+const PORTRAIT = params.has("portrait");
+const W = PORTRAIT ? 1080 : TL.width, H = PORTRAIT ? 1920 : TL.height;
 const CUTS = plates.CUTS;
+
+// Vertical film, plates without a vertical layout of their own: they draw in their 1920×1080 layout and two
+// regions of it are placed on the tall frame, the headline column on top (enlarged) and the visual under it.
+// [source x, y, w, h] → [dest x, y, scale]. The text column ends at x 1740 (COL in common.js); it lands at x 1020.
+const TEXT = { sx: 1040, sy: 290, sw: 800, sh: 480, k: 1.3 };
+TEXT.dx = 1020 - (1740 - TEXT.sx) * TEXT.k;
+TEXT.dy = 90;
+// the visual: the plate's bounding box (VISUAL in the film module), as large as the space under the headline allows
+const VIS_TOP = 690;
+function visRegion(id) {
+  const [sx, sy, sw, sh] = plates.VISUAL?.[id] ?? [80, 20, 980, 1050];
+  const k = Math.min((W - 60) / sw, (H - VIS_TOP - 50) / sh);
+  return { sx, sy, sw, sh, k, dx: (W - sw * k) / 2, dy: VIS_TOP + (H - VIS_TOP - 50 - sh * k) / 2 };
+}
+const BACKDROP = { page: C.paper, mint: C.mint, deep: C.deep };
 
 const canvas = document.getElementById("c");
 canvas.width = W;
@@ -31,8 +49,41 @@ function drawPlate(p, t) {
   ctx.translate(W / 2, H / 2);
   ctx.scale(z, z);
   ctx.translate(-W / 2, -H / 2);
-  plates[p.id](ctx, t, Q);
+  if (!PORTRAIT || plates.NATIVE?.includes(p.id)) {
+    setFrame(W, H);
+    plates[p.id](ctx, t, Q);
+  } else {
+    rearranged(p, t);
+  }
   ctx.restore();
+  setFrame(W, H);
+}
+
+function rearranged(p, t) {
+  const kind = plates.BG?.[p.id] ?? "page";
+  ctx.fillStyle = BACKDROP[kind];
+  ctx.fillRect(0, 0, W, H);
+  if (kind === "page") {
+    ctx.save();
+    ctx.translate(W - 60, 140 + Math.sin(t * 0.5) * 8);
+    ctx.rotate(0.7 + t * 0.02);
+    rrect(ctx, -200, -200, 400, 400, 115);
+    ctx.fillStyle = "rgba(15,143,128,0.05)";
+    ctx.fill();
+    ctx.restore();
+  }
+  setFrame(1920, 1080, true);
+  for (const r of [TEXT, visRegion(p.id)]) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(r.dx, r.dy, r.sw * r.k, r.sh * r.k);
+    ctx.clip();
+    ctx.translate(r.dx, r.dy);
+    ctx.scale(r.k, r.k);
+    ctx.translate(-r.sx, -r.sy);
+    plates[p.id](ctx, t, Q);
+    ctx.restore();
+  }
 }
 
 function render(t) {
@@ -76,7 +127,7 @@ function transition(cut, A, B, t, p) {
   }
   if (cut.kind === "iris") {
     drawPlate(A, t);
-    const [x, y] = cut.at;
+    const [x, y] = PORTRAIT ? [W / 2, VIS_TOP + 550] : cut.at;
     ctx.save();
     ctx.beginPath();
     ctx.arc(x, y, ease.in(p) * Math.hypot(W, H) * 1.05, 0, Math.PI * 2);
