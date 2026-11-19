@@ -299,8 +299,8 @@ while DOWN + k * BEAT / 4 < END:
         place(music, hat(open_=pos in (6, 14)), tt, 0.14, pan=0.25)
     elif tt >= DOWN + 2:
         place(music, hat(), tt, 0.06, pan=-0.2)
-for k in range(6):
-    place(music, snare(), END - 0.75 + k * 0.125, 0.1 + k * 0.04, pan=0.1)
+for k in range(4):  # a short, soft roll: the last line of the plate before is still being spoken
+    place(music, snare(), END - 0.5 + k * 0.125, 0.06 + k * 0.03, pan=0.1)
 
 pump = np.ones(N)
 for k in range(int((END - DOWN) / BEAT) + 1):
@@ -325,7 +325,8 @@ place(sfx, blip(800, 1300, 0.1), Q["end.cta"], 0.3)
 # transitions: a whoosh into every plate after the first two
 for p in TL["plates"][2:]:
     if p["id"] != "end":
-        place(sfx, whoosh(0.5, 500, 7000), p["start"] - 0.3, 0.28)
+        # starts at the cut, not before it: earlier it covered the last word of the line before
+        place(sfx, whoosh(0.45, 500, 7000), p["start"], 0.22)
 
 # ── UI sound effects on the cues ─────────────────────────────────────────────
 def has(*names):
@@ -356,7 +357,7 @@ if FILM == "contractor":
     for k in range(3):
         place(sfx, blip(mtof(76 + k * 3), None, 0.12), Q[f"search.pick{k + 1}"], 0.28)
     ding_row(Q["docs.d1"], 4, 0.14)
-    place(sfx, bell(mtof(84), 1.2) + bell(mtof(91), 1.2) * 0.7, Q["docs.ok"], 0.09)
+    place(sfx, bell(mtof(84), 1.2) + bell(mtof(91), 1.2) * 0.7, Q["docs.ok"] + 0.45, 0.09)  # after the word, not on it
     for k in range(14):
         place(sfx, click(5000, 0.012), Q["price.count"] + k * 0.05 * (1 + k / 14), 0.18)
     for key in ("price.toggle1", "price.toggle2"):
@@ -373,8 +374,8 @@ if FILM == "contractor":
         place(sfx, blip(mtof(m), None, 0.1), Q[key], 0.26)
         place(sfx, blip(mtof(m + 7), None, 0.12), Q[key] + 0.07, 0.22)
     place(sfx, buzz(), Q["checkin.c3"], 0.22)
-    place(sfx, thud(), Q["checkin.zero"], 0.45)
-    place(sfx, bell(mtof(91), 1.0) + bell(mtof(96), 1.0), Q["checkin.zero"] + 0.05, 0.1)
+    place(sfx, thud(), Q["checkin.zero"] + 0.55, 0.4)  # after "משלמים", which it masked
+    place(sfx, bell(mtof(91), 1.0) + bell(mtof(96), 1.0), Q["checkin.zero"] + 0.6, 0.1)
 
 if FILM == "agency":
     for k in range(2):

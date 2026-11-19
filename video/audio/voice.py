@@ -12,8 +12,8 @@ Cues are written next to the words they belong to, so re-recording or rewording 
 
     python3 audio/voice.py contractor      (needs ffmpeg; edge-tts only for the edge provider)
 
-ElevenLabs: the key goes in the xi-api-key header. Here it is injected by the environment's network proxy; elsewhere
-set ELEVENLABS_API_KEY.
+ElevenLabs: set ELEVENLABS_API_KEY (needs only the text-to-speech permission). In the cloud environment the network
+proxy injects the key instead, see KEY below.
 """
 import asyncio
 import hashlib
@@ -42,15 +42,20 @@ CACHE.mkdir(parents=True, exist_ok=True)
 SR = 48000
 
 
+# Behind the cloud environment's proxy the key is injected into requests that carry no key of their own, so send
+# none there (a stale ELEVENLABS_API_KEY would override it). Elsewhere, ELEVENLABS_API_KEY is sent as usual.
+KEY = {} if CA.exists() and not os.environ.get("ELEVENLABS_SEND_KEY") else {"xi-api-key": os.environ.get("ELEVENLABS_API_KEY", "")}
+
+
 def speak_eleven(text, cfg, mp3):
     """ElevenLabs text-to-speech with character timings → word timings."""
     body = {"text": text, "model_id": cfg.get("model", "eleven_v3"), "language_code": "he"}
     if cfg.get("settings"):
         body["voice_settings"] = cfg["settings"]
     req = urllib.request.Request(
-        f"https://api.elevenlabs.io/v1/text-to-speech/{cfg['voice_id']}/with-timestamps?output_format=mp3_44100_192",
+        f"https://api.elevenlabs.io/v1/text-to-speech/{cfg['voice_id']}/with-timestamps?output_format=mp3_44100_128",
         data=json.dumps(body).encode(),
-        headers={"content-type": "application/json", "xi-api-key": os.environ.get("ELEVENLABS_API_KEY", "proxy-injected")},
+        headers={"content-type": "application/json", **KEY},
     )
     ctx = ssl.create_default_context(cafile=str(CA)) if CA.exists() else None
     with urllib.request.urlopen(req, context=ctx, timeout=120) as r:

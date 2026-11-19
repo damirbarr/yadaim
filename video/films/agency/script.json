@@ -1,6 +1,10 @@
 {
-  "voice": "he-IL-HilaNeural",
-  "rate": "+10%",
+  "provider": "elevenlabs",
+  "elevenlabs": {
+    "voice_id": "EXAVITQu4vr4xnSDxMaL",
+    "voice": "Sarah",
+    "model": "eleven_v3"
+  },
   "intro": 0.5,
   "pause": 0.4,
   "lead": 0.3,
@@ -50,7 +54,7 @@
     },
     {
       "plate": "offer",
-      "say": "לכל יום פנוי מוכנה הצעה לקבלנים שלכם. אתם מאשרים, והיא יוצאת בוואטס־אפ.",
+      "say": "לכל יום פנוי מוכנה הצעה לקבלנים שלכם. אתם מאשרים, והיא יוצאת בוואטסאפ.",
       "cues": {
         "offer.title": "start-0.2",
         "offer.card": "הצעה-0.2",

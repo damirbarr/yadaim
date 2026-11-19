@@ -1,6 +1,10 @@
 {
-  "voice": "he-IL-AvriNeural",
-  "rate": "+12%",
+  "provider": "elevenlabs",
+  "elevenlabs": {
+    "voice_id": "pNInz6obpgDQGcFmaJgB",
+    "voice": "Adam",
+    "model": "eleven_v3"
+  },
   "intro": 0.5,
   "pause": 0.4,
   "lead": 0.3,
@@ -68,7 +72,7 @@
     },
     {
       "plate": "lock",
-      "say": "בְּשֵׁשׁ בָּעֶרֶב הצוות ננעל, עם שם הנהג ושעת האיסוף.",
+      "say": "בשש בערב הצוות ננעל, עם שם הנהג ושעת האיסוף.",
       "cues": {
         "lock.sweep": "start-0.3",
         "lock.clunk": "ננעל",
@@ -85,7 +89,8 @@
         "checkin.c2": "עובד",
         "checkin.c3": "מתאים-0.2",
         "checkin.zero": "משלמים-0.25"
-      }
+      },
+      "pause": 0.7
     },
     {
       "plate": "end",
